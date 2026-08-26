@@ -1,0 +1,92 @@
+:root {
+  --paper: #f7f5ef;
+  --ink: #17231d;
+  --muted: #66736c;
+  --line: #d9ddd3;
+  --green: #146c43;
+  --green-pale: #e5f2e9;
+  --gold: #b96d18;
+  --surface: #fffefa;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+  color: var(--ink);
+  background: var(--paper);
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; min-width: 320px; }
+a { color: inherit; text-decoration: none; }
+.topbar { align-items: center; border-bottom: 1px solid var(--line); display: flex; gap: 16px; height: 60px; padding: 0 max(24px, calc((100vw - 1280px) / 2)); }
+.brand { font-size: 18px; font-weight: 760; letter-spacing: -0.04em; }
+.brand span { color: var(--green); }
+.brand-note, .eyebrow, .overview, .signals small { color: var(--muted); font-size: 13px; }
+.shell { display: grid; grid-template-columns: 255px minmax(0, 1fr); margin: 0 auto; max-width: 1280px; min-height: calc(100vh - 60px); }
+.sidebar { border-right: 1px solid var(--line); padding: 32px 22px 48px 0; }
+.eyebrow { font-size: 12px; font-weight: 750; letter-spacing: .09em; margin: 0 0 14px; text-transform: uppercase; }
+.tree, .tree ul { list-style: none; margin: 0; padding: 0; }
+.tree ul { border-left: 1px solid #dce4db; margin: 3px 0 3px 7px; padding-left: 14px; }
+.tree li { color: #4e5d54; font-size: 14px; line-height: 1.45; padding: 4px 0; }
+.tree summary { cursor: pointer; font-weight: 650; }
+.tree a { border-radius: 4px; display: inline-block; padding: 2px 4px; }
+.tree a:hover { background: var(--green-pale); color: var(--green); }
+.main-content, .article { padding: 54px clamp(28px, 5vw, 76px) 80px; }
+.main-content { max-width: 1050px; }
+h1 { font-size: clamp(32px, 4vw, 54px); letter-spacing: -.065em; line-height: 1.04; margin: 0 0 16px; max-width: 700px; }
+.lead { color: #4f5c55; font-size: 17px; line-height: 1.7; margin: 0 0 30px; max-width: 680px; }
+.search { display: flex; gap: 8px; margin: 30px 0 12px; max-width: 720px; }
+.search input { background: var(--surface); border: 1px solid #b9c6bb; border-radius: 8px; font: inherit; outline-color: var(--green); padding: 14px 15px; width: 100%; }
+.search button { background: var(--green); border: 0; border-radius: 8px; color: white; cursor: pointer; font: inherit; font-weight: 700; padding: 0 19px; }
+.overview { display: flex; gap: 18px; margin-bottom: 22px; }
+.overview strong { color: var(--green); }
+.signals { background: #edf3ed; border: 1px solid #d8e5d9; border-radius: 8px; margin: 18px 0 40px; max-width: 720px; padding: 11px 14px; }
+.signals summary { cursor: pointer; font-size: 14px; font-weight: 700; }
+.signal-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.signal-list span { background: white; border: 1px solid #d7e5d7; border-radius: 999px; font-size: 13px; padding: 5px 9px; }
+.signal-list b { color: var(--green); }
+.result-heading { align-items: baseline; display: flex; gap: 10px; justify-content: space-between; }
+h2 { font-size: 21px; letter-spacing: -.035em; margin: 0 0 17px; }
+.result-heading span { color: var(--muted); font-size: 13px; }
+.cards { display: grid; gap: 14px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; display: flex; flex-direction: column; min-height: 205px; padding: 20px; transition: border-color .16s, transform .16s; }
+.card:hover { border-color: #89ad92; transform: translateY(-2px); }
+.card-top { align-items: center; display: flex; flex-wrap: wrap; gap: 6px; }
+.tag, .plain-tag { border-radius: 999px; font-size: 11px; font-weight: 700; padding: 4px 8px; }
+.tag { background: #edf0ed; color: #536158; }
+.tag--algorithm { background: #e8f2eb; color: var(--green); }
+.tag--engineering { background: #fff0dd; color: #9a5512; }
+.plain-tag { background: #f3f3ef; color: #718077; font-weight: 600; }
+.card h3 { font-size: 19px; letter-spacing: -.035em; line-height: 1.25; margin: 16px 0 8px; }
+.card h3 a:hover, .markdown a, .related-links a:hover { color: var(--green); }
+.card p { color: #5f6b64; font-size: 14px; line-height: 1.62; margin: 0; }
+.card-link { color: var(--green); font-size: 13px; font-weight: 750; margin-top: auto; padding-top: 18px; }
+.card-link span, .related-links span { padding-left: 4px; }
+.empty { color: var(--muted); }
+.article { max-width: 910px; }
+.back { color: var(--green); display: inline-block; font-size: 14px; font-weight: 700; margin-bottom: 34px; }
+.article h1 { font-size: clamp(34px, 4vw, 48px); margin: 16px 0 10px; }
+.article-summary { border-left: 3px solid var(--green); color: #4f5d55; font-size: 17px; line-height: 1.65; margin: 0 0 36px; padding-left: 16px; }
+.markdown { font-family: ui-serif, Georgia, "Noto Serif SC", serif; font-size: 16px; line-height: 1.85; }
+.markdown h2 { font-family: Inter, ui-sans-serif, system-ui, sans-serif; font-size: 22px; margin: 40px 0 10px; }
+.markdown p { margin: 0 0 16px; }
+.markdown ul { padding-left: 22px; }
+.markdown code { background: #edf0ea; border-radius: 4px; font-family: "SFMono-Regular", Consolas, monospace; font-size: .9em; padding: 2px 4px; }
+.markdown pre { background: #183329; border-radius: 10px; color: #e4f1e7; overflow-x: auto; padding: 18px; }
+.markdown pre code { background: transparent; color: inherit; padding: 0; }
+.related, .evidence { border-top: 1px solid var(--line); margin-top: 43px; padding-top: 24px; }
+.related-links { display: flex; flex-wrap: wrap; gap: 10px; }
+.related-links a, .evidence a { background: var(--surface); border: 1px solid var(--line); border-radius: 7px; font-size: 14px; padding: 10px 12px; }
+.evidence p { color: var(--muted); font-size: 14px; line-height: 1.6; }
+.evidence a { display: inline-block; margin: 0 8px 8px 0; }
+.sr-only { height: 1px; overflow: hidden; position: absolute; width: 1px; }
+@media (max-width: 780px) {
+  .topbar { padding: 0 18px; }
+  .brand-note { display: none; }
+  .shell { display: block; }
+  .sidebar { border-bottom: 1px solid var(--line); border-right: 0; padding: 18px; }
+  .sidebar .eyebrow { margin-bottom: 6px; }
+  .tree { display: flex; gap: 10px; overflow-x: auto; }
+  .tree > li { min-width: 135px; }
+  .main-content, .article { padding: 38px 20px 60px; }
+  .cards { grid-template-columns: 1fr; }
+  .overview { flex-direction: column; gap: 5px; }
+  .signals small { display: block; margin-top: 4px; }
+}

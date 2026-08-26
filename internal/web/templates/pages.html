@@ -1,0 +1,116 @@
+{{define "head"}}
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="本地优先的面试知识查询系统">
+  <title>{{.Title}}</title>
+  <link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="/">Fish <span>Interview</span></a>
+  <span class="brand-note">知识树 · 模式库 · 算法实验室</span>
+</header>
+{{end}}
+
+{{define "tree"}}
+<li>
+  {{if .Children}}
+  <details open>
+    <summary>{{nodeTitle .}}</summary>
+    <ul>{{range .Children}}{{template "tree" .}}{{end}}</ul>
+  </details>
+  {{else}}
+  <a href="/cards/{{.Card}}">{{nodeTitle .}}</a>
+  {{end}}
+</li>
+{{end}}
+
+{{define "sidebar"}}
+<aside class="sidebar">
+  <p class="eyebrow">知识地图</p>
+  <nav aria-label="知识树">
+    <ul class="tree">{{range .Roots}}{{template "tree" .}}{{end}}</ul>
+  </nav>
+</aside>
+{{end}}
+
+{{define "home"}}
+{{template "head" .}}
+<main class="shell">
+  {{template "sidebar" .}}
+  <section class="main-content">
+    <p class="eyebrow">本地优先 · 随时查阅</p>
+    <h1>找到那个刚刚忘掉的知识点。</h1>
+    <p class="lead">从概念卡片、算法识别信号和可追溯的考情标签开始，而不是从进度条开始。</p>
+    <form class="search" method="get" action="/">
+      <label class="sr-only" for="search">搜索知识点</label>
+      <input id="search" name="q" value="{{.Query}}" placeholder="搜索：Rebalance、区间 DP、最小化最大值" autocomplete="off">
+      <button type="submit">搜索</button>
+    </form>
+    <div class="overview">
+      <span><strong>{{.TotalCards}}</strong> 张可引用卡片</span>
+      <span>无进度追踪 · 无账号 · 内容在 Git 中</span>
+    </div>
+    {{if .Signals}}
+    <details class="signals">
+      <summary>考情标签聚合 <small>仅作证据索引，不等于公司题型承诺</small></summary>
+      <div class="signal-list">{{range .Signals}}<span>{{.Company}} <b>{{.Count}}</b></span>{{end}}</div>
+    </details>
+    {{end}}
+    <div class="result-heading">
+      <h2>{{if .Query}}“{{.Query}}” 的结果{{else}}从这些节点开始{{end}}</h2>
+      <span>{{len .Results}} 项</span>
+    </div>
+    <div class="cards">
+      {{range .Results}}
+      <article class="card">
+        <div class="card-top"><span class="{{tagClass .Kind}}">{{.Kind}}</span>{{range .Tags}}<span class="plain-tag">{{.}}</span>{{end}}</div>
+        <h3><a href="/cards/{{.ID}}">{{.Title}}</a></h3>
+        <p>{{.Summary}}</p>
+        <a class="card-link" href="/cards/{{.ID}}">打开卡片 <span>→</span></a>
+      </article>
+      {{else}}
+      <p class="empty">没有匹配项。试试上层概念或同义词。</p>
+      {{end}}
+    </div>
+  </section>
+</main>
+<script src="/static/app.js"></script>
+</body>
+</html>
+{{end}}
+
+{{define "card"}}
+{{template "head" .}}
+<main class="shell">
+  {{template "sidebar" .}}
+  <article class="article">
+    <a class="back" href="/">← 返回知识地图</a>
+    <div class="card-top"><span class="{{tagClass .Card.Kind}}">{{.Card.Kind}}</span>{{range .Card.Tags}}<span class="plain-tag">{{.}}</span>{{end}}</div>
+    <h1>{{.Card.Title}}</h1>
+    <p class="article-summary">{{.Card.Summary}}</p>
+    <div class="markdown">{{.Body}}</div>
+    {{if .Related}}
+    <section class="related">
+      <h2>关联节点</h2>
+      <div class="related-links">{{range .Related}}<a href="/cards/{{.ID}}">{{.Title}} <span>→</span></a>{{end}}</div>
+    </section>
+    {{end}}
+    {{if .Signals}}
+    <section class="evidence">
+      <h2>考情标签</h2>
+      <p>以下为时间和岗位受限的外部线索；使用前仍应复核原始来源。</p>
+      {{range .Signals}}
+      <a href="{{.Source}}" target="_blank" rel="noreferrer">{{.Company}} · {{.Year}} · {{.Role}} · {{.Confidence}} confidence ↗</a>
+      {{end}}
+    </section>
+    {{end}}
+  </article>
+</main>
+<script src="/static/app.js"></script>
+</body>
+</html>
+{{end}}
