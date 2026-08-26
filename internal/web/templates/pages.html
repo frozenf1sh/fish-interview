@@ -11,7 +11,7 @@
 <body>
 <header class="topbar">
   <a class="brand" href="/">Fish <span>Interview</span></a>
-  <span class="brand-note">知识树 · 模式库 · 算法实验室</span>
+  <span class="brand-note">知识树 · 模式库 · <a href="/lab/interval-scheduling">算法实验室</a></span>
 </header>
 {{end}}
 
@@ -109,6 +109,41 @@
     </section>
     {{end}}
   </article>
+</main>
+<script src="/static/app.js"></script>
+</body>
+</html>
+{{end}}
+
+{{define "lab"}}
+{{template "head" .}}
+<main class="shell">
+  {{template "sidebar" .}}
+  <section class="lab">
+    <a class="back" href="/cards/algo.greedy.interval-scheduling">← 返回算法卡片</a>
+    <p class="eyebrow">Go Trace · intervals renderer</p>
+    <h1>区间调度，逐帧看贪心如何选择。</h1>
+    <p class="lead">先按结束时间排序。每一帧都由 Go 侧算法状态生成；播放器不重新执行算法，因此可以稳定前进、后退和回放。</p>
+    <section class="trace-player" data-trace="/api/traces/interval-scheduling">
+      <div class="player-top">
+        <p class="narration" data-narration>正在加载执行轨迹…</p>
+        <span class="step-count" data-step-count></span>
+      </div>
+      <div class="interval-board" data-board aria-live="polite"></div>
+      <div class="player-bottom">
+        <div class="controls">
+          <button data-first title="跳到开始">↤</button>
+          <button data-prev title="上一步">←</button>
+          <button class="play" data-play>播放</button>
+          <button data-next title="下一步">→</button>
+          <button data-last title="跳到结尾">↦</button>
+        </div>
+        <dl class="variables" data-variables></dl>
+      </div>
+      <ol class="pseudocode" data-code></ol>
+    </section>
+    <aside class="lab-note"><b>观察：</b>B 和 D 都比当前边界早开始，因此即使它们结束时间不算晚，也不能加入已选集合。</aside>
+  </section>
 </main>
 <script src="/static/app.js"></script>
 </body>

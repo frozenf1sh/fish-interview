@@ -3,6 +3,7 @@ package web
 import (
 	"bytes"
 	"embed"
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"net/http"
@@ -11,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/frozenf1sh/fish-interview/internal/content"
+	"github.com/frozenf1sh/fish-interview/internal/trace"
 	"github.com/yuin/goldmark"
 )
 
@@ -39,6 +41,11 @@ type cardData struct {
 	Related []content.Card
 	Signals []content.ExamSignal
 	Roots   []content.TreeNode
+}
+
+type labData struct {
+	Title string
+	Roots []content.TreeNode
 }
 
 type signalCount struct {
@@ -71,6 +78,10 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.home(w, r)
 	case strings.HasPrefix(r.URL.Path, "/cards/"):
 		s.card(w, r)
+	case r.URL.Path == "/lab/interval-scheduling":
+		s.lab(w, r)
+	case r.URL.Path == "/api/traces/interval-scheduling":
+		s.intervalTrace(w, r)
 	case r.URL.Path == "/static/app.css":
 		s.static(w, r, "static/app.css", "text/css; charset=utf-8")
 	case r.URL.Path == "/static/app.js":
@@ -78,6 +89,21 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	default:
 		http.NotFound(w, r)
 	}
+}
+
+func (s *Server) lab(w http.ResponseWriter, r *http.Request) {
+	s.render(w, "lab", labData{Title: "区间调度实验室 · Fish Interview", Roots: s.catalog.Roots})
+}
+
+func (s *Server) intervalTrace(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	_ = json.NewEncoder(w).Encode(trace.IntervalScheduling([]trace.Interval{
+		{Label: "A", Start: 1, End: 3},
+		{Label: "B", Start: 2, End: 5},
+		{Label: "C", Start: 3, End: 6},
+		{Label: "D", Start: 5, End: 7},
+		{Label: "E", Start: 6, End: 8},
+	}))
 }
 
 func (s *Server) home(w http.ResponseWriter, r *http.Request) {

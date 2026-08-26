@@ -48,3 +48,13 @@ func TestCardRendersInternalLink(t *testing.T) {
 		t.Fatal("card should render wikilink")
 	}
 }
+
+func TestTraceEndpointReturnsReplayableFrames(t *testing.T) {
+	server := newDemoServer(t)
+	req := httptest.NewRequest(http.MethodGet, "/api/traces/interval-scheduling", nil)
+	res := httptest.NewRecorder()
+	server.ServeHTTP(res, req)
+	if res.Code != http.StatusOK || !strings.Contains(res.Body.String(), `"frames"`) {
+		t.Fatalf("trace response = %d %s", res.Code, res.Body.String())
+	}
+}
