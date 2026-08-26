@@ -1,0 +1,34 @@
+roots:
+  - id: algorithms
+    title: 算法
+    children:
+      - id: algo.greedy
+        title: 贪心
+        children:
+          - id: algo.greedy.exchange-argument
+            card: algo.greedy.exchange-argument
+          - id: algo.greedy.interval-scheduling
+            card: algo.greedy.interval-scheduling
+      - id: algo.dp
+        title: 动态规划
+        children:
+          - id: algo.dp.modeling
+            card: algo.dp.modeling
+          - id: algo.dp.linear
+            card: algo.dp.linear
+      - id: algo.binary-search
+        title: 二分答案
+        children:
+          - id: algo.binary-search.answer
+            card: algo.binary-search.answer
+  - id: engineering
+    title: 工程基础
+    children:
+      - id: eng.kafka
+        title: Kafka
+        children:
+          - id: eng.kafka.consumer-group
+            card: eng.kafka.consumer-group
+          - id: eng.kafka.rebalance
+            card: eng.kafka.rebalance
+
