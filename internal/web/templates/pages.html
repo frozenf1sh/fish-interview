@@ -99,15 +99,17 @@
     <a class="back" href="/">← 返回知识地图</a>
     <div class="card-top"><span class="{{tagClass .Card.Kind}}">{{.Card.Kind}}</span>{{range .Card.Tags}}<span class="plain-tag">{{.}}</span>{{end}}</div>
     <h1>{{.Card.Title}}</h1>
+    <p class="article-kicker">一句话结论</p>
     <p class="article-summary">{{.Card.Summary}}</p>
-    <div class="markdown">{{.Body}}</div>
     {{if .TraceURL}}
-    <section class="inline-trace">
+    <section class="inline-trace inline-trace--lead">
       <p class="eyebrow">关键动画 · Go Trace</p>
       <h2>逐帧观察模板的选择过程</h2>
+      <p class="trace-intro">先播放一次，再回到下方模板：重点观察候选区间何时因边界 <code>end</code> 被保留或跳过。</p>
       {{template "trace-player" .TraceURL}}
     </section>
     {{end}}
+    <div class="markdown">{{.Body}}</div>
     {{if .Related}}
     <section class="related">
       <h2>关联节点</h2>

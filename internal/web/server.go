@@ -11,9 +11,12 @@ import (
 	"sort"
 	"strings"
 
+	chromahtml "github.com/alecthomas/chroma/v2/formatters/html"
 	"github.com/frozenf1sh/fish-interview/internal/content"
 	"github.com/frozenf1sh/fish-interview/internal/trace"
 	"github.com/yuin/goldmark"
+	highlighting "github.com/yuin/goldmark-highlighting/v2"
+	"github.com/yuin/goldmark/extension"
 )
 
 //go:embed templates/*.html static/*
@@ -89,7 +92,18 @@ func New(catalog content.Catalog) (*Server, error) {
 	if err != nil {
 		return nil, fmt.Errorf("parse templates: %w", err)
 	}
-	return &Server{catalog: catalog, templates: templates, markdown: goldmark.New()}, nil
+	markdown := goldmark.New(
+		goldmark.WithExtensions(
+			extension.GFM,
+			extension.CJK,
+			extension.Typographer,
+			highlighting.NewHighlighting(
+				highlighting.WithStyle("github"),
+				highlighting.WithFormatOptions(chromahtml.WithLineNumbers(true)),
+			),
+		),
+	)
+	return &Server{catalog: catalog, templates: templates, markdown: markdown}, nil
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -329,8 +343,11 @@ func (s *Server) signalCounts() []signalCount {
 }
 
 var wikilink = regexp.MustCompile(`\[\[([a-z0-9.-]+)\]\]`)
+var codeBlock = regexp.MustCompile(`<pre([^>]*)>`)
+var emphasisTrailingPunctuation = regexp.MustCompile(`\*\*([^*\n]+)([：:])\*\*`)
 
 func (s *Server) renderMarkdown(body string) (string, error) {
+	body = emphasisTrailingPunctuation.ReplaceAllString(body, `**$1**$2`)
 	body = wikilink.ReplaceAllStringFunc(body, func(match string) string {
 		id := wikilink.FindStringSubmatch(match)[1]
 		if card, ok := s.catalog.Find(id); ok {
@@ -342,7 +359,7 @@ func (s *Server) renderMarkdown(body string) (string, error) {
 	if err := s.markdown.Convert([]byte(body), &rendered); err != nil {
 		return "", err
 	}
-	return rendered.String(), nil
+	return codeBlock.ReplaceAllString(rendered.String(), `<pre class="code-block"$1>`), nil
 }
 
 func tagClass(kind string) string {

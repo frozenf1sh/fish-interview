@@ -75,3 +75,25 @@ func TestCardPartialEmbedsAlgorithmTraceWithoutLayout(t *testing.T) {
 		t.Fatal("partial should replace only the content panel")
 	}
 }
+
+func TestMarkdownUsesChromaWithLineNumbers(t *testing.T) {
+	server := newDemoServer(t)
+	rendered, err := server.renderMarkdown("```go\nfmt.Println(\"fish\")\n```")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(rendered, `class="code-block"`) || !strings.Contains(rendered, "user-select:none") || !strings.Contains(rendered, "color:#") {
+		t.Fatalf("expected highlighted line-numbered output, got %s", rendered)
+	}
+}
+
+func TestMarkdownKeepsChineseEmphasisBeforeColon(t *testing.T) {
+	server := newDemoServer(t)
+	rendered, err := server.renderMarkdown("**重点：**后面是说明")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(rendered, "<strong>重点</strong>：后面是说明") {
+		t.Fatalf("expected normalized emphasis, got %s", rendered)
+	}
+}
