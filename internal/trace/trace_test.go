@@ -69,3 +69,36 @@ func TestDPPatternTracesReachExpectedResults(t *testing.T) {
 		t.Fatalf("unexpected bitmask trace: %#v", bitmask)
 	}
 }
+
+func TestDPTracesMarkDependencies(t *testing.T) {
+	linear := LinearDPClimbStairs()
+	linearState, ok := linear.Frames[3].State.(dpTableState)
+	if !ok || !linearState.Cells[0].Dependency || !linearState.Cells[1].Dependency {
+		t.Fatalf("fibonacci trace should mark dp[0] and dp[1]: %#v", linear.Frames[3].State)
+	}
+	for _, trace := range []Trace{LCSTrace(), IntervalMergeTrace(), PathTrace()} {
+		found := false
+		for _, frame := range trace.Frames {
+			state, ok := frame.State.(gridState)
+			if !ok {
+				continue
+			}
+			for _, cell := range state.Cells {
+				found = found || cell.Dependency
+			}
+		}
+		if !found {
+			t.Fatalf("trace %q never marks a dependency", trace.Title)
+		}
+	}
+	stock := StockTrace()
+	stockState, ok := stock.Frames[1].State.(stockState)
+	if !ok || stockState.Days[0].State != "dependency" {
+		t.Fatalf("stock trace should mark the previous day: %#v", stock.Frames[1].State)
+	}
+	bitmask := BitmaskTrace()
+	bitmaskState, ok := bitmask.Frames[1].State.(bitmaskState)
+	if !ok || bitmaskState.PreviousLast != 0 {
+		t.Fatalf("bitmask trace should retain the previous last city: %#v", bitmask.Frames[1].State)
+	}
+}

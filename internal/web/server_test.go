@@ -136,3 +136,29 @@ func TestMarkdownKeepsChineseEmphasisBeforeColon(t *testing.T) {
 		t.Fatalf("expected normalized emphasis, got %s", rendered)
 	}
 }
+
+func TestMarkdownRendersLatexStateTransition(t *testing.T) {
+	server := newDemoServer(t)
+	rendered, err := server.renderMarkdown("$$dp_{i} = dp_{i-1} + dp_{i-2}$$")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(rendered, `class="math-formula"`) || !strings.Contains(rendered, `dp<sub>i</sub>`) {
+		t.Fatalf("expected rendered formula, got %s", rendered)
+	}
+}
+
+func TestDPCardsRenderFormulaAndSegmentedImplementation(t *testing.T) {
+	server := newDemoServer(t)
+	for _, id := range []string{"algo.dp.linear", "algo.dp.lcs", "algo.dp.interval", "algo.dp.stock", "algo.dp.bitmask", "algo.dp.path"} {
+		t.Run(id, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, "/cards/"+id, nil)
+			res := httptest.NewRecorder()
+			server.ServeHTTP(res, req)
+			body := res.Body.String()
+			if res.Code != http.StatusOK || !strings.Contains(body, `class="math-formula"`) || !strings.Contains(body, "分段实现") {
+				t.Fatalf("card %s misses formula or segmented implementation: %d", id, res.Code)
+			}
+		})
+	}
+}

@@ -24,6 +24,14 @@
   <nav class="tree-switch" aria-label="切换知识树" role="tablist">
     {{range .TreeOptions}}<button type="button" role="tab" data-tree-switch data-tree-id="{{.ID}}" aria-selected="{{if eq $.TreeID .ID}}true{{else}}false{{end}}">{{.Title}}</button>{{end}}
   </nav>
+  <div class="tree-tools" aria-label="知识树视图控制">
+    <span>拖拽画布浏览</span>
+    <div class="tree-zoom" role="group" aria-label="缩放知识树">
+      <button type="button" data-tree-zoom-out aria-label="缩小知识树">−</button>
+      <output data-tree-zoom-value>100%</output>
+      <button type="button" data-tree-zoom-in aria-label="放大知识树">放大</button>
+    </div>
+  </div>
   <div class="tree-canvas-wrap">
     <svg class="tree-canvas" data-tree-canvas data-tree-id="{{.TreeID}}" data-active-id="{{.ActiveCardID}}" role="img" aria-label="可交互知识树画布"></svg>
   </div>
@@ -101,11 +109,7 @@
     <h1>{{.Card.Title}}</h1>
     <p class="article-kicker">一句话结论</p>
     <p class="article-summary">{{.Card.Summary}}</p>
-    {{if .TraceURL}}
-    <section class="inline-trace inline-trace--lead">
-      {{template "trace-player" .TraceURL}}
-    </section>
-    {{end}}
+    {{if .TraceURL}}{{template "trace-player" .TraceURL}}{{end}}
     <div class="markdown">{{.Body}}</div>
     {{if .Related}}
     <section class="related">

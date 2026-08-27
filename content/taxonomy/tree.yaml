@@ -39,12 +39,15 @@ roots:
               - id: algo.dp.interval
                 card: algo.dp.interval
                 title: 区间 DP
-              - id: algo.dp.stock
-                card: algo.dp.stock
-                title: 状态 DP：股票
-              - id: algo.dp.bitmask
-                card: algo.dp.bitmask
-                title: 状态压缩 DP
+              - id: algo.patterns.dp.state
+                title: 状态 DP
+                children:
+                  - id: algo.dp.stock
+                    card: algo.dp.stock
+                    title: 股票买卖
+                  - id: algo.dp.bitmask
+                    card: algo.dp.bitmask
+                    title: 状态压缩 DP
               - id: algo.dp.path
                 card: algo.dp.path
                 title: 寻路 DP

@@ -1,11 +1,14 @@
 package trace
 
 type gridCell struct {
-	Row    int    `json:"row"`
-	Column int    `json:"column"`
-	Value  int    `json:"value"`
-	State  string `json:"state"`
+	Row        int    `json:"row"`
+	Column     int    `json:"column"`
+	Value      int    `json:"value"`
+	State      string `json:"state"`
+	Dependency bool   `json:"dependency"`
 }
+
+type gridPoint struct{ Row, Column int }
 
 type gridState struct {
 	Title   string     `json:"title"`
@@ -39,21 +42,21 @@ func LCSTrace() Trace {
 			"}",
 		},
 	}
-	result.Frames = append(result.Frames, gridFrame("dp[i][j]：两个前缀的 LCS 长度", labels("∅", a), labels("∅", b), values, done, -1, -1, 0, "第 0 行和第 0 列表示一个前缀为空，LCS 长度固定为 0。"))
+	result.Frames = append(result.Frames, gridFrame("dp[i][j]：两个前缀的 LCS 长度", labels("∅", a), labels("∅", b), values, done, -1, -1, nil, 0, "第 0 行和第 0 列表示一个前缀为空，LCS 长度固定为 0。"))
 	for i := 1; i <= len(a); i++ {
 		for j := 1; j <= len(b); j++ {
 			if a[i-1] == b[j-1] {
 				values[i][j] = values[i-1][j-1] + 1
 				done[i][j] = true
-				result.Frames = append(result.Frames, gridFrame("dp[i][j]：两个前缀的 LCS 长度", labels("∅", a), labels("∅", b), values, done, i, j, 2, "字符 "+string(a[i-1])+" 相同：在左上角结果后接上它。"))
+				result.Frames = append(result.Frames, gridFrame("dp[i][j]：两个前缀的 LCS 长度", labels("∅", a), labels("∅", b), values, done, i, j, []gridPoint{{i - 1, j - 1}}, 2, "字符 "+string(a[i-1])+" 相同：在左上角结果后接上它。"))
 				continue
 			}
 			values[i][j] = max(values[i-1][j], values[i][j-1])
 			done[i][j] = true
-			result.Frames = append(result.Frames, gridFrame("dp[i][j]：两个前缀的 LCS 长度", labels("∅", a), labels("∅", b), values, done, i, j, 3, "字符 "+string(a[i-1])+" 与 "+string(b[j-1])+" 不同：保留上方或左方的较优结果。"))
+			result.Frames = append(result.Frames, gridFrame("dp[i][j]：两个前缀的 LCS 长度", labels("∅", a), labels("∅", b), values, done, i, j, []gridPoint{{i - 1, j}, {i, j - 1}}, 3, "字符 "+string(a[i-1])+" 与 "+string(b[j-1])+" 不同：保留上方或左方的较优结果。"))
 		}
 	}
-	result.Frames = append(result.Frames, gridFrame("dp[i][j]：两个前缀的 LCS 长度", labels("∅", a), labels("∅", b), values, done, len(a), len(b), 5, "完整前缀的 LCS 长度为 "+itoa(values[len(a)][len(b)])+"。"))
+	result.Frames = append(result.Frames, gridFrame("dp[i][j]：两个前缀的 LCS 长度", labels("∅", a), labels("∅", b), values, done, len(a), len(b), []gridPoint{{len(a) - 1, len(b) - 1}}, 5, "完整前缀的 LCS 长度为 "+itoa(values[len(a)][len(b)])+"。"))
 	return result
 }
 
@@ -84,26 +87,31 @@ func IntervalMergeTrace() Trace {
 			"}",
 		},
 	}
-	result.Frames = append(result.Frames, intervalFrameGrid(values, done, -1, -1, 0, "长度为 1 的区间无需合并，主对角线初始化为 0。"))
+	result.Frames = append(result.Frames, intervalFrameGrid(values, done, -1, -1, nil, 0, "长度为 1 的区间无需合并，主对角线初始化为 0。"))
 	for length := 2; length <= n; length++ {
 		for left := 0; left+length <= n; left++ {
 			right := left + length - 1
 			total := prefix[right+1] - prefix[left]
 			best := int(^uint(0) >> 1)
+			bestSplit := left
 			for split := left; split < right; split++ {
-				best = min(best, values[left][split]+values[split+1][right]+total)
+				candidate := values[left][split] + values[split+1][right] + total
+				if candidate < best {
+					best, bestSplit = candidate, split
+				}
 			}
 			values[left][right] = best
 			done[left][right] = true
-			result.Frames = append(result.Frames, intervalFrameGrid(values, done, left, right, 4, "长度 "+itoa(length)+"：先用更短的两个子区间，再加本段合并代价 "+itoa(total)+"。"))
+			result.Frames = append(result.Frames, intervalFrameGrid(values, done, left, right, []gridPoint{{left, bestSplit}, {bestSplit + 1, right}}, 4, "长度 "+itoa(length)+"：蓝色格子是本次最优切分用到的两个子区间，再加本段合并代价 "+itoa(total)+"。"))
 		}
 	}
-	result.Frames = append(result.Frames, intervalFrameGrid(values, done, 0, n-1, 7, "完整区间的最小合并代价为 "+itoa(values[0][n-1])+"。"))
+	result.Frames = append(result.Frames, intervalFrameGrid(values, done, 0, n-1, nil, 7, "完整区间的最小合并代价为 "+itoa(values[0][n-1])+"。"))
 	return result
 }
 
-func intervalFrameGrid(values [][]int, done [][]bool, currentRow, currentColumn, line int, narration string) Frame {
+func intervalFrameGrid(values [][]int, done [][]bool, currentRow, currentColumn int, dependencies []gridPoint, line int, narration string) Frame {
 	state := gridState{Title: "dp[l][r]：闭区间 [l,r] 的最小合并代价", Rows: []string{"l=0", "l=1", "l=2", "l=3"}, Columns: []string{"r=0", "r=1", "r=2", "r=3"}}
+	dependencySet := gridPointSet(dependencies)
 	for row := range values {
 		for column := range values[row] {
 			cellState := "pending"
@@ -115,7 +123,7 @@ func intervalFrameGrid(values [][]int, done [][]bool, currentRow, currentColumn,
 			if row == currentRow && column == currentColumn {
 				cellState = "current"
 			}
-			state.Cells = append(state.Cells, gridCell{Row: row, Column: column, Value: values[row][column], State: cellState})
+			state.Cells = append(state.Cells, gridCell{Row: row, Column: column, Value: values[row][column], State: cellState, Dependency: dependencySet[gridPoint{row, column}]})
 		}
 	}
 	return Frame{ActiveLine: line, Narration: narration, Variables: map[string]string{"order": "区间长度从短到长", "current": intervalName(currentRow, currentColumn)}, State: state}
@@ -131,8 +139,8 @@ func StockTrace() Trace {
 		Title: "股票状态 DP：持仓与空仓",
 		Pseudocode: []string{
 			"hold, cash = -prices[0], 0",
-			"for price in prices[1:] {",
-			"    prevHold, prevCash = hold, cash",
+			"for _, price := range prices[1:] {",
+			"    prevHold, prevCash := hold, cash",
 			"    hold = max(prevHold, prevCash-price)",
 			"    cash = max(prevCash, prevHold+price)",
 			"}",
@@ -171,6 +179,9 @@ func stockFrame(state stockState, line int, narration string) Frame {
 		view.Days[i].State = "ready"
 	}
 	view.Days[len(view.Days)-1].State = "current"
+	if len(view.Days) > 1 {
+		view.Days[len(view.Days)-2].State = "dependency"
+	}
 	last := view.Days[len(view.Days)-1]
 	return Frame{ActiveLine: line, Narration: narration, Variables: map[string]string{"price": itoa(last.Price), "hold": itoa(last.Hold), "cash": itoa(last.Cash)}, State: view}
 }
@@ -201,10 +212,12 @@ func BitmaskTrace() Trace {
 	}
 	for index, step := range steps {
 		line := 0
+		previousLast := -1
 		if index > 0 {
 			line = 5
+			previousLast = steps[index-1].Last
 		}
-		result.Frames = append(result.Frames, Frame{ActiveLine: line, Narration: step.Narration, Variables: map[string]string{"mask": binaryMask(step.Mask, 4), "last": "city " + itoa(step.Last), "cost": itoa(step.Cost)}, State: bitmaskState{Names: []string{"0", "1", "2", "3"}, Mask: step.Mask, Last: step.Last, Cost: step.Cost}})
+		result.Frames = append(result.Frames, Frame{ActiveLine: line, Narration: step.Narration, Variables: map[string]string{"mask": binaryMask(step.Mask, 4), "last": "city " + itoa(step.Last), "cost": itoa(step.Cost)}, State: bitmaskState{Names: []string{"0", "1", "2", "3"}, Mask: step.Mask, Last: step.Last, PreviousLast: previousLast, Cost: step.Cost}})
 	}
 	return result
 }
@@ -217,10 +230,11 @@ type bitmaskStep struct {
 }
 
 type bitmaskState struct {
-	Names []string `json:"names"`
-	Mask  int      `json:"mask"`
-	Last  int      `json:"last"`
-	Cost  int      `json:"cost"`
+	Names        []string `json:"names"`
+	Mask         int      `json:"mask"`
+	Last         int      `json:"last"`
+	PreviousLast int      `json:"previousLast"`
+	Cost         int      `json:"cost"`
 }
 
 // PathTrace fills the minimum-path table from the top left to the bottom right.
@@ -248,28 +262,29 @@ func PathTrace() Trace {
 			"}",
 		},
 	}
-	result.Frames = append(result.Frames, pathFrame(grid, values, done, 0, 0, 0, "起点的最小路径和就是它自己的权重 1。"))
+	result.Frames = append(result.Frames, pathFrame(grid, values, done, 0, 0, nil, 0, "起点的最小路径和就是它自己的权重 1。"))
 	for column := 1; column < columns; column++ {
 		values[0][column] = values[0][column-1] + grid[0][column]
 		done[0][column] = true
-		result.Frames = append(result.Frames, pathFrame(grid, values, done, 0, column, 1, "首行只能从左侧进入，累加当前格子权重。"))
+		result.Frames = append(result.Frames, pathFrame(grid, values, done, 0, column, []gridPoint{{0, column - 1}}, 1, "首行只能从左侧进入，蓝色格子是本次读取的左侧状态。"))
 	}
 	for row := 1; row < rows; row++ {
 		values[row][0] = values[row-1][0] + grid[row][0]
 		done[row][0] = true
-		result.Frames = append(result.Frames, pathFrame(grid, values, done, row, 0, 3, "首列只能从上方进入，累加当前格子权重。"))
+		result.Frames = append(result.Frames, pathFrame(grid, values, done, row, 0, []gridPoint{{row - 1, 0}}, 3, "首列只能从上方进入，蓝色格子是本次读取的上方状态。"))
 		for column := 1; column < columns; column++ {
 			values[row][column] = min(values[row-1][column], values[row][column-1]) + grid[row][column]
 			done[row][column] = true
-			result.Frames = append(result.Frames, pathFrame(grid, values, done, row, column, 5, "比较上方与左方路径和，再加当前格子权重 "+itoa(grid[row][column])+"。"))
+			result.Frames = append(result.Frames, pathFrame(grid, values, done, row, column, []gridPoint{{row - 1, column}, {row, column - 1}}, 5, "蓝色格子是本次参与比较的上方与左方状态，再加当前格子权重 "+itoa(grid[row][column])+"。"))
 		}
 	}
-	result.Frames = append(result.Frames, pathFrame(grid, values, done, rows-1, columns-1, 7, "右下角的最小路径和为 "+itoa(values[rows-1][columns-1])+"。"))
+	result.Frames = append(result.Frames, pathFrame(grid, values, done, rows-1, columns-1, []gridPoint{{rows - 2, columns - 1}, {rows - 1, columns - 2}}, 7, "右下角的最小路径和为 "+itoa(values[rows-1][columns-1])+"。"))
 	return result
 }
 
-func pathFrame(grid, values [][]int, done [][]bool, currentRow, currentColumn, line int, narration string) Frame {
+func pathFrame(grid, values [][]int, done [][]bool, currentRow, currentColumn int, dependencies []gridPoint, line int, narration string) Frame {
 	state := gridState{Title: "dp[r][c]：到达该格的最小路径和", Rows: []string{"r=0", "r=1", "r=2"}, Columns: []string{"c=0", "c=1", "c=2"}}
+	dependencySet := gridPointSet(dependencies)
 	for row := range values {
 		for column := range values[row] {
 			cellState := "pending"
@@ -279,14 +294,15 @@ func pathFrame(grid, values [][]int, done [][]bool, currentRow, currentColumn, l
 			if row == currentRow && column == currentColumn {
 				cellState = "current"
 			}
-			state.Cells = append(state.Cells, gridCell{Row: row, Column: column, Value: values[row][column], State: cellState})
+			state.Cells = append(state.Cells, gridCell{Row: row, Column: column, Value: values[row][column], State: cellState, Dependency: dependencySet[gridPoint{row, column}]})
 		}
 	}
 	return Frame{ActiveLine: line, Narration: narration, Variables: map[string]string{"cell": "(" + itoa(currentRow) + "," + itoa(currentColumn) + ")", "weight": itoa(grid[currentRow][currentColumn])}, State: state}
 }
 
-func gridFrame(title string, rows, columns []string, values [][]int, done [][]bool, currentRow, currentColumn, line int, narration string) Frame {
+func gridFrame(title string, rows, columns []string, values [][]int, done [][]bool, currentRow, currentColumn int, dependencies []gridPoint, line int, narration string) Frame {
 	state := gridState{Title: title, Rows: rows, Columns: columns}
+	dependencySet := gridPointSet(dependencies)
 	for row := range values {
 		for column := range values[row] {
 			cellState := "pending"
@@ -296,10 +312,18 @@ func gridFrame(title string, rows, columns []string, values [][]int, done [][]bo
 			if row == currentRow && column == currentColumn {
 				cellState = "current"
 			}
-			state.Cells = append(state.Cells, gridCell{Row: row, Column: column, Value: values[row][column], State: cellState})
+			state.Cells = append(state.Cells, gridCell{Row: row, Column: column, Value: values[row][column], State: cellState, Dependency: dependencySet[gridPoint{row, column}]})
 		}
 	}
 	return Frame{ActiveLine: line, Narration: narration, Variables: map[string]string{"current": intervalName(currentRow, currentColumn)}, State: state}
+}
+
+func gridPointSet(points []gridPoint) map[gridPoint]bool {
+	result := make(map[gridPoint]bool, len(points))
+	for _, point := range points {
+		result[point] = true
+	}
+	return result
 }
 
 func labels(prefix, input string) []string {

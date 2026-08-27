@@ -9,21 +9,23 @@ links: [algo.dp.modeling]
 trace: interval-dp
 ---
 
+## 状态转移
+
+$$
+dp_{l,r} = \min_{l \le k < r}(dp_{l,k}+dp_{k+1,r}) + sum(l,r)
+$$
+
 > **适用条件**：一次决策把连续区间拆成更短区间，或答案由区间两端共同决定。
 
 ## 以合并石子为例
 
 石子 `[3,5,1,2]` 每次只能合并相邻两堆，代价是两堆总重量，求合并成一堆的最小代价。令 `dp[l][r]` 为合并闭区间 `[l,r]` 的最小代价。
 
-最后一次合并会把 `[l,r]` 切在某个 `k`：左边 `[l,k]` 和右边 `[k+1,r]` 都已合并完，再支付整段重量。因此：
+最后一次合并会把 `[l,r]` 切在某个 `k`：左边 `[l,k]` 和右边 `[k+1,r]` 都已合并完，再支付整段重量。子区间长度小于当前长度，所以外层必须枚举 `length=2..n`；蓝色格子是当前最优切分读取的两个子区间。
 
-```text
-dp[l][r] = min(dp[l][k] + dp[k+1][r] + sum(l,r))
-```
+## 分段实现
 
-子区间长度小于当前长度，所以外层必须枚举 `length=2..n`。动画中的对角线代表同一长度。
-
-## Go 实现
+### 1. 预处理区间和并建立空表
 
 ```go
 prefix := make([]int, n+1) // prefix 让任意区间和在 O(1) 得到
@@ -32,6 +34,11 @@ for i, value := range stones {
 }
 dp := make([][]int, n) // dp[l][r]：把闭区间 [l,r] 合成一堆的最小代价
 for i := range dp { dp[i] = make([]int, n) }
+```
+
+### 2. 由短到长枚举区间
+
+```go
 for length := 2; length <= n; length++ { // 先算短区间，供长区间引用
 	for l := 0; l+length <= n; l++ {
 		r, total := l+length-1, prefix[l+length]-prefix[l]

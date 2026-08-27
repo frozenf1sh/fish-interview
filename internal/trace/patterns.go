@@ -34,9 +34,10 @@ type dpTableState struct {
 }
 
 type dpCell struct {
-	Index int    `json:"index"`
-	Value int    `json:"value"`
-	State string `json:"state"`
+	Index      int    `json:"index"`
+	Value      int    `json:"value"`
+	State      string `json:"state"`
+	Dependency bool   `json:"dependency"`
 }
 
 func dpFrame(values []int, current, line int, narration string) Frame {
@@ -49,7 +50,7 @@ func dpFrame(values []int, current, line int, narration string) Frame {
 		if i == current {
 			cellState = "current"
 		}
-		state.Cells[i] = dpCell{Index: i, Value: value, State: cellState}
+		state.Cells[i] = dpCell{Index: i, Value: value, State: cellState, Dependency: current >= 2 && (i == current-1 || i == current-2)}
 	}
 	return Frame{
 		ActiveLine: line,

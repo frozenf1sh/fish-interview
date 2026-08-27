@@ -5,6 +5,7 @@ import (
 	"embed"
 	"encoding/json"
 	"fmt"
+	stdhtml "html"
 	"html/template"
 	"net/http"
 	"regexp"
@@ -409,9 +410,19 @@ func (s *Server) signalCounts() []signalCount {
 var wikilink = regexp.MustCompile(`\[\[([a-z0-9.-]+)\]\]`)
 var codeBlock = regexp.MustCompile(`<pre([^>]*)>`)
 var emphasisTrailingPunctuation = regexp.MustCompile(`\*\*([^*\n]+)([：:])\*\*`)
+var latexBlock = regexp.MustCompile(`(?s)\$\$(.+?)\$\$`)
+var latexSubscript = regexp.MustCompile(`_\{([^{}]+)\}`)
+var latexSuperscript = regexp.MustCompile(`\^\{([^{}]+)\}`)
+var latexText = regexp.MustCompile(`\\text\{([^{}]+)\}`)
 
 func (s *Server) renderMarkdown(body string) (string, error) {
 	body = emphasisTrailingPunctuation.ReplaceAllString(body, `**$1**$2`)
+	formulas := make(map[string]string)
+	body = latexBlock.ReplaceAllStringFunc(body, func(match string) string {
+		key := fmt.Sprintf("FISHINTERVIEWMATH%d", len(formulas))
+		formulas[key] = strings.TrimSpace(strings.TrimSuffix(strings.TrimPrefix(match, "$$"), "$$"))
+		return key
+	})
 	body = wikilink.ReplaceAllStringFunc(body, func(match string) string {
 		id := wikilink.FindStringSubmatch(match)[1]
 		if card, ok := s.catalog.Find(id); ok {
@@ -423,7 +434,34 @@ func (s *Server) renderMarkdown(body string) (string, error) {
 	if err := s.markdown.Convert([]byte(body), &rendered); err != nil {
 		return "", err
 	}
-	return codeBlock.ReplaceAllString(rendered.String(), `<pre class="code-block"$1>`), nil
+	html := codeBlock.ReplaceAllString(rendered.String(), `<pre class="code-block"$1>`)
+	for key, formula := range formulas {
+		html = strings.ReplaceAll(html, "<p>"+key+"</p>", renderLatex(formula))
+	}
+	return html, nil
+}
+
+func renderLatex(formula string) string {
+	formula = stdhtml.EscapeString(formula)
+	formula = strings.ReplaceAll(formula, `\left`, "")
+	formula = strings.ReplaceAll(formula, `\right`, "")
+	formula = strings.ReplaceAll(formula, `\min`, "min")
+	formula = strings.ReplaceAll(formula, `\max`, "max")
+	formula = strings.ReplaceAll(formula, `\sum`, "∑")
+	formula = strings.ReplaceAll(formula, `\infty`, "∞")
+	formula = strings.ReplaceAll(formula, `\cup`, "∪")
+	formula = strings.ReplaceAll(formula, `\le`, "≤")
+	formula = strings.ReplaceAll(formula, `\ge`, "≥")
+	formula = strings.ReplaceAll(formula, `\neq`, "≠")
+	formula = strings.ReplaceAll(formula, `\;`, " ")
+	formula = latexText.ReplaceAllString(formula, `<span class="math-text">$1</span>`)
+	formula = latexSubscript.ReplaceAllString(formula, `<sub>$1</sub>`)
+	formula = latexSuperscript.ReplaceAllString(formula, `<sup>$1</sup>`)
+	formula = strings.ReplaceAll(formula, `\begin{cases}`, `<span class="math-cases">`)
+	formula = strings.ReplaceAll(formula, `\end{cases}`, `</span>`)
+	formula = strings.ReplaceAll(formula, `\\`, `<br>`)
+	formula = strings.ReplaceAll(formula, "&amp;", "")
+	return `<div class="math-formula" aria-label="状态转移公式">` + formula + `</div>`
 }
 
 func tagClass(kind string) string {

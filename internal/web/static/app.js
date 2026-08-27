@@ -15,6 +15,8 @@ if (treePayload && treeCanvas) {
   const expandedByTree = new Map();
   let currentTreeID = treeCanvas.dataset.treeId;
   const canvasWrap = treeCanvas.closest(".tree-canvas-wrap");
+  const zoomValue = document.querySelector("[data-tree-zoom-value]");
+  let treeZoom = 1;
 
   const expanded = () => {
     if (!expandedByTree.has(currentTreeID)) expandedByTree.set(currentTreeID, new Set([currentTreeID]));
@@ -61,6 +63,8 @@ if (treePayload && treeCanvas) {
     treeCanvas.setAttribute("viewBox", `0 0 ${width} ${height}`);
     treeCanvas.setAttribute("height", String(height));
     treeCanvas.setAttribute("width", String(width));
+    treeCanvas.style.width = `${width * treeZoom}px`;
+    treeCanvas.style.height = `${height * treeZoom}px`;
     treeCanvas.replaceChildren();
 
     const svg = (tag) => document.createElementNS("http://www.w3.org/2000/svg", tag);
@@ -141,6 +145,58 @@ if (treePayload && treeCanvas) {
     else expanded().add(id);
     drawTree();
   };
+  const setTreeZoom = (nextZoom) => {
+    const next = Math.max(0.8, Math.min(2, nextZoom));
+    if (next === treeZoom) return;
+    const oldZoom = treeZoom;
+    const centerX = (canvasWrap.scrollLeft + canvasWrap.clientWidth / 2) / oldZoom;
+    const centerY = (canvasWrap.scrollTop + canvasWrap.clientHeight / 2) / oldZoom;
+    treeZoom = next;
+    drawTree();
+    canvasWrap.scrollLeft = centerX * treeZoom - canvasWrap.clientWidth / 2;
+    canvasWrap.scrollTop = centerY * treeZoom - canvasWrap.clientHeight / 2;
+    if (zoomValue) zoomValue.textContent = `${Math.round(treeZoom * 100)}%`;
+  };
+  let drag = null;
+  let suppressTreeClick = false;
+  const finishDrag = (event) => {
+    if (!drag || event.pointerId !== drag.pointerID) return;
+    if (canvasWrap.hasPointerCapture(event.pointerId)) canvasWrap.releasePointerCapture(event.pointerId);
+    if (drag.moved) {
+      suppressTreeClick = true;
+      window.setTimeout(() => { suppressTreeClick = false; }, 0);
+    }
+    drag = null;
+    canvasWrap.classList.remove("is-dragging");
+  };
+  canvasWrap.addEventListener("pointerdown", (event) => {
+    if (event.button !== 0) return;
+    drag = { pointerID: event.pointerId, startX: event.clientX, startY: event.clientY, scrollLeft: canvasWrap.scrollLeft, scrollTop: canvasWrap.scrollTop, moved: false };
+    canvasWrap.setPointerCapture(event.pointerId);
+    event.preventDefault();
+  });
+  canvasWrap.addEventListener("pointermove", (event) => {
+    if (!drag || event.pointerId !== drag.pointerID) return;
+    const deltaX = event.clientX - drag.startX;
+    const deltaY = event.clientY - drag.startY;
+    if (Math.abs(deltaX) > 4 || Math.abs(deltaY) > 4) {
+      drag.moved = true;
+      canvasWrap.classList.add("is-dragging");
+    }
+    if (drag.moved) {
+      canvasWrap.scrollLeft = drag.scrollLeft - deltaX;
+      canvasWrap.scrollTop = drag.scrollTop - deltaY;
+    }
+  });
+  canvasWrap.addEventListener("pointerup", finishDrag);
+  canvasWrap.addEventListener("pointercancel", finishDrag);
+  canvasWrap.addEventListener("dragstart", (event) => event.preventDefault());
+  canvasWrap.addEventListener("click", (event) => {
+    if (!suppressTreeClick) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    suppressTreeClick = false;
+  }, true);
   treeController = {
     currentTree: () => currentTreeID,
     activate: (id) => { treeCanvas.dataset.activeId = id; drawTree(); },
@@ -156,6 +212,8 @@ if (treePayload && treeCanvas) {
       drawTree();
     });
   });
+  document.querySelector("[data-tree-zoom-in]")?.addEventListener("click", () => setTreeZoom(treeZoom + 0.25));
+  document.querySelector("[data-tree-zoom-out]")?.addEventListener("click", () => setTreeZoom(treeZoom - 0.25));
   drawTree();
 }
 
@@ -218,7 +276,7 @@ function createTracePlayer(root, trace) {
 
   code.replaceChildren(...trace.pseudocode.map((line, lineIndex) => {
     const item = document.createElement("li");
-    item.textContent = line;
+    item.innerHTML = highlightGoSyntax(line);
     item.dataset.line = String(lineIndex);
     return item;
   }));
@@ -259,6 +317,19 @@ function createTracePlayer(root, trace) {
   render();
 }
 
+function highlightGoSyntax(line) {
+  const escaped = line.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+  const tokens = /(\/\/.*$|"(?:\\.|[^"\\])*"|`[^`]*`|\b(?:break|case|continue|default|defer|else|for|func|go|if|range|return|select|switch|type|var)\b|\b(?:append|len|make|max|min)\b|\b\d+\b|:=|==|!=|&lt;=|&gt;=|&amp;&amp;|&amp;|\|\||[+\-*/=&lt;&gt;])/g;
+  return escaped.replace(tokens, (token) => {
+    if (token.startsWith("//")) return `<span class="go-comment">${token}</span>`;
+    if (token.startsWith('"') || token.startsWith("`")) return `<span class="go-string">${token}</span>`;
+    if (/^(break|case|continue|default|defer|else|for|func|go|if|range|return|select|switch|type|var)$/.test(token)) return `<span class="go-keyword">${token}</span>`;
+    if (/^(append|len|make|max|min)$/.test(token)) return `<span class="go-builtin">${token}</span>`;
+    if (/^\d+$/.test(token)) return `<span class="go-number">${token}</span>`;
+    return `<span class="go-operator">${token}</span>`;
+  });
+}
+
 function renderTraceBoard(board, kind, state) {
   if (kind === "dp-table") return renderDPTable(board, state);
   if (kind === "dp-grid") return renderDPGrid(board, state);
@@ -297,7 +368,7 @@ function renderDPTable(board, state) {
   cells.className = "dp-cells";
   state.cells.forEach((cell) => {
     const item = document.createElement("div");
-    item.className = `dp-cell dp-cell--${cell.state}`;
+    item.className = `dp-cell dp-cell--${cell.state}${cell.dependency ? " is-dependency" : ""}`;
     const key = document.createElement("small");
     key.textContent = `dp[${cell.index}]`;
     const value = document.createElement("strong");
@@ -332,7 +403,7 @@ function renderDPGrid(board, state) {
     state.columns.forEach((_, columnIndex) => {
       const cell = cells.get(`${rowIndex}:${columnIndex}`);
       const value = document.createElement("td");
-      value.className = `dp-grid-cell dp-grid-cell--${cell?.state || "pending"}`;
+      value.className = `dp-grid-cell dp-grid-cell--${cell?.state || "pending"}${cell?.dependency ? " is-dependency" : ""}`;
       value.textContent = cell?.state === "unused" ? "·" : String(cell?.value ?? 0);
       line.append(value);
     });
@@ -367,7 +438,7 @@ function renderBitmaskState(board, state) {
   state.names.forEach((name, index) => {
     const city = document.createElement("div");
     const visited = (state.mask & (1 << index)) !== 0;
-    city.className = `bitmask-city${visited ? " is-visited" : ""}${state.last === index ? " is-last" : ""}`;
+    city.className = `bitmask-city${visited ? " is-visited" : ""}${state.previousLast === index ? " is-dependency" : ""}${state.last === index ? " is-last" : ""}`;
     city.textContent = `城市 ${name}`;
     cities.append(city);
   });
