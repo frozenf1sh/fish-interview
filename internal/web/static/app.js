@@ -15,7 +15,6 @@ if (treePayload && treeCanvas) {
   const expandedByTree = new Map();
   let currentTreeID = treeCanvas.dataset.treeId;
   const canvasWrap = treeCanvas.closest(".tree-canvas-wrap");
-  const zoomValue = document.querySelector("[data-tree-zoom-value]");
   let treeZoom = 1;
 
   const expanded = () => {
@@ -155,9 +154,10 @@ if (treePayload && treeCanvas) {
     drawTree();
     canvasWrap.scrollLeft = centerX * treeZoom - canvasWrap.clientWidth / 2;
     canvasWrap.scrollTop = centerY * treeZoom - canvasWrap.clientHeight / 2;
-    if (zoomValue) zoomValue.textContent = `${Math.round(treeZoom * 100)}%`;
   };
   let drag = null;
+  const activePointers = new Map();
+  let pinch = null;
   let suppressTreeClick = false;
   const finishDrag = (event) => {
     if (!drag || event.pointerId !== drag.pointerID) return;
@@ -171,9 +171,26 @@ if (treePayload && treeCanvas) {
   };
   canvasWrap.addEventListener("pointerdown", (event) => {
     if (event.button !== 0) return;
+    activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    if (activePointers.size === 2) {
+      const [first, second] = [...activePointers.values()];
+      pinch = { distance: Math.hypot(first.x - second.x, first.y - second.y), zoom: treeZoom };
+      drag = null;
+      return;
+    }
     drag = { pointerID: event.pointerId, startX: event.clientX, startY: event.clientY, scrollLeft: canvasWrap.scrollLeft, scrollTop: canvasWrap.scrollTop, moved: false, captured: false };
   });
   canvasWrap.addEventListener("pointermove", (event) => {
+    if (!activePointers.has(event.pointerId)) return;
+    activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    if (activePointers.size >= 2) {
+      const [first, second] = [...activePointers.values()];
+      if (!pinch) pinch = { distance: Math.hypot(first.x - second.x, first.y - second.y), zoom: treeZoom };
+      const distance = Math.hypot(first.x - second.x, first.y - second.y);
+      if (pinch.distance > 0) setTreeZoom(pinch.zoom * distance / pinch.distance);
+      suppressTreeClick = true;
+      return;
+    }
     if (!drag || event.pointerId !== drag.pointerID) return;
     const deltaX = event.clientX - drag.startX;
     const deltaY = event.clientY - drag.startY;
@@ -190,8 +207,23 @@ if (treePayload && treeCanvas) {
       canvasWrap.scrollTop = drag.scrollTop - deltaY;
     }
   });
-  canvasWrap.addEventListener("pointerup", finishDrag);
-  canvasWrap.addEventListener("pointercancel", finishDrag);
+  const releasePointer = (event) => {
+    const wasPinching = pinch !== null;
+    activePointers.delete(event.pointerId);
+    if (activePointers.size < 2) pinch = null;
+    if (wasPinching) {
+      suppressTreeClick = true;
+      window.setTimeout(() => { suppressTreeClick = false; }, 0);
+    }
+    finishDrag(event);
+  };
+  canvasWrap.addEventListener("pointerup", releasePointer);
+  canvasWrap.addEventListener("pointercancel", releasePointer);
+  canvasWrap.addEventListener("wheel", (event) => {
+    if (!event.ctrlKey) return;
+    event.preventDefault();
+    setTreeZoom(treeZoom * Math.exp(-event.deltaY * 0.002));
+  }, { passive: false });
   canvasWrap.addEventListener("dragstart", (event) => event.preventDefault());
   canvasWrap.addEventListener("click", (event) => {
     if (!suppressTreeClick) return;
@@ -214,11 +246,11 @@ if (treePayload && treeCanvas) {
       drawTree();
     });
   });
-  document.querySelector("[data-tree-zoom-in]")?.addEventListener("click", () => setTreeZoom(treeZoom + 0.25));
-  document.querySelector("[data-tree-zoom-out]")?.addEventListener("click", () => setTreeZoom(treeZoom - 0.25));
   const focusTree = (active) => {
     document.body.classList.toggle("tree-focus", active);
-    document.querySelector("[data-tree-focus]")?.setAttribute("aria-pressed", String(active));
+    const button = document.querySelector("[data-tree-focus]");
+    button?.setAttribute("aria-pressed", String(active));
+    if (button) button.textContent = active ? "收起知识树" : "展开知识树";
   };
   document.querySelector("[data-tree-focus]")?.addEventListener("click", () => focusTree(!document.body.classList.contains("tree-focus")));
   document.querySelector("[data-tree-focus-close]")?.addEventListener("click", () => focusTree(false));

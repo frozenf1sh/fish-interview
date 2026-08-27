@@ -28,9 +28,8 @@ a { color: inherit; text-decoration: none; }
 .tree-switch button { background: transparent; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); cursor: pointer; font: inherit; font-size: 12px; padding: 6px 10px; }
 .tree-switch button[aria-selected="true"] { background: var(--green); border-color: var(--green); color: white; font-weight: 700; }
 .tree-tools { align-items: center; color: var(--muted); display: flex; font-size: 11px; justify-content: space-between; margin: -3px 0 9px; }
-.tree-zoom { align-items: center; display: flex; gap: 4px; }
-.tree-zoom button { background: white; border: 1px solid var(--line); border-radius: 5px; color: var(--green); cursor: pointer; font: inherit; font-size: 11px; font-weight: 750; min-width: 24px; padding: 3px 6px; }
-.tree-zoom output { color: #405048; font-family: "SFMono-Regular", Consolas, monospace; min-width: 32px; text-align: center; }
+.tree-focus-button { background: var(--green); border: 1px solid var(--green); border-radius: 7px; color: white; cursor: pointer; font: inherit; font-size: 13px; font-weight: 800; padding: 8px 12px; }
+.tree-focus-button:hover, .tree-focus-button[aria-pressed="true"] { background: #054b2e; border-color: #054b2e; }
 .tree-canvas-wrap { background-color: #fbfcf8; background-image: linear-gradient(#e8eee7 1px, transparent 1px), linear-gradient(90deg, #e8eee7 1px, transparent 1px); background-size: 18px 18px; border: 1px solid var(--line); border-radius: 10px; cursor: grab; max-height: calc(100vh - 207px); min-height: 260px; overflow: auto; overscroll-behavior: contain; touch-action: none; user-select: none; }
 .tree-canvas-wrap.is-dragging { cursor: grabbing; }
 .tree-canvas { display: block; min-width: 330px; user-select: none; }
@@ -197,12 +196,10 @@ h2 { font-size: 21px; letter-spacing: -.035em; margin: 0 0 17px; }
 .sr-only { height: 1px; overflow: hidden; position: absolute; width: 1px; }
 @media (min-width: 781px) {
   .topbar { background: var(--paper); position: sticky; top: 0; z-index: 20; }
-  .shell { display: block; margin: 0; max-width: none; min-height: calc(100vh - 60px); }
-  .sidebar { background: var(--paper); border-right: 1px solid var(--line); bottom: 0; display: flex; flex-direction: column; left: 0; padding: 28px 20px; position: fixed; top: 60px; width: 50vw; z-index: 10; }
+  .sidebar { align-self: start; background: var(--paper); display: flex; flex-direction: column; height: calc(100vh - 60px); padding-bottom: 28px; position: sticky; top: 60px; }
   .tree-canvas-wrap { flex: 1; max-height: none; min-height: 0; }
-  .main-content, .article { margin-left: 50vw; max-width: 940px; min-height: calc(100vh - 60px); }
-  body.tree-focus .sidebar { box-shadow: 16px 0 32px rgba(18, 32, 25, .15); width: min(84vw, 1100px); }
-  body.tree-focus .tree-focus-scrim { background: rgba(18, 32, 25, .04); border: 0; bottom: 0; cursor: pointer; display: block; left: min(84vw, 1100px); padding: 0; position: fixed; right: 0; top: 60px; z-index: 9; }
+  body.tree-focus .sidebar { box-shadow: 16px 0 32px rgba(18, 32, 25, .15); left: 0; padding: 28px 20px; position: fixed; top: 60px; width: 50vw; z-index: 30; }
+  body.tree-focus .tree-focus-scrim { background: rgba(18, 32, 25, .04); border: 0; bottom: 0; cursor: pointer; display: block; left: 50vw; padding: 0; position: fixed; right: 0; top: 60px; z-index: 29; }
 }
 @media (max-width: 780px) {
   .topbar { padding: 0 18px; }
@@ -219,4 +216,8 @@ h2 { font-size: 21px; letter-spacing: -.035em; margin: 0 0 17px; }
   .player-bottom { align-items: flex-start; flex-direction: column; gap: 14px; }
   .dp-cells { grid-template-columns: repeat(3, minmax(64px, 1fr)); }
   .stock-timeline { grid-template-columns: repeat(6, 104px); }
+  body.tree-focus { overflow: hidden; }
+  body.tree-focus .sidebar { background: var(--paper); bottom: 0; display: flex; flex-direction: column; left: 0; padding: 20px; position: fixed; right: 0; top: 0; z-index: 30; }
+  body.tree-focus .tree-canvas-wrap { flex: 1; max-height: none; min-height: 0; }
+  body.tree-focus .tree-focus-button { min-height: 42px; }
 }
