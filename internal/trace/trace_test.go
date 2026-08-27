@@ -51,6 +51,19 @@ func TestFlowTraceHasReplayableSteps(t *testing.T) {
 	}
 }
 
+func TestSequenceAndSimulationTracesReachExpectedStates(t *testing.T) {
+	lis := LISTrace()
+	lisState, ok := lis.Frames[len(lis.Frames)-1].State.(sequenceState)
+	if !ok || strings.Join([]string{itoa(lisState.Tails[0]), itoa(lisState.Tails[1]), itoa(lisState.Tails[2]), itoa(lisState.Tails[3])}, ",") != "2,3,7,18" {
+		t.Fatalf("unexpected LIS trace: %#v", lis.Frames[len(lis.Frames)-1])
+	}
+	gravity := RowGravityTrace()
+	gravityState, ok := gravity.Frames[len(gravity.Frames)-1].State.(gravityState)
+	if !ok || strings.Join(gravityState.Cells, "") != ".#*.." {
+		t.Fatalf("unexpected gravity trace: %#v", gravity.Frames[len(gravity.Frames)-1])
+	}
+}
+
 func TestBinaryRedBlueTrace(t *testing.T) {
 	got := BinaryRedBluePartition()
 	last := got.Frames[len(got.Frames)-1]

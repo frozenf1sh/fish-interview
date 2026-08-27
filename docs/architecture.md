@@ -40,7 +40,7 @@ summary: 选择最多互不重叠区间时，优先保留结束最早的可行�
 parents: [algo.patterns.greedy]
 tags: [greedy, interval]
 links: [algo.greedy.exchange-argument]
-trace: interval-scheduling # required for algorithm-pattern cards
+trace: interval-scheduling # required for every card beneath algo.patterns
 exam_signals:
   - company: meituan
     year: 2027
@@ -68,7 +68,7 @@ The algorithms root is intentionally split into two branches:
 
 A **knowledge card** explains one reusable mechanism. Start with its conclusion, derive it through one minimal example, then give the boundary where it stops applying. A non-leaf node may own such a card: for example, the “贪心原理” node explains safe local choices while its leaf cards hold specific templates.
 
-An **algorithm-pattern card** is a runnable retrieval unit. Its Markdown starts with `## 例题`, followed by a matching LeetCode link when one exists, then a short recognition condition, one progressively derived example, annotated Go code, and only the nearest confusions. The player is rendered before the Markdown body, so the card must not repeat generic text such as “how to watch the animation.” The content validator rejects an `algorithm-pattern` without a trace.
+An **algorithm-pattern card** is a runnable retrieval unit. Its Markdown starts with `## 例题`, followed by a matching LeetCode link when one exists, then a short recognition condition, one progressively derived example, annotated Go code, and only the nearest confusions. The player is rendered before the Markdown body, so the card must not repeat generic text such as “how to watch the animation.” The content validator rejects any card beneath `algo.patterns` without a trace. Use a state-level trace when the important object changes; reserve a flow trace for control flow that has no smaller useful state view.
 
 For DP patterns, place a display formula written in `$$ ... $$` immediately after the player, then split the Go implementation into state/base-case initialization and transition sections. The renderer typesets the subset of LaTex used by state transitions (subscripts, superscripts, `min`/`max`, cases, and common relation symbols). Write code comments next to the state definition, base case, transition, and boundary update; comments should explain the role of the line, not restate its syntax.
 
@@ -76,7 +76,7 @@ For DP patterns, place a display formula written in `$$ ... $$` immediately afte
 
 Algorithms produce a `trace.Trace` in Go. A trace contains a renderer kind, pseudocode lines, and replayable frames. A frame contains the active line, narration, variable values, and a renderer-specific state. Browser code can therefore play, step backward, or jump without re-running the algorithm. DP frame states should mark the old states read by the current transition: completed states are green, dependencies blue, and the newly written state orange.
 
-Current renderer kinds are `intervals`, `dp-table`, `dp-grid`, `rolling-dependency`, `bitmask-state`, `linked-list`, and `binary-red-blue`. `dp-grid` is shared by LCS, interval DP, stock-state DP, and forward/reverse path DP; `rolling-dependency` exposes the read-before-overwrite order needed for space compression; `linked-list` renders dummy nodes, detached nodes, pointer labels, and rewired chains. Add a renderer only when several traces need a visual state that existing primitives cannot express. For a new pattern: (1) add its trace generator under `internal/trace`, (2) test its final frame and key state transition, (3) expose it from `internal/web/server.go`, and (4) reference it from the card frontmatter.
+Current renderer kinds are `intervals`, `dp-table`, `dp-grid`, `rolling-dependency`, `bitmask-state`, `linked-list`, `binary-red-blue`, `flow-steps`, `sequence-tails`, and `row-gravity`. `dp-grid` is shared by LCS, interval DP, stock-state DP, and forward/reverse path DP; `rolling-dependency` exposes the read-before-overwrite order needed for space compression; `linked-list` renders dummy nodes, detached nodes, pointer labels, and rewired chains. Add a renderer only when several traces need a visual state that existing primitives cannot express. For a new pattern: (1) add its trace generator under `internal/trace`, (2) test its final frame and key state transition, (3) expose it from `internal/web/server.go`, and (4) reference it from the card frontmatter.
 
 For binary search, use a named color invariant instead of a mix of closed-interval templates. The standard minimum-feasible template keeps `(red, blue]`: `red` is a known invalid sentinel, `blue` is known valid, and the answer is `blue`. If a variant reverses the objective, declare the colors and return endpoint before writing its loop.
 

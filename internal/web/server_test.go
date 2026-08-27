@@ -79,6 +79,7 @@ func TestPatternTraceEndpoints(t *testing.T) {
 		"/api/traces/linear-dp", "/api/traces/space-rolling", "/api/traces/lcs-dp", "/api/traces/interval-dp",
 		"/api/traces/stock-dp", "/api/traces/bitmask-dp", "/api/traces/linked-list-rewire", "/api/traces/path-dp", "/api/traces/reverse-path-dp", "/api/traces/binary-red-blue",
 		"/api/traces/flow-bfs-shortest-path", "/api/traces/flow-tree-dp", "/api/traces/flow-string-golang",
+		"/api/traces/lis", "/api/traces/row-gravity",
 	} {
 		req := httptest.NewRequest(http.MethodGet, path, nil)
 		res := httptest.NewRecorder()
@@ -105,6 +106,8 @@ func TestPatternCardsEmbedKnownTraces(t *testing.T) {
 		"algo.bfs.shortest-path":          "/api/traces/flow-bfs-shortest-path",
 		"algo.tree.dp":                    "/api/traces/flow-tree-dp",
 		"algo.string.golang":              "/api/traces/flow-string-golang",
+		"algo.sequence.lis":               "/api/traces/lis",
+		"algo.simulation.gravity":         "/api/traces/row-gravity",
 	}
 	for id, traceURL := range traces {
 		t.Run(id, func(t *testing.T) {

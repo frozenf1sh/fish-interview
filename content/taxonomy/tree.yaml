@@ -192,6 +192,18 @@ roots:
               - id: algo.string.kmp
                 card: algo.string.kmp
                 title: KMP 前缀函数
+          - id: algo.patterns.sequence
+            title: 序列与二分
+            children:
+              - id: algo.sequence.lis
+                card: algo.sequence.lis
+                title: 最长递增子序列 LIS
+          - id: algo.patterns.simulation
+            title: 模拟
+            children:
+              - id: algo.simulation.gravity
+                card: algo.simulation.gravity
+                title: 带障碍的重力下落
           - id: algo.binary-search
             title: 二分答案
             children:

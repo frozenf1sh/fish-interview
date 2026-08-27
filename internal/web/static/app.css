@@ -139,6 +139,18 @@ h2 { font-size: 21px; letter-spacing: -.035em; margin: 0 0 17px; }
 .flow-step.is-current { background: #fff0d8; border-color: #e3a846; box-shadow: 0 0 0 3px #fff4e2; }
 .flow-step.is-current strong { color: #9a540c; }
 .flow-arrow { align-self: center; color: #78907d; font-size: 20px; font-weight: 800; }
+.sequence-numbers, .sequence-tails { display: flex; flex-wrap: wrap; gap: 8px; }
+.sequence-number, .sequence-tail { background: white; border: 1px solid #cdd9cf; border-radius: 7px; color: #48584e; font-family: "SFMono-Regular", Consolas, monospace; font-size: 13px; font-weight: 800; padding: 8px 11px; }
+.sequence-number.is-seen { background: #e4f3e8; border-color: #8fc49d; color: var(--green); }
+.sequence-number.is-current { background: #fff0d8; border-color: #e3a846; box-shadow: 0 0 0 3px #fff4e2; color: #9a540c; }
+.sequence-tails-label { color: var(--muted); font-family: "SFMono-Regular", Consolas, monospace; font-size: 12px; font-weight: 800; margin: 4px 0 -1px; }
+.sequence-tail { background: #e9f0ff; border-color: #8aa7d9; color: #2459a7; }
+.gravity-row { display: flex; gap: 8px; }
+.gravity-cell { align-items: center; background: white; border: 1px solid #cdd9cf; border-radius: 7px; color: #68766d; display: flex; font-family: "SFMono-Regular", Consolas, monospace; font-size: 20px; font-weight: 800; height: 46px; justify-content: center; width: 46px; }
+.gravity-cell.is-block { background: #e4f3e8; border-color: #8fc49d; color: var(--green); }
+.gravity-cell.is-wall { background: #34473d; border-color: #34473d; color: white; }
+.gravity-cell.is-write { box-shadow: 0 0 0 3px #dce9ff; outline: 2px solid #5683c9; }
+.gravity-cell.is-current { background: #fff0d8; border-color: #e3a846; color: #9a540c; }
 .dp-cell { background: white; border: 1px solid #d3ddd5; border-radius: 7px; display: grid; gap: 4px; padding: 10px; text-align: center; transition: background .2s, border-color .2s; }
 .dp-cell small { color: var(--muted); font-family: "SFMono-Regular", Consolas, monospace; font-size: 11px; }
 .dp-cell strong { color: #617068; font-size: 19px; }

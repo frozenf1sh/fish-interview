@@ -385,10 +385,55 @@ function renderTraceBoard(board, kind, state) {
   if (kind === "dp-grid") return renderDPGrid(board, state);
   if (kind === "rolling-dependency") return renderRollingDependency(board, state);
   if (kind === "flow-steps") return renderFlowSteps(board, state);
+  if (kind === "sequence-tails") return renderSequenceTails(board, state);
+  if (kind === "row-gravity") return renderRowGravity(board, state);
   if (kind === "bitmask-state") return renderBitmaskState(board, state);
   if (kind === "linked-list") return renderLinkedList(board, state);
   if (kind === "binary-red-blue") return renderRedBlue(board, state);
   return renderIntervals(board, state);
+}
+
+function renderSequenceTails(board, state) {
+  board.className = "trace-board trace-board--sequence";
+  const heading = document.createElement("p");
+  heading.className = "trace-board-label";
+  heading.textContent = "橙色是当前数字；tails[k] 是长度 k+1 的递增子序列能取得的最小结尾";
+  const numbers = document.createElement("div");
+  numbers.className = "sequence-numbers";
+  state.numbers.forEach((number, index) => {
+    const item = document.createElement("span");
+    item.className = `sequence-number${index < state.current ? " is-seen" : ""}${index === state.current ? " is-current" : ""}`;
+    item.textContent = String(number);
+    numbers.append(item);
+  });
+  const tailsLabel = document.createElement("p");
+  tailsLabel.className = "sequence-tails-label";
+  tailsLabel.textContent = "tails";
+  const tails = document.createElement("div");
+  tails.className = "sequence-tails";
+  state.tails.forEach((value, index) => {
+    const item = document.createElement("div");
+    item.className = "sequence-tail";
+    item.textContent = `长度 ${index + 1}: ${value}`;
+    tails.append(item);
+  });
+  board.replaceChildren(heading, numbers, tailsLabel, tails);
+}
+
+function renderRowGravity(board, state) {
+  board.className = "trace-board trace-board--gravity";
+  const heading = document.createElement("p");
+  heading.className = "trace-board-label";
+  heading.textContent = "# 为可下落块，* 为固定障碍；蓝色是下一个落点";
+  const row = document.createElement("div");
+  row.className = "gravity-row";
+  state.cells.forEach((cell, index) => {
+    const item = document.createElement("span");
+    item.className = `gravity-cell${cell === "#" ? " is-block" : ""}${cell === "*" ? " is-wall" : ""}${index === state.cursor ? " is-current" : ""}${index === state.write ? " is-write" : ""}`;
+    item.textContent = cell;
+    row.append(item);
+  });
+  board.replaceChildren(heading, row);
 }
 
 function renderIntervals(board, state) {

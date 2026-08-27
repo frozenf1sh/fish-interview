@@ -143,6 +143,10 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.reversePathTrace(w, r)
 	case r.URL.Path == "/api/traces/binary-red-blue":
 		s.binaryRedBlueTrace(w, r)
+	case r.URL.Path == "/api/traces/lis":
+		s.lisTrace(w, r)
+	case r.URL.Path == "/api/traces/row-gravity":
+		s.rowGravityTrace(w, r)
 	case strings.HasPrefix(r.URL.Path, "/api/traces/flow-"):
 		s.flowTrace(w, r)
 	case r.URL.Path == "/static/app.css":
@@ -223,6 +227,16 @@ func (s *Server) reversePathTrace(w http.ResponseWriter, _ *http.Request) {
 func (s *Server) binaryRedBlueTrace(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	_ = json.NewEncoder(w).Encode(trace.BinaryRedBluePartition())
+}
+
+func (s *Server) lisTrace(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	_ = json.NewEncoder(w).Encode(trace.LISTrace())
+}
+
+func (s *Server) rowGravityTrace(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	_ = json.NewEncoder(w).Encode(trace.RowGravityTrace())
 }
 
 func (s *Server) flowTrace(w http.ResponseWriter, r *http.Request) {
@@ -400,6 +414,10 @@ func traceURL(name string) string {
 		return "/api/traces/reverse-path-dp"
 	case "binary-red-blue":
 		return "/api/traces/binary-red-blue"
+	case "lis":
+		return "/api/traces/lis"
+	case "row-gravity":
+		return "/api/traces/row-gravity"
 	}
 	if strings.HasPrefix(name, "flow-") {
 		return "/api/traces/" + name
