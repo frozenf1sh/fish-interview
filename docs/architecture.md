@@ -37,10 +37,10 @@ id: algo.greedy.interval-scheduling
 kind: algorithm-pattern # concept | algorithm-pattern | engineering | ai-coding
 title: 区间调度：按结束时间选择
 summary: 选择最多互不重叠区间时，优先保留结束最早的可行区间。
-parents: [algo.greedy.interval]
+parents: [algo.patterns.greedy]
 tags: [greedy, interval]
 links: [algo.greedy.exchange-argument]
-trace: interval-scheduling # optional, connects an algorithm leaf to a Go Trace
+trace: interval-scheduling # required for algorithm-pattern cards
 exam_signals:
   - company: meituan
     year: 2027
@@ -51,31 +51,45 @@ exam_signals:
 
 Card IDs are stable public keys: file paths may change, IDs may not. `links` must resolve to card IDs. A taxonomy node can reference one card and still have child nodes: non-leaf concepts such as “贪心” and “Kafka” are first-class explanatory cards, not empty folders. The validator rejects duplicate IDs, broken references, tree cycles, and incomplete exam signals.
 
-## Algorithm card structure
+## Algorithm knowledge and pattern cards
 
-Algorithm-pattern cards should use these headings in order:
+The algorithms root is intentionally split into two branches:
 
-1. 识别信号
-2. 建模与正确性直觉
-3. Go 模板
-4. 常见误区
-5. 变体与关联
+```text
+算法
+├── 知识       # 原理、建模、证明语言和边界
+│   ├── 贪心原理
+│   └── 动态规划
+└── 题型       # 可直接套用并验证的输入/输出模式
+    ├── 贪心 / 区间调度
+    ├── 动态规划 / 线性 DP
+    └── 二分答案
+```
 
-The order matters: sorting rules are consequences of a model, not the model itself.
+A **knowledge card** explains one reusable mechanism. Start with its conclusion, derive it through one minimal example, then give the boundary where it stops applying. A non-leaf node may own such a card: for example, the “贪心原理” node explains safe local choices while its leaf cards hold specific templates.
+
+An **algorithm-pattern card** is a runnable retrieval unit. It must contain a `trace`, a short recognition condition, one progressively derived example, annotated Go code, and only the nearest confusions. The player is rendered before the Markdown body, so the card must not repeat generic text such as “how to watch the animation.” The content validator rejects an `algorithm-pattern` without a trace.
+
+Write code comments next to the state definition, base case, transition, and boundary update. Comments should explain the role of the line, not restate its syntax.
 
 ## Reusable animation model
 
 Algorithms produce a `trace.Trace` in Go. A trace contains a renderer kind, pseudocode lines, and replayable frames. A frame contains the active line, narration, variable values, and a renderer-specific state. Browser code can therefore play, step backward, or jump without re-running the algorithm.
 
-The initial renderer kinds are `intervals`, `array`, and `dp-table`. Add a renderer only when several traces need a visual state that existing primitives cannot express.
+The initial renderer kinds are `intervals`, `dp-table`, and `binary-answer`. Add a renderer only when several traces need a visual state that existing primitives cannot express. For a new pattern: (1) add its trace generator under `internal/trace`, (2) test its final frame and key state transition, (3) expose it from `internal/web/server.go`, and (4) reference it from the card frontmatter.
+
+## Engineering mechanism cards
+
+Engineering trees use the same contract, but their leaves are concepts rather than exercises. A parent card explains a subsystem boundary and the mechanism that joins its children; each leaf answers one question such as “consumer group,” “partition,” or “rebalance.” Prefer one request flow, state transition, or failure table over a list of disconnected facts. Use `links` for cross-tree references so a card can point directly to the exact prerequisite or related failure mode.
 
 ## Extension rules
 
 | Change | Required work |
 | --- | --- |
-| New knowledge card | Markdown card, taxonomy entry, validator pass |
+| New knowledge card | Markdown card, taxonomy entry, one mechanism/example/boundary, validator pass |
 | New exam signal | Source URL, year, role, confidence, validator pass |
-| New algorithm | Card plus Go trace generator and trace tests |
+| New algorithm pattern | Pattern card, embedded Go trace generator, trace tests, annotated Go template |
+| New engineering concept | Leaf card, taxonomy entry, parent mechanism and `links` checked |
 | New visual primitive | Renderer contract, a representative trace, browser accessibility check |
 
 ## Persistence and release model

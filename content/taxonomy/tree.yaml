@@ -2,26 +2,38 @@ roots:
   - id: algorithms
     title: 算法
     children:
-      - id: algo.greedy
-        card: algo.greedy
-        title: 贪心
+      - id: algo.knowledge
+        title: 知识
         children:
-          - id: algo.greedy.exchange-argument
-            card: algo.greedy.exchange-argument
-          - id: algo.greedy.interval-scheduling
-            card: algo.greedy.interval-scheduling
-      - id: algo.dp
-        title: 动态规划
+          - id: algo.greedy
+            card: algo.greedy
+            title: 贪心原理
+            children:
+              - id: algo.greedy.exchange-argument
+                card: algo.greedy.exchange-argument
+          - id: algo.dp
+            title: 动态规划
+            children:
+              - id: algo.dp.modeling
+                card: algo.dp.modeling
+      - id: algo.patterns
+        title: 题型
         children:
-          - id: algo.dp.modeling
-            card: algo.dp.modeling
-          - id: algo.dp.linear
-            card: algo.dp.linear
-      - id: algo.binary-search
-        title: 二分答案
-        children:
-          - id: algo.binary-search.answer
-            card: algo.binary-search.answer
+          - id: algo.patterns.greedy
+            title: 贪心
+            children:
+              - id: algo.greedy.interval-scheduling
+                card: algo.greedy.interval-scheduling
+          - id: algo.patterns.dp
+            title: 动态规划
+            children:
+              - id: algo.dp.linear
+                card: algo.dp.linear
+          - id: algo.binary-search
+            title: 二分答案
+            children:
+              - id: algo.binary-search.answer
+                card: algo.binary-search.answer
   - id: engineering
     title: 工程基础
     children:

@@ -137,6 +137,9 @@ func (c Catalog) Validate() error {
 		if card.ID == "" || card.Kind == "" || card.Title == "" || card.Summary == "" {
 			return fmt.Errorf("card %q misses required metadata", id)
 		}
+		if card.Kind == "algorithm-pattern" && card.Trace == "" {
+			return fmt.Errorf("algorithm pattern %q misses trace", id)
+		}
 		for _, parent := range card.Parents {
 			if !nodeIDs[parent] {
 				return fmt.Errorf("card %q refers to unknown parent %q", id, parent)

@@ -59,6 +59,18 @@ func TestTraceEndpointReturnsReplayableFrames(t *testing.T) {
 	}
 }
 
+func TestPatternTraceEndpoints(t *testing.T) {
+	server := newDemoServer(t)
+	for _, path := range []string{"/api/traces/linear-dp", "/api/traces/binary-answer"} {
+		req := httptest.NewRequest(http.MethodGet, path, nil)
+		res := httptest.NewRecorder()
+		server.ServeHTTP(res, req)
+		if res.Code != http.StatusOK || !strings.Contains(res.Body.String(), `"frames"`) {
+			t.Fatalf("trace response for %s = %d %s", path, res.Code, res.Body.String())
+		}
+	}
+}
+
 func TestCardPartialEmbedsAlgorithmTraceWithoutLayout(t *testing.T) {
 	server := newDemoServer(t)
 	req := httptest.NewRequest(http.MethodGet, "/partials/cards/algo.greedy.interval-scheduling?tree=algorithms", nil)

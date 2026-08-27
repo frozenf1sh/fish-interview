@@ -238,7 +238,7 @@ function createTracePlayer(root, trace) {
       return [term, definition];
     }));
     code.querySelectorAll("li").forEach((line) => line.classList.toggle("active", Number(line.dataset.line) === frame.activeLine));
-    renderIntervals(board, frame.state);
+    renderTraceBoard(board, trace.kind, frame.state);
   };
   const setIndex = (next) => {
     index = Math.max(0, Math.min(trace.frames.length - 1, next));
@@ -259,7 +259,14 @@ function createTracePlayer(root, trace) {
   render();
 }
 
+function renderTraceBoard(board, kind, state) {
+  if (kind === "dp-table") return renderDPTable(board, state);
+  if (kind === "binary-answer") return renderBinaryAnswer(board, state);
+  return renderIntervals(board, state);
+}
+
 function renderIntervals(board, state) {
+  board.className = "trace-board trace-board--intervals";
   board.replaceChildren(...state.intervals.map((interval) => {
     const row = document.createElement("div");
     row.className = "interval-row";
@@ -276,4 +283,57 @@ function renderIntervals(board, state) {
     row.append(label, track);
     return row;
   }));
+}
+
+function renderDPTable(board, state) {
+  board.className = "trace-board trace-board--dp";
+  const heading = document.createElement("p");
+  heading.className = "trace-board-label";
+  heading.textContent = "dp[i]：到达第 i 级的方案数";
+  const cells = document.createElement("div");
+  cells.className = "dp-cells";
+  state.cells.forEach((cell) => {
+    const item = document.createElement("div");
+    item.className = `dp-cell dp-cell--${cell.state}`;
+    const key = document.createElement("small");
+    key.textContent = `dp[${cell.index}]`;
+    const value = document.createElement("strong");
+    value.textContent = String(cell.value);
+    item.append(key, value);
+    cells.append(item);
+  });
+  board.replaceChildren(heading, cells);
+}
+
+function renderBinaryAnswer(board, state) {
+  board.className = "trace-board trace-board--binary";
+  const numbers = document.createElement("div");
+  numbers.className = "binary-numbers";
+  state.numbers.forEach((number) => {
+    const item = document.createElement("span");
+    item.textContent = String(number);
+    numbers.append(item);
+  });
+  const range = document.createElement("div");
+  range.className = "binary-range";
+  const minimum = state.minimum;
+  const maximum = state.maximum;
+  const toPercent = (value) => ((value - minimum) / (maximum - minimum)) * 100;
+  const window = document.createElement("div");
+  window.className = "binary-window";
+  window.style.left = `${toPercent(state.low)}%`;
+  window.style.width = `${Math.max(1, toPercent(state.high) - toPercent(state.low))}%`;
+  range.append(window);
+  [["lo", state.low], ["mid", state.mid], ["hi", state.high]].forEach(([name, value]) => {
+    if (value < minimum || value > maximum) return;
+    const marker = document.createElement("span");
+    marker.className = `binary-marker binary-marker--${name}`;
+    marker.style.left = `${toPercent(value)}%`;
+    marker.textContent = `${name}=${value}`;
+    range.append(marker);
+  });
+  const result = document.createElement("p");
+  result.className = `binary-result${state.feasible ? " is-feasible" : " is-infeasible"}`;
+  result.textContent = state.mid < 0 ? "准备二分答案范围" : `最多 ${state.groups} 组：${state.feasible ? "可行" : "不可行"}`;
+  board.replaceChildren(numbers, range, result);
 }

@@ -23,7 +23,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("build web server: %v", err)
 	}
-	log.Printf("Fish Interview listening on http://localhost%s", *addr)
+	log.Printf("Fish Interview listening on %s", *addr)
 	if err := http.ListenAndServe(*addr, server); err != nil {
 		log.Fatal(err)
 	}

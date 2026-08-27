@@ -118,6 +118,10 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.lab(w, r)
 	case r.URL.Path == "/api/traces/interval-scheduling":
 		s.intervalTrace(w, r)
+	case r.URL.Path == "/api/traces/linear-dp":
+		s.linearDPTrace(w, r)
+	case r.URL.Path == "/api/traces/binary-answer":
+		s.binaryAnswerTrace(w, r)
 	case r.URL.Path == "/static/app.css":
 		s.static(w, r, "static/app.css", "text/css; charset=utf-8")
 	case r.URL.Path == "/static/app.js":
@@ -140,6 +144,16 @@ func (s *Server) intervalTrace(w http.ResponseWriter, _ *http.Request) {
 		{Label: "D", Start: 5, End: 7},
 		{Label: "E", Start: 6, End: 8},
 	}))
+}
+
+func (s *Server) linearDPTrace(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	_ = json.NewEncoder(w).Encode(trace.LinearDPClimbStairs())
+}
+
+func (s *Server) binaryAnswerTrace(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	_ = json.NewEncoder(w).Encode(trace.BinaryAnswerPartition())
 }
 
 func (s *Server) home(w http.ResponseWriter, r *http.Request) {
@@ -283,8 +297,13 @@ func treeContains(node content.TreeNode, id string) bool {
 }
 
 func traceURL(name string) string {
-	if name == "interval-scheduling" {
+	switch name {
+	case "interval-scheduling":
 		return "/api/traces/interval-scheduling"
+	case "linear-dp":
+		return "/api/traces/linear-dp"
+	case "binary-answer":
+		return "/api/traces/binary-answer"
 	}
 	return ""
 }

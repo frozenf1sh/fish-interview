@@ -3,7 +3,7 @@ id: algo.greedy.interval-scheduling
 kind: algorithm-pattern
 title: 区间调度：按结束时间选择
 summary: 选择最多互不重叠区间时，优先保留结束最早的可行区间。
-parents: [algo.greedy]
+parents: [algo.patterns.greedy]
 tags: [greedy, interval, scheduling]
 links: [algo.greedy, algo.greedy.exchange-argument]
 trace: interval-scheduling
@@ -26,27 +26,25 @@ exam_signals:
 ## Go 实现
 
 ```go
-sort.Slice(intervals, func(i, j int) bool { return intervals[i][1] < intervals[j][1] })
-count, end := 0, math.MinInt
+sort.Slice(intervals, func(i, j int) bool {
+	return intervals[i][1] < intervals[j][1] // 结束早的区间排在前面
+})
+count, end := 0, math.MinInt // end：最后一个已选区间的结束时间
 for _, in := range intervals {
-	if in[0] >= end {
-		count++
-		end = in[1]
+	if in[0] >= end { // 当前区间能接在已选集合之后
+		count++        // 记录一次有效选择
+		end = in[1]    // 更新后续区间必须满足的边界
 	}
 }
 ```
 
 > **不变量**：循环开始前，`count` 是已选择区间数，`end` 是最后一个已选区间的结束时间；所有已选区间两两不重叠。
 
-## 动画应该看什么
-
-动画直接内嵌在本卡片顶部。绿色表示已选择，橙色是当前候选，红色表示冲突。重点看 `B=[2,5)` 与 `D=[5,7)`：它们不是“长度更长所以不好”，而是开始时间早于当前 `end`，无法接在已选区间之后。
-
 ## 一眼排除的相似题
 
 - **按开始时间排序**不能保证给未来留下最大空间。
-- **最少会议室**不是本题：它要求按开始时间扫描并维护结束时间最小堆。
-- **带权区间选择**也不是本题：目标变为总收益最大，通常应使用 DP。
+- **最少会议室**要求按开始时间扫描并维护结束时间最小堆。
+- **带权区间选择**的目标是总收益最大，通常应使用 DP。
 
 ## 下一步
 
