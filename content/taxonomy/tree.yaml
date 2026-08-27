@@ -5,6 +5,27 @@ roots:
       - id: algo.knowledge
         title: 知识
         children:
+          - id: algo.math
+            title: 数学
+            children:
+              - id: algo.math.gcd
+                card: algo.math.gcd
+                title: 最大公因数 GCD
+              - id: algo.math.lcm
+                card: algo.math.lcm
+                title: 最小公倍数 LCM
+              - id: algo.math.factorial
+                card: algo.math.factorial
+                title: 阶乘与模阶乘
+              - id: algo.math.permutation
+                card: algo.math.permutation
+                title: 排列数
+              - id: algo.math.combination
+                card: algo.math.combination
+                title: 组合数
+              - id: algo.math.bit-operations
+                card: algo.math.bit-operations
+                title: 通用位运算
           - id: algo.greedy
             card: algo.greedy
             title: 贪心原理
@@ -22,6 +43,27 @@ roots:
           - id: algo.binary-search.red-blue
             card: algo.binary-search.red-blue
             title: 红蓝染色法
+          - id: algo.tree
+            title: 树
+            children:
+              - id: algo.tree.terms
+                card: algo.tree.terms
+                title: 树的术语与结构
+              - id: algo.tree.degree-count
+                card: algo.tree.degree-count
+                title: 度数与边数计算
+              - id: algo.tree.binary-properties
+                card: algo.tree.binary-properties
+                title: 二叉树常见性质
+              - id: algo.tree.traversal
+                card: algo.tree.traversal
+                title: 遍历与序列性质
+          - id: algo.go
+            title: Go 模板
+            children:
+              - id: algo.go.heap
+                card: algo.go.heap
+                title: container/heap 与优先队列
       - id: algo.patterns
         title: 题型
         children:
