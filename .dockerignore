@@ -1,0 +1,10 @@
+.git
+.gitignore
+.DS_Store
+bin
+tmp
+coverage.out
+notes/private
+deploy
+scripts
+Dockerfile

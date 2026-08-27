@@ -23,6 +23,16 @@ Build an offline-first, Go-based interview knowledge explorer. It is a reference
 - Do not add accounts, remote services, a database, progress tracking, or a frontend build chain without explicit approval.
 - Prefer small, coherent commits. Do not combine content changes with unrelated refactors.
 
+## Deployment
+
+- k3s target: SSH `tc`, kubeconfig `~/.kube/config-tc.yaml`, namespace `fish-interview`, Traefik + cert-manager DNS-01.
+- Fast path after a clean commit: `bash scripts/deploy-tc.sh`; for deliberate local/uncommitted testing use `IMAGE_TAG=local-<unique> bash scripts/deploy-tc.sh`.
+- The script builds `linux/amd64`, imports the image into tc k3s, applies `deploy/`, and waits for the rollout. It does not change DNS.
+- Cloudflare DNS: add a proxied `A` record `code` → `43.155.223.199` in [frozenf1sh.top DNS](https://dash.cloudflare.com/e4df346763044db08dfaa53e6aafcef8/frozenf1sh.top/dns/records). The Ingress requests `code-frozenf1sh-top-tls` from `letsencrypt-prod-dns01`.
+- Verify: `kubectl --kubeconfig ~/.kube/config-tc.yaml -n fish-interview get pods,ingress,certificate`; then `curl -I https://code.frozenf1sh.top/`.
+- Roll back app: `kubectl --kubeconfig ~/.kube/config-tc.yaml -n fish-interview rollout undo deployment/fish-interview`; DNS rollback means remove only the `code` record.
+- A successful local build, image import, or Kubernetes rollout is not by itself public acceptance; verify DNS, certificate readiness, HTTPS redirect, and the public URL.
+
 ## Checks
 
 Run before a code commit:

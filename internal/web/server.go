@@ -109,6 +109,10 @@ func New(catalog content.Catalog) (*Server, error) {
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch {
+	case r.URL.Path == "/healthz":
+		s.health(w)
+	case r.URL.Path == "/readyz":
+		s.health(w)
 	case r.URL.Path == "/":
 		s.home(w, r)
 	case strings.HasPrefix(r.URL.Path, "/cards/"):
@@ -140,6 +144,12 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	default:
 		http.NotFound(w, r)
 	}
+}
+
+func (s *Server) health(w http.ResponseWriter) {
+	w.Header().Set("Cache-Control", "no-store")
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	_, _ = w.Write([]byte("ok\n"))
 }
 
 func (s *Server) lab(w http.ResponseWriter, r *http.Request) {

@@ -36,6 +36,20 @@ func TestHomeSearchesCards(t *testing.T) {
 	}
 }
 
+func TestHealthEndpoints(t *testing.T) {
+	server := newDemoServer(t)
+	for _, path := range []string{"/healthz", "/readyz"} {
+		t.Run(path, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, path, nil)
+			res := httptest.NewRecorder()
+			server.ServeHTTP(res, req)
+			if res.Code != http.StatusOK || res.Body.String() != "ok\n" {
+				t.Fatalf("health response for %s = %d %q", path, res.Code, res.Body.String())
+			}
+		})
+	}
+}
+
 func TestCardRendersInternalLink(t *testing.T) {
 	server := newDemoServer(t)
 	req := httptest.NewRequest(http.MethodGet, "/cards/eng.kafka.consumer-group", nil)
