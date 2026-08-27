@@ -24,7 +24,9 @@ content cards + taxonomy + exam signals
           browser-native tree, cards, SVG player
 ```
 
-`internal/content` owns all file parsing and content integrity. `internal/trace` owns algorithm state transitions. `internal/web` only renders view models and never parses raw content itself. The left navigation is a browser-rendered node-and-edge canvas derived from taxonomy data; it is not a nested directory list.
+`internal/content` owns all file parsing and content integrity. `internal/trace` owns algorithm state transitions. `internal/web` only renders view models and never parses raw content itself. The left navigation is a browser-rendered, vertically oriented node-and-edge canvas derived from taxonomy data; it is not a nested directory list. Its first two levels are visible by default; deeper branches are expanded through their child-count badge.
+
+Card navigation uses same-origin HTML partials (`/partials/cards/{id}`): selecting a tree node replaces only the right content panel. The canvas, its scroll position, selected tree, and expansion state stay in place. Algorithm traces are embedded in their algorithm card rather than presented as separate study pages.
 
 ## Content contracts
 

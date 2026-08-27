@@ -11,7 +11,7 @@
 <body>
 <header class="topbar">
   <a class="brand" href="/">Fish <span>Interview</span></a>
-  <span class="brand-note">知识树 · 模式库 · <a href="/lab/interval-scheduling">算法实验室</a></span>
+  <span class="brand-note">知识树 · 模式库 · 关键动画</span>
 </header>
 {{end}}
 
@@ -35,6 +35,16 @@
 {{template "head" .}}
 <main class="shell">
   {{template "sidebar" .}}
+  <section id="content-panel" data-content-panel>
+    {{template "home-content" .}}
+  </section>
+</main>
+<script src="/static/app.js"></script>
+</body>
+</html>
+{{end}}
+
+{{define "home-content"}}
   <section class="main-content">
     <p class="eyebrow">本地优先 · 随时查阅</p>
     <h1>找到那个刚刚忘掉的知识点。</h1>
@@ -71,27 +81,37 @@
       {{end}}
     </div>
   </section>
-</main>
-<script src="/static/app.js"></script>
-</body>
-</html>
 {{end}}
 
 {{define "card"}}
 {{template "head" .}}
 <main class="shell">
   {{template "sidebar" .}}
-  <article class="article">
+  {{template "card-content" .}}
+</main>
+<script src="/static/app.js"></script>
+</body>
+</html>
+{{end}}
+
+{{define "card-content"}}
+  <article id="content-panel" class="article" data-content-panel>
     <a class="back" href="/">← 返回知识地图</a>
     <div class="card-top"><span class="{{tagClass .Card.Kind}}">{{.Card.Kind}}</span>{{range .Card.Tags}}<span class="plain-tag">{{.}}</span>{{end}}</div>
     <h1>{{.Card.Title}}</h1>
     <p class="article-summary">{{.Card.Summary}}</p>
-    {{if .TraceURL}}<a class="trace-link" href="{{.TraceURL}}">进入关键动画：逐帧查看模板如何执行 <span>→</span></a>{{end}}
     <div class="markdown">{{.Body}}</div>
+    {{if .TraceURL}}
+    <section class="inline-trace">
+      <p class="eyebrow">关键动画 · Go Trace</p>
+      <h2>逐帧观察模板的选择过程</h2>
+      {{template "trace-player" .TraceURL}}
+    </section>
+    {{end}}
     {{if .Related}}
     <section class="related">
       <h2>关联节点</h2>
-      <div class="related-links">{{range .Related}}<a href="/cards/{{.ID}}">{{.Title}} <span>→</span></a>{{end}}</div>
+      <div class="related-links">{{range .Related}}<a data-card-link href="/cards/{{.ID}}">{{.Title}} <span>→</span></a>{{end}}</div>
     </section>
     {{end}}
     {{if .Signals}}
@@ -104,22 +124,10 @@
     </section>
     {{end}}
   </article>
-</main>
-<script src="/static/app.js"></script>
-</body>
-</html>
 {{end}}
 
-{{define "lab"}}
-{{template "head" .}}
-<main class="shell">
-  {{template "sidebar" .}}
-  <section class="lab">
-    <a class="back" href="/cards/algo.greedy.interval-scheduling">← 返回算法卡片</a>
-    <p class="eyebrow">Go Trace · intervals renderer</p>
-    <h1>区间调度，逐帧看贪心如何选择。</h1>
-    <p class="lead">先按结束时间排序。每一帧都由 Go 侧算法状态生成；播放器不重新执行算法，因此可以稳定前进、后退和回放。</p>
-    <section class="trace-player" data-trace="/api/traces/interval-scheduling">
+{{define "trace-player"}}
+    <section class="trace-player" data-trace="{{.}}">
       <div class="player-top">
         <p class="narration" data-narration>正在加载执行轨迹…</p>
         <span class="step-count" data-step-count></span>
@@ -137,10 +145,4 @@
       </div>
       <ol class="pseudocode" data-code></ol>
     </section>
-    <aside class="lab-note"><b>观察：</b>B 和 D 都比当前边界早开始，因此即使它们结束时间不算晚，也不能加入已选集合。</aside>
-  </section>
-</main>
-<script src="/static/app.js"></script>
-</body>
-</html>
 {{end}}

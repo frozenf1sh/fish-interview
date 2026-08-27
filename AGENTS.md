@@ -18,6 +18,7 @@ Build an offline-first, Go-based interview knowledge explorer. It is a reference
 - Preserve stable content IDs. Do not use file paths as identifiers.
 - A non-leaf taxonomy node may own a detailed mechanism card; do not model it as an empty folder.
 - Keep the left navigation as an interactive node-and-edge tree canvas, with responsive fallback for small screens.
+- Tree navigation must replace only the right content panel; do not reload or reset the tree canvas when opening a card.
 - Company data is evidence-tagged metadata, never the primary information architecture.
 - Do not add accounts, remote services, a database, progress tracking, or a frontend build chain without explicit approval.
 - Prefer small, coherent commits. Do not combine content changes with unrelated refactors.

@@ -98,6 +98,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.home(w, r)
 	case strings.HasPrefix(r.URL.Path, "/cards/"):
 		s.card(w, r)
+	case strings.HasPrefix(r.URL.Path, "/partials/cards/"):
+		s.cardPartial(w, r)
 	case r.URL.Path == "/lab/interval-scheduling":
 		s.lab(w, r)
 	case r.URL.Path == "/api/traces/interval-scheduling":
@@ -112,8 +114,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) lab(w http.ResponseWriter, r *http.Request) {
-	nav := s.navigation("algorithms")
-	s.render(w, "lab", labData{navigationData: nav, Title: "区间调度实验室 · Fish Interview"})
+	http.Redirect(w, r, "/cards/algo.greedy.interval-scheduling?tree=algorithms", http.StatusFound)
 }
 
 func (s *Server) intervalTrace(w http.ResponseWriter, _ *http.Request) {
@@ -143,15 +144,40 @@ func (s *Server) home(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) card(w http.ResponseWriter, r *http.Request) {
 	id := strings.TrimPrefix(r.URL.Path, "/cards/")
-	card, ok := s.catalog.Find(id)
-	if !ok {
-		http.NotFound(w, r)
-		return
-	}
-	body, err := s.renderMarkdown(card.Body)
+	data, err := s.cardView(id, r.URL.Query().Get("tree"))
 	if err != nil {
 		http.Error(w, "render card", http.StatusInternalServerError)
 		return
+	}
+	if data.Card.ID == "" {
+		http.NotFound(w, r)
+		return
+	}
+	s.render(w, "card", data)
+}
+
+func (s *Server) cardPartial(w http.ResponseWriter, r *http.Request) {
+	id := strings.TrimPrefix(r.URL.Path, "/partials/cards/")
+	data, err := s.cardView(id, r.URL.Query().Get("tree"))
+	if err != nil {
+		http.Error(w, "render card", http.StatusInternalServerError)
+		return
+	}
+	if data.Card.ID == "" {
+		http.NotFound(w, r)
+		return
+	}
+	s.render(w, "card-content", data)
+}
+
+func (s *Server) cardView(id, requestedTree string) (cardData, error) {
+	card, ok := s.catalog.Find(id)
+	if !ok {
+		return cardData{}, nil
+	}
+	body, err := s.renderMarkdown(card.Body)
+	if err != nil {
+		return cardData{}, err
 	}
 	related := make([]content.Card, 0, len(card.Links))
 	for _, link := range card.Links {
@@ -159,13 +185,12 @@ func (s *Server) card(w http.ResponseWriter, r *http.Request) {
 			related = append(related, target)
 		}
 	}
-	requestedTree := r.URL.Query().Get("tree")
 	if requestedTree == "" {
 		requestedTree = s.rootForCard(card.ID)
 	}
 	nav := s.navigation(requestedTree)
 	nav.ActiveCardID = card.ID
-	s.render(w, "card", cardData{
+	return cardData{
 		navigationData: nav,
 		Title:          card.Title + " · Fish Interview",
 		Card:           card,
@@ -173,7 +198,7 @@ func (s *Server) card(w http.ResponseWriter, r *http.Request) {
 		Related:        related,
 		Signals:        card.ExamSignals,
 		TraceURL:       traceURL(card.Trace),
-	})
+	}, nil
 }
 
 func (s *Server) navigation(requestedID string) navigationData {
@@ -245,7 +270,7 @@ func treeContains(node content.TreeNode, id string) bool {
 
 func traceURL(name string) string {
 	if name == "interval-scheduling" {
-		return "/lab/interval-scheduling"
+		return "/api/traces/interval-scheduling"
 	}
 	return ""
 }

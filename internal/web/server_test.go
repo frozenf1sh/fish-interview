@@ -58,3 +58,20 @@ func TestTraceEndpointReturnsReplayableFrames(t *testing.T) {
 		t.Fatalf("trace response = %d %s", res.Code, res.Body.String())
 	}
 }
+
+func TestCardPartialEmbedsAlgorithmTraceWithoutLayout(t *testing.T) {
+	server := newDemoServer(t)
+	req := httptest.NewRequest(http.MethodGet, "/partials/cards/algo.greedy.interval-scheduling?tree=algorithms", nil)
+	res := httptest.NewRecorder()
+	server.ServeHTTP(res, req)
+	if res.Code != http.StatusOK {
+		t.Fatalf("status = %d", res.Code)
+	}
+	body := res.Body.String()
+	if !strings.Contains(body, `data-trace="/api/traces/interval-scheduling"`) {
+		t.Fatal("partial should embed the algorithm trace player")
+	}
+	if strings.Contains(body, "<html") || strings.Contains(body, "tree-canvas") {
+		t.Fatal("partial should replace only the content panel")
+	}
+}
