@@ -135,6 +135,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.stockTrace(w, r)
 	case r.URL.Path == "/api/traces/bitmask-dp":
 		s.bitmaskTrace(w, r)
+	case r.URL.Path == "/api/traces/linked-list-rewire":
+		s.linkedListRewireTrace(w, r)
 	case r.URL.Path == "/api/traces/path-dp":
 		s.pathTrace(w, r)
 	case r.URL.Path == "/api/traces/reverse-path-dp":
@@ -199,6 +201,11 @@ func (s *Server) stockTrace(w http.ResponseWriter, _ *http.Request) {
 func (s *Server) bitmaskTrace(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	_ = json.NewEncoder(w).Encode(trace.BitmaskTrace())
+}
+
+func (s *Server) linkedListRewireTrace(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	_ = json.NewEncoder(w).Encode(trace.LinkedListRewireTrace())
 }
 
 func (s *Server) pathTrace(w http.ResponseWriter, _ *http.Request) {
@@ -372,6 +379,8 @@ func traceURL(name string) string {
 		return "/api/traces/stock-dp"
 	case "bitmask-dp":
 		return "/api/traces/bitmask-dp"
+	case "linked-list-rewire":
+		return "/api/traces/linked-list-rewire"
 	case "path-dp":
 		return "/api/traces/path-dp"
 	case "reverse-path-dp":

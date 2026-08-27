@@ -29,6 +29,14 @@ func TestLinearDPTrace(t *testing.T) {
 	}
 }
 
+func TestLinkedListRewireTrace(t *testing.T) {
+	trace := LinkedListRewireTrace()
+	last, ok := trace.Frames[len(trace.Frames)-1].State.(linkedListState)
+	if !ok || strings.Join(last.Chain, ",") != "D,1,4,3,2,5" {
+		t.Fatalf("unexpected linked-list trace: %#v", trace.Frames[len(trace.Frames)-1])
+	}
+}
+
 func TestBinaryRedBlueTrace(t *testing.T) {
 	got := BinaryRedBluePartition()
 	last := got.Frames[len(got.Frames)-1]

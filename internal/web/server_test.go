@@ -77,7 +77,7 @@ func TestPatternTraceEndpoints(t *testing.T) {
 	server := newDemoServer(t)
 	for _, path := range []string{
 		"/api/traces/linear-dp", "/api/traces/space-rolling", "/api/traces/lcs-dp", "/api/traces/interval-dp",
-		"/api/traces/stock-dp", "/api/traces/bitmask-dp", "/api/traces/path-dp", "/api/traces/reverse-path-dp", "/api/traces/binary-red-blue",
+		"/api/traces/stock-dp", "/api/traces/bitmask-dp", "/api/traces/linked-list-rewire", "/api/traces/path-dp", "/api/traces/reverse-path-dp", "/api/traces/binary-red-blue",
 	} {
 		req := httptest.NewRequest(http.MethodGet, path, nil)
 		res := httptest.NewRecorder()
@@ -97,6 +97,7 @@ func TestPatternCardsEmbedKnownTraces(t *testing.T) {
 		"algo.dp.interval":                "/api/traces/interval-dp",
 		"algo.dp.stock":                   "/api/traces/stock-dp",
 		"algo.dp.bitmask":                 "/api/traces/bitmask-dp",
+		"algo.list.dummy-rewire":          "/api/traces/linked-list-rewire",
 		"algo.dp.path":                    "/api/traces/path-dp",
 		"algo.dp.path.minimum-health":     "/api/traces/reverse-path-dp",
 		"algo.binary-search.answer":       "/api/traces/binary-red-blue",

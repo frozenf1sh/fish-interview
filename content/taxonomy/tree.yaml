@@ -72,6 +72,15 @@ roots:
             children:
               - id: algo.greedy.interval-scheduling
                 card: algo.greedy.interval-scheduling
+              - id: algo.greedy.reachability
+                card: algo.greedy.reachability
+                title: 可达边界贪心
+              - id: algo.greedy.lexicographic
+                card: algo.greedy.lexicographic
+                title: 字典序贪心
+              - id: algo.greedy.interval-endpoints
+                card: algo.greedy.interval-endpoints
+                title: 区间端点贪心
           - id: algo.patterns.dp
             title: 动态规划
             children:
@@ -108,6 +117,51 @@ roots:
                   - id: algo.dp.path.minimum-health
                     card: algo.dp.path.minimum-health
                     title: 逆推：最低初始生命值
+          - id: algo.patterns.bfs
+            title: BFS
+            children:
+              - id: algo.bfs.shortest-path
+                card: algo.bfs.shortest-path
+                title: 无权最短路
+              - id: algo.bfs.multi-source
+                card: algo.bfs.multi-source
+                title: 多源扩散
+              - id: algo.bfs.topological
+                card: algo.bfs.topological
+                title: 拓扑排序 Kahn
+          - id: algo.patterns.dfs
+            title: DFS
+            children:
+              - id: algo.dfs.tree
+                card: algo.dfs.tree
+                title: 树 DFS
+              - id: algo.dfs.grid
+                card: algo.dfs.grid
+                title: 网格 DFS
+              - id: algo.dfs.path-enumeration
+                card: algo.dfs.path-enumeration
+                title: 路径枚举
+          - id: algo.patterns.backtracking
+            title: 回溯
+            children:
+              - id: algo.backtracking.choose-skip
+                card: algo.backtracking.choose-skip
+                title: 选或不选
+              - id: algo.backtracking.enumeration
+                card: algo.backtracking.enumeration
+                title: 枚举候选
+          - id: algo.patterns.linked-list
+            title: 链表
+            children:
+              - id: algo.list.dummy-rewire
+                card: algo.list.dummy-rewire
+                title: dummy 与重连
+              - id: algo.list.fast-slow
+                card: algo.list.fast-slow
+                title: 快慢指针
+              - id: algo.list.merge
+                card: algo.list.merge
+                title: 合并有序链表
           - id: algo.binary-search
             title: 二分答案
             children:

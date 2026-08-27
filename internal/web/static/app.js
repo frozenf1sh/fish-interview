@@ -385,6 +385,7 @@ function renderTraceBoard(board, kind, state) {
   if (kind === "dp-grid") return renderDPGrid(board, state);
   if (kind === "rolling-dependency") return renderRollingDependency(board, state);
   if (kind === "bitmask-state") return renderBitmaskState(board, state);
+  if (kind === "linked-list") return renderLinkedList(board, state);
   if (kind === "binary-red-blue") return renderRedBlue(board, state);
   return renderIntervals(board, state);
 }
@@ -505,6 +506,45 @@ function renderBitmaskState(board, state) {
   result.className = "bitmask-result";
   result.textContent = `当前累计代价：${state.cost}`;
   board.replaceChildren(heading, cities, result);
+}
+
+function renderLinkedList(board, state) {
+  board.className = "trace-board trace-board--linked-list";
+  const heading = document.createElement("p");
+  heading.className = "trace-board-label";
+  heading.textContent = "主链上的箭头是当前 Next 指针；橙色节点暂时从主链断开";
+  const chain = document.createElement("div");
+  chain.className = "linked-chain";
+  const renderNode = (value, detached = false) => {
+    const node = document.createElement("div");
+    const labels = Object.entries(state.pointers || {}).filter(([, target]) => target === value).map(([name]) => name);
+    node.className = `linked-node${value === "D" ? " is-dummy" : ""}${detached ? " is-detached" : ""}${labels.length ? " is-pointed" : ""}`;
+    node.textContent = value === "D" ? "dummy" : value;
+    if (labels.length) {
+      const pointer = document.createElement("small");
+      pointer.textContent = labels.join(" · ");
+      node.append(pointer);
+    }
+    return node;
+  };
+  state.chain.forEach((value, index) => {
+    chain.append(renderNode(value));
+    if (index < state.chain.length - 1) {
+      const arrow = document.createElement("span");
+      arrow.className = "linked-arrow";
+      arrow.textContent = "→";
+      chain.append(arrow);
+    }
+  });
+  if (state.detached?.length) {
+    const detached = document.createElement("div");
+    detached.className = "linked-detached";
+    detached.append(document.createTextNode("暂离主链："));
+    state.detached.forEach((value) => detached.append(renderNode(value, true)));
+    board.replaceChildren(heading, chain, detached);
+    return;
+  }
+  board.replaceChildren(heading, chain);
 }
 
 function renderRedBlue(board, state) {

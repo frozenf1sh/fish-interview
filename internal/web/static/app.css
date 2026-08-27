@@ -153,6 +153,14 @@ h2 { font-size: 21px; letter-spacing: -.035em; margin: 0 0 17px; }
 .bitmask-city.is-dependency { background: #e9f0ff; border-color: #8aa7d9; color: #2459a7; }
 .bitmask-city.is-last { box-shadow: 0 0 0 3px #fff0d8; outline: 2px solid #e3a846; }
 .bitmask-result { color: #254a36; font-family: "SFMono-Regular", Consolas, monospace; font-size: 14px; font-weight: 800; margin: 5px 0 0; }
+.linked-chain, .linked-detached { align-items: center; display: flex; flex-wrap: wrap; gap: 8px; }
+.linked-node { align-items: center; background: white; border: 1px solid #cdd9cf; border-radius: 8px; color: #244533; display: flex; font-family: "SFMono-Regular", Consolas, monospace; font-size: 14px; font-weight: 800; min-height: 40px; padding: 7px 12px; position: relative; }
+.linked-node small { color: #9a540c; font-family: Inter, ui-sans-serif, system-ui, sans-serif; font-size: 10px; font-weight: 800; left: 50%; position: absolute; top: -18px; transform: translateX(-50%); white-space: nowrap; }
+.linked-node.is-dummy { background: #e4f3e8; border-color: #8fc49d; color: var(--green); }
+.linked-node.is-pointed { box-shadow: 0 0 0 3px #fff0d8; outline: 2px solid #e3a846; }
+.linked-node.is-detached { background: #fff0d8; border-color: #e3a846; color: #9a540c; }
+.linked-arrow { color: var(--green); font-size: 19px; font-weight: 800; }
+.linked-detached { color: var(--muted); font-size: 12px; margin-top: 20px; }
 .binary-numbers { display: flex; flex-wrap: wrap; gap: 7px; }
 .binary-numbers span { background: white; border: 1px solid #cdd9cf; border-radius: 6px; color: #244533; font-family: "SFMono-Regular", Consolas, monospace; font-size: 13px; font-weight: 750; padding: 6px 10px; }
 .binary-range { background: #dce5de; border-radius: 999px; height: 10px; margin: 41px 8px 13px; position: relative; }
