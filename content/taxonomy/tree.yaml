@@ -16,6 +16,9 @@ roots:
             children:
               - id: algo.dp.modeling
                 card: algo.dp.modeling
+          - id: algo.binary-search.red-blue
+            card: algo.binary-search.red-blue
+            title: 红蓝染色法
       - id: algo.patterns
         title: 题型
         children:
@@ -29,6 +32,22 @@ roots:
             children:
               - id: algo.dp.linear
                 card: algo.dp.linear
+                title: 斐波那契 DP
+              - id: algo.dp.lcs
+                card: algo.dp.lcs
+                title: 线性 DP：LCS
+              - id: algo.dp.interval
+                card: algo.dp.interval
+                title: 区间 DP
+              - id: algo.dp.stock
+                card: algo.dp.stock
+                title: 状态 DP：股票
+              - id: algo.dp.bitmask
+                card: algo.dp.bitmask
+                title: 状态压缩 DP
+              - id: algo.dp.path
+                card: algo.dp.path
+                title: 寻路 DP
           - id: algo.binary-search
             title: 二分答案
             children:

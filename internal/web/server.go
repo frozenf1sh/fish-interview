@@ -120,8 +120,18 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.intervalTrace(w, r)
 	case r.URL.Path == "/api/traces/linear-dp":
 		s.linearDPTrace(w, r)
-	case r.URL.Path == "/api/traces/binary-answer":
-		s.binaryAnswerTrace(w, r)
+	case r.URL.Path == "/api/traces/lcs-dp":
+		s.lcsTrace(w, r)
+	case r.URL.Path == "/api/traces/interval-dp":
+		s.intervalDPTrace(w, r)
+	case r.URL.Path == "/api/traces/stock-dp":
+		s.stockTrace(w, r)
+	case r.URL.Path == "/api/traces/bitmask-dp":
+		s.bitmaskTrace(w, r)
+	case r.URL.Path == "/api/traces/path-dp":
+		s.pathTrace(w, r)
+	case r.URL.Path == "/api/traces/binary-red-blue":
+		s.binaryRedBlueTrace(w, r)
 	case r.URL.Path == "/static/app.css":
 		s.static(w, r, "static/app.css", "text/css; charset=utf-8")
 	case r.URL.Path == "/static/app.js":
@@ -151,9 +161,34 @@ func (s *Server) linearDPTrace(w http.ResponseWriter, _ *http.Request) {
 	_ = json.NewEncoder(w).Encode(trace.LinearDPClimbStairs())
 }
 
-func (s *Server) binaryAnswerTrace(w http.ResponseWriter, _ *http.Request) {
+func (s *Server) lcsTrace(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	_ = json.NewEncoder(w).Encode(trace.BinaryAnswerPartition())
+	_ = json.NewEncoder(w).Encode(trace.LCSTrace())
+}
+
+func (s *Server) intervalDPTrace(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	_ = json.NewEncoder(w).Encode(trace.IntervalMergeTrace())
+}
+
+func (s *Server) stockTrace(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	_ = json.NewEncoder(w).Encode(trace.StockTrace())
+}
+
+func (s *Server) bitmaskTrace(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	_ = json.NewEncoder(w).Encode(trace.BitmaskTrace())
+}
+
+func (s *Server) pathTrace(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	_ = json.NewEncoder(w).Encode(trace.PathTrace())
+}
+
+func (s *Server) binaryRedBlueTrace(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	_ = json.NewEncoder(w).Encode(trace.BinaryRedBluePartition())
 }
 
 func (s *Server) home(w http.ResponseWriter, r *http.Request) {
@@ -302,8 +337,18 @@ func traceURL(name string) string {
 		return "/api/traces/interval-scheduling"
 	case "linear-dp":
 		return "/api/traces/linear-dp"
-	case "binary-answer":
-		return "/api/traces/binary-answer"
+	case "lcs-dp":
+		return "/api/traces/lcs-dp"
+	case "interval-dp":
+		return "/api/traces/interval-dp"
+	case "stock-dp":
+		return "/api/traces/stock-dp"
+	case "bitmask-dp":
+		return "/api/traces/bitmask-dp"
+	case "path-dp":
+		return "/api/traces/path-dp"
+	case "binary-red-blue":
+		return "/api/traces/binary-red-blue"
 	}
 	return ""
 }

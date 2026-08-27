@@ -26,14 +26,46 @@ func TestLinearDPTrace(t *testing.T) {
 	}
 }
 
-func TestBinaryAnswerTrace(t *testing.T) {
-	got := BinaryAnswerPartition()
+func TestBinaryRedBlueTrace(t *testing.T) {
+	got := BinaryRedBluePartition()
 	last := got.Frames[len(got.Frames)-1]
-	if got.Kind != "binary-answer" || last.Variables["lo"] != "18" {
+	if got.Kind != "binary-red-blue" || last.Variables["blue"] != "18" || last.Variables["red"] != "17" {
 		t.Fatalf("unexpected trace: %#v", got)
 	}
-	firstState, ok := got.Frames[0].State.(binaryAnswerState)
-	if !ok || firstState.Minimum != 10 || firstState.Maximum != 32 {
+	firstState, ok := got.Frames[0].State.(redBlueState)
+	if !ok || firstState.Minimum != 9 || firstState.Maximum != 32 {
 		t.Fatalf("unexpected binary range: %#v", got.Frames[0].State)
+	}
+}
+
+func TestDPPatternTracesReachExpectedResults(t *testing.T) {
+	assertGridValue := func(t *testing.T, trace Trace, row, column, want int) {
+		t.Helper()
+		if len(trace.Frames) < 4 {
+			t.Fatalf("too few frames: %#v", trace)
+		}
+		state, ok := trace.Frames[len(trace.Frames)-1].State.(gridState)
+		if !ok {
+			t.Fatalf("state type = %T, want gridState", trace.Frames[len(trace.Frames)-1].State)
+		}
+		for _, cell := range state.Cells {
+			if cell.Row == row && cell.Column == column && cell.Value == want {
+				return
+			}
+		}
+		t.Fatalf("cell (%d,%d) = not %d: %#v", row, column, want, state.Cells)
+	}
+	assertGridValue(t, LCSTrace(), 5, 3, 3)
+	assertGridValue(t, IntervalMergeTrace(), 0, 3, 22)
+	assertGridValue(t, PathTrace(), 2, 2, 7)
+
+	stock := StockTrace()
+	if len(stock.Frames) < 4 || stock.Frames[len(stock.Frames)-1].Variables["cash"] != "7" {
+		t.Fatalf("unexpected stock trace: %#v", stock)
+	}
+	bitmask := BitmaskTrace()
+	last := bitmask.Frames[len(bitmask.Frames)-1]
+	if last.Variables["mask"] != "1111" || last.Variables["cost"] != "18" {
+		t.Fatalf("unexpected bitmask trace: %#v", bitmask)
 	}
 }

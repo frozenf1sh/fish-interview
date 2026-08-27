@@ -11,7 +11,7 @@ func TestLoadDemoCatalog(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Load() error = %v", err)
 	}
-	if got, want := len(catalog.Cards), 11; got != want {
+	if got, want := len(catalog.Cards), 17; got != want {
 		t.Fatalf("card count = %d, want %d", got, want)
 	}
 	if _, ok := catalog.Find("eng.kafka.rebalance"); !ok {

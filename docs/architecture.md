@@ -76,7 +76,9 @@ Write code comments next to the state definition, base case, transition, and bou
 
 Algorithms produce a `trace.Trace` in Go. A trace contains a renderer kind, pseudocode lines, and replayable frames. A frame contains the active line, narration, variable values, and a renderer-specific state. Browser code can therefore play, step backward, or jump without re-running the algorithm.
 
-The initial renderer kinds are `intervals`, `dp-table`, and `binary-answer`. Add a renderer only when several traces need a visual state that existing primitives cannot express. For a new pattern: (1) add its trace generator under `internal/trace`, (2) test its final frame and key state transition, (3) expose it from `internal/web/server.go`, and (4) reference it from the card frontmatter.
+Current renderer kinds are `intervals`, `dp-table`, `dp-grid`, `stock-state`, `bitmask-state`, and `binary-red-blue`. `dp-grid` is shared by LCS, interval DP, and path DP; add a renderer only when several traces need a visual state that existing primitives cannot express. For a new pattern: (1) add its trace generator under `internal/trace`, (2) test its final frame and key state transition, (3) expose it from `internal/web/server.go`, and (4) reference it from the card frontmatter.
+
+For binary search, use a named color invariant instead of a mix of closed-interval templates. The standard minimum-feasible template keeps `(red, blue]`: `red` is a known invalid sentinel, `blue` is known valid, and the answer is `blue`. If a variant reverses the objective, declare the colors and return endpoint before writing its loop.
 
 ## Engineering mechanism cards
 

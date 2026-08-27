@@ -61,13 +61,40 @@ func TestTraceEndpointReturnsReplayableFrames(t *testing.T) {
 
 func TestPatternTraceEndpoints(t *testing.T) {
 	server := newDemoServer(t)
-	for _, path := range []string{"/api/traces/linear-dp", "/api/traces/binary-answer"} {
+	for _, path := range []string{
+		"/api/traces/linear-dp", "/api/traces/lcs-dp", "/api/traces/interval-dp",
+		"/api/traces/stock-dp", "/api/traces/bitmask-dp", "/api/traces/path-dp", "/api/traces/binary-red-blue",
+	} {
 		req := httptest.NewRequest(http.MethodGet, path, nil)
 		res := httptest.NewRecorder()
 		server.ServeHTTP(res, req)
 		if res.Code != http.StatusOK || !strings.Contains(res.Body.String(), `"frames"`) {
 			t.Fatalf("trace response for %s = %d %s", path, res.Code, res.Body.String())
 		}
+	}
+}
+
+func TestPatternCardsEmbedKnownTraces(t *testing.T) {
+	server := newDemoServer(t)
+	traces := map[string]string{
+		"algo.greedy.interval-scheduling": "/api/traces/interval-scheduling",
+		"algo.dp.linear":                  "/api/traces/linear-dp",
+		"algo.dp.lcs":                     "/api/traces/lcs-dp",
+		"algo.dp.interval":                "/api/traces/interval-dp",
+		"algo.dp.stock":                   "/api/traces/stock-dp",
+		"algo.dp.bitmask":                 "/api/traces/bitmask-dp",
+		"algo.dp.path":                    "/api/traces/path-dp",
+		"algo.binary-search.answer":       "/api/traces/binary-red-blue",
+	}
+	for id, traceURL := range traces {
+		t.Run(id, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, "/cards/"+id, nil)
+			res := httptest.NewRecorder()
+			server.ServeHTTP(res, req)
+			if res.Code != http.StatusOK || !strings.Contains(res.Body.String(), `data-trace="`+traceURL+`"`) {
+				t.Fatalf("card %s did not embed %s: %d", id, traceURL, res.Code)
+			}
+		})
 	}
 }
 

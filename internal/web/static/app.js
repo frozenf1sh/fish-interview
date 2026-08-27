@@ -261,7 +261,10 @@ function createTracePlayer(root, trace) {
 
 function renderTraceBoard(board, kind, state) {
   if (kind === "dp-table") return renderDPTable(board, state);
-  if (kind === "binary-answer") return renderBinaryAnswer(board, state);
+  if (kind === "dp-grid") return renderDPGrid(board, state);
+  if (kind === "stock-state") return renderStockState(board, state);
+  if (kind === "bitmask-state") return renderBitmaskState(board, state);
+  if (kind === "binary-red-blue") return renderRedBlue(board, state);
   return renderIntervals(board, state);
 }
 
@@ -305,7 +308,76 @@ function renderDPTable(board, state) {
   board.replaceChildren(heading, cells);
 }
 
-function renderBinaryAnswer(board, state) {
+function renderDPGrid(board, state) {
+  board.className = "trace-board trace-board--grid";
+  const heading = document.createElement("p");
+  heading.className = "trace-board-label";
+  heading.textContent = state.title;
+  const table = document.createElement("table");
+  table.className = "dp-grid";
+  const head = document.createElement("tr");
+  head.append(document.createElement("th"));
+  state.columns.forEach((column) => {
+    const label = document.createElement("th");
+    label.textContent = column;
+    head.append(label);
+  });
+  table.append(head);
+  const cells = new Map(state.cells.map((cell) => [`${cell.row}:${cell.column}`, cell]));
+  state.rows.forEach((row, rowIndex) => {
+    const line = document.createElement("tr");
+    const label = document.createElement("th");
+    label.textContent = row;
+    line.append(label);
+    state.columns.forEach((_, columnIndex) => {
+      const cell = cells.get(`${rowIndex}:${columnIndex}`);
+      const value = document.createElement("td");
+      value.className = `dp-grid-cell dp-grid-cell--${cell?.state || "pending"}`;
+      value.textContent = cell?.state === "unused" ? "·" : String(cell?.value ?? 0);
+      line.append(value);
+    });
+    table.append(line);
+  });
+  board.replaceChildren(heading, table);
+}
+
+function renderStockState(board, state) {
+  board.className = "trace-board trace-board--stock";
+  const heading = document.createElement("p");
+  heading.className = "trace-board-label";
+  heading.textContent = "每列是一天结束时，持仓与空仓的最优收益";
+  const timeline = document.createElement("div");
+  timeline.className = "stock-timeline";
+  state.days.forEach((day) => {
+    const item = document.createElement("div");
+    item.className = `stock-day stock-day--${day.state}`;
+    item.innerHTML = `<small>第 ${day.day} 天 · 价格 ${day.price}</small><strong>hold ${day.hold}</strong><strong>cash ${day.cash}</strong>`;
+    timeline.append(item);
+  });
+  board.replaceChildren(heading, timeline);
+}
+
+function renderBitmaskState(board, state) {
+  board.className = "trace-board trace-board--bitmask";
+  const heading = document.createElement("p");
+  heading.className = "trace-board-label";
+  heading.textContent = "mask 的每一位对应一个城市；高亮位已经访问";
+  const cities = document.createElement("div");
+  cities.className = "bitmask-cities";
+  state.names.forEach((name, index) => {
+    const city = document.createElement("div");
+    const visited = (state.mask & (1 << index)) !== 0;
+    city.className = `bitmask-city${visited ? " is-visited" : ""}${state.last === index ? " is-last" : ""}`;
+    city.textContent = `城市 ${name}`;
+    cities.append(city);
+  });
+  const result = document.createElement("p");
+  result.className = "bitmask-result";
+  result.textContent = `当前累计代价：${state.cost}`;
+  board.replaceChildren(heading, cities, result);
+}
+
+function renderRedBlue(board, state) {
   board.className = "trace-board trace-board--binary";
   const numbers = document.createElement("div");
   numbers.className = "binary-numbers";
@@ -321,10 +393,10 @@ function renderBinaryAnswer(board, state) {
   const toPercent = (value) => ((value - minimum) / (maximum - minimum)) * 100;
   const window = document.createElement("div");
   window.className = "binary-window";
-  window.style.left = `${toPercent(state.low)}%`;
-  window.style.width = `${Math.max(1, toPercent(state.high) - toPercent(state.low))}%`;
+  window.style.left = `${toPercent(state.red)}%`;
+  window.style.width = `${Math.max(1, toPercent(state.blue) - toPercent(state.red))}%`;
   range.append(window);
-  [["lo", state.low], ["mid", state.mid], ["hi", state.high]].forEach(([name, value]) => {
+  [["red", state.red], ["mid", state.mid], ["blue", state.blue]].forEach(([name, value]) => {
     if (value < minimum || value > maximum) return;
     const marker = document.createElement("span");
     marker.className = `binary-marker binary-marker--${name}`;
@@ -334,6 +406,6 @@ function renderBinaryAnswer(board, state) {
   });
   const result = document.createElement("p");
   result.className = `binary-result${state.feasible ? " is-feasible" : " is-infeasible"}`;
-  result.textContent = state.mid < 0 ? "准备二分答案范围" : `最多 ${state.groups} 组：${state.feasible ? "可行" : "不可行"}`;
+  result.textContent = state.mid < 0 ? "区间 (red, blue]：左开、右闭" : `mid=${state.mid}：${state.feasible ? "蓝色可行" : "红色不可行"}，需要 ${state.groups} 组`;
   board.replaceChildren(numbers, range, result);
 }

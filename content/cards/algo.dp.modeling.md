@@ -5,7 +5,7 @@ title: DP 建模：状态、转移与计算顺序
 summary: DP 建模先把“一个状态到底代表什么”说清楚，再由最后一步推导转移和计算顺序。
 parents: [algo.dp]
 tags: [dp, modeling]
-links: [algo.dp.linear]
+links: [algo.dp.linear, algo.dp.lcs, algo.dp.interval, algo.dp.stock, algo.dp.bitmask, algo.dp.path]
 exam_signals:
   - company: meituan
     year: 2027
@@ -34,4 +34,4 @@ dp[i] = dp[i-1] + dp[i-2]
 4. 边界：最小规模问题的答案是多少？
 5. 顺序：依赖谁，就先计算谁。
 
-[[algo.dp.linear]] 用动画把这套过程落到一维数组上；背包、区间、树和 DAG DP 都沿用同一推导顺序。
+[[algo.dp.linear]] 从固定前序状态开始；LCS、区间、股票、状态压缩和网格寻路分别改变了状态坐标或状态含义，但都遵循这五步。

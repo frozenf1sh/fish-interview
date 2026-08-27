@@ -62,67 +62,67 @@ func dpFrame(values []int, current, line int, narration string) Frame {
 	}
 }
 
-// BinaryAnswerPartition traces minimizing the largest group sum for two groups.
-func BinaryAnswerPartition() Trace {
+// BinaryRedBluePartition traces the left-open, right-closed red-blue template.
+func BinaryRedBluePartition() Trace {
 	nums := []int{7, 2, 5, 10, 8}
 	const groups = 2
-	const minimum, maximum = 10, 32
-	low, high := minimum, maximum
+	const firstAnswer, maximum = 10, 32
+	red, blue := firstAnswer-1, maximum
 	result := Trace{
-		Kind:  "binary-answer",
-		Title: "二分答案：最小化最大分组和",
+		Kind:  "binary-red-blue",
+		Title: "二分答案：红蓝染色",
 		Pseudocode: []string{
-			"lo, hi := max(nums), sum(nums)",
-			"for lo < hi {",
-			"    mid := lo + (hi-lo)/2",
+			"red, blue := max(nums)-1, sum(nums)",
+			"for red+1 < blue {",
+			"    mid := red + (blue-red)/2",
 			"    if groupsNeeded(nums, mid) <= k {",
-			"        hi = mid // 这个上限可行，继续缩小",
-			"    } else { lo = mid + 1 } // 上限太小",
+			"        blue = mid // mid 为蓝色可行点",
+			"    } else { red = mid } // mid 为红色不可行点",
 			"}",
-			"return lo",
+			"return blue",
 		},
 	}
-	result.Frames = append(result.Frames, binaryFrame(nums, minimum, maximum, low, -1, high, 0, false, 0, "答案范围是 [10, 32]：至少容纳最大元素，至多放进一个组。"))
-	for low < high {
-		mid := low + (high-low)/2
+	result.Frames = append(result.Frames, redBlueFrame(nums, red, maximum, red, -1, blue, 0, false, 0, "red=9 确定不可行，blue=32 确定可行；候选区间为 (red, blue]。"))
+	for red+1 < blue {
+		mid := red + (blue-red)/2
 		needed := groupsNeeded(nums, mid)
 		feasible := needed <= groups
-		result.Frames = append(result.Frames, binaryFrame(nums, minimum, maximum, low, mid, high, needed, feasible, 2, "尝试最大组和 "+itoa(mid)+"，用贪心扫描计算需要多少组。"))
-		result.Frames = append(result.Frames, binaryFrame(nums, minimum, maximum, low, mid, high, needed, feasible, 3, "上限 "+itoa(mid)+" 需要 "+itoa(needed)+" 组；目标是最多 "+itoa(groups)+" 组。"))
+		result.Frames = append(result.Frames, redBlueFrame(nums, firstAnswer-1, maximum, red, mid, blue, needed, feasible, 2, "尝试 "+itoa(mid)+"：用贪心扫描计算所需分组数。"))
+		result.Frames = append(result.Frames, redBlueFrame(nums, firstAnswer-1, maximum, red, mid, blue, needed, feasible, 3, "最多允许 "+itoa(groups)+" 组；当前需要 "+itoa(needed)+" 组，因此 mid 被染色。"))
 		if feasible {
-			high = mid
-			result.Frames = append(result.Frames, binaryFrame(nums, minimum, maximum, low, mid, high, needed, true, 4, "可行：答案可以更小，把右边界收为 "+itoa(high)+"。"))
+			blue = mid
+			result.Frames = append(result.Frames, redBlueFrame(nums, firstAnswer-1, maximum, red, mid, blue, needed, true, 4, "mid 为蓝色可行点：收缩右端点 blue="+itoa(blue)+"，右端点保持闭区间。"))
 		} else {
-			low = mid + 1
-			result.Frames = append(result.Frames, binaryFrame(nums, minimum, maximum, low, mid, high, needed, false, 5, "不可行：答案必须更大，把左边界提到 "+itoa(low)+"。"))
+			red = mid
+			result.Frames = append(result.Frames, redBlueFrame(nums, firstAnswer-1, maximum, red, mid, blue, needed, false, 5, "mid 为红色不可行点：收缩左端点 red="+itoa(red)+"，左端点保持开区间。"))
 		}
 	}
-	result.Frames = append(result.Frames, binaryFrame(nums, minimum, maximum, low, low, high, groupsNeeded(nums, low), true, 7, "最小可行最大组和是 "+itoa(low)+"。"))
+	result.Frames = append(result.Frames, redBlueFrame(nums, firstAnswer-1, maximum, red, -1, blue, groupsNeeded(nums, blue), true, 7, "blue-red=1，区间 (red, blue] 只剩 blue="+itoa(blue)+"；它是第一个蓝点。"))
 	return result
 }
 
-type binaryAnswerState struct {
+type redBlueState struct {
 	Numbers  []int `json:"numbers"`
 	Minimum  int   `json:"minimum"`
 	Maximum  int   `json:"maximum"`
-	Low      int   `json:"low"`
+	Red      int   `json:"red"`
 	Mid      int   `json:"mid"`
-	High     int   `json:"high"`
+	Blue     int   `json:"blue"`
 	Groups   int   `json:"groups"`
 	Feasible bool  `json:"feasible"`
 }
 
-func binaryFrame(numbers []int, minimum, maximum, low, mid, high, groups int, feasible bool, line int, narration string) Frame {
+func redBlueFrame(numbers []int, minimum, maximum, red, mid, blue, groups int, feasible bool, line int, narration string) Frame {
 	return Frame{
 		ActiveLine: line,
 		Narration:  narration,
 		Variables: map[string]string{
-			"lo":     itoa(low),
+			"red":    itoa(red),
 			"mid":    itoa(mid),
-			"hi":     itoa(high),
+			"blue":   itoa(blue),
 			"groups": itoa(groups),
 		},
-		State: binaryAnswerState{Numbers: append([]int(nil), numbers...), Minimum: minimum, Maximum: maximum, Low: low, Mid: mid, High: high, Groups: groups, Feasible: feasible},
+		State: redBlueState{Numbers: append([]int(nil), numbers...), Minimum: minimum, Maximum: maximum, Red: red, Mid: mid, Blue: blue, Groups: groups, Feasible: feasible},
 	}
 }
 
