@@ -187,7 +187,10 @@ if (treePayload && treeCanvas) {
       const [first, second] = [...activePointers.values()];
       if (!pinch) pinch = { distance: Math.hypot(first.x - second.x, first.y - second.y), zoom: treeZoom };
       const distance = Math.hypot(first.x - second.x, first.y - second.y);
-      if (pinch.distance > 0) setTreeZoom(pinch.zoom * distance / pinch.distance);
+      if (pinch.distance > 0) {
+        const scale = distance / pinch.distance;
+        setTreeZoom(pinch.zoom * (1 + (scale - 1) * 3));
+      }
       suppressTreeClick = true;
       return;
     }
@@ -222,7 +225,7 @@ if (treePayload && treeCanvas) {
   canvasWrap.addEventListener("wheel", (event) => {
     if (!event.ctrlKey) return;
     event.preventDefault();
-    setTreeZoom(treeZoom * Math.exp(-event.deltaY * 0.002));
+    setTreeZoom(treeZoom * Math.exp(-event.deltaY * 0.006));
   }, { passive: false });
   canvasWrap.addEventListener("dragstart", (event) => event.preventDefault());
   canvasWrap.addEventListener("click", (event) => {

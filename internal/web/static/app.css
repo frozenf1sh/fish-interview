@@ -199,7 +199,8 @@ h2 { font-size: 21px; letter-spacing: -.035em; margin: 0 0 17px; }
   .sidebar { align-self: start; background: var(--paper); display: flex; flex-direction: column; height: calc(100vh - 60px); padding-bottom: 28px; position: sticky; top: 60px; }
   .tree-canvas-wrap { flex: 1; max-height: none; min-height: 0; }
   body.tree-focus .sidebar { box-shadow: 16px 0 32px rgba(18, 32, 25, .15); left: 0; padding: 28px 20px; position: fixed; top: 60px; width: 50vw; z-index: 30; }
-  body.tree-focus .tree-focus-scrim { background: rgba(18, 32, 25, .04); border: 0; bottom: 0; cursor: pointer; display: block; left: 50vw; padding: 0; position: fixed; right: 0; top: 60px; z-index: 29; }
+  body.tree-focus .main-content, body.tree-focus .article { grid-column: 1 / -1; margin-left: 50vw; max-width: none; }
+  body.tree-focus .tree-focus-scrim { background: transparent; border: 0; bottom: 0; cursor: pointer; display: block; left: 50vw; padding: 0; position: fixed; right: 0; top: 60px; z-index: 29; }
 }
 @media (max-width: 780px) {
   .topbar { padding: 0 18px; }

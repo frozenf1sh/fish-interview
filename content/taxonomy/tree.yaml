@@ -40,6 +40,10 @@ roots:
               - id: algo.dp.lcs
                 card: algo.dp.lcs
                 title: 线性 DP：LCS
+                children:
+                  - id: algo.dp.lcs-space-optimization
+                    card: algo.dp.lcs-space-optimization
+                    title: LCS 空间优化
               - id: algo.dp.interval
                 card: algo.dp.interval
                 title: 区间 DP

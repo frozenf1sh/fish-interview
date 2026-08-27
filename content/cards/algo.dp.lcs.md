@@ -5,7 +5,7 @@ title: 线性 DP：最长公共子序列 LCS
 summary: 用两个前缀长度定位子问题；字符相等时同时前进，不等时保留删去一侧字符后的更优答案。
 parents: [algo.patterns.dp]
 tags: [dp, sequence, lcs]
-links: [algo.dp.modeling, algo.dp.linear]
+links: [algo.dp.modeling, algo.dp.linear, algo.dp.lcs-space-optimization]
 trace: lcs-dp
 ---
 
@@ -63,5 +63,6 @@ return dp[len(a)][len(b)] // 完整前缀对应目标答案
 
 - 需要连续子串时，状态不能继承左或上，转移会改变。
 - 需要输出具体序列时，从 `dp[m][n]` 按转移来源回溯。
+- 只要求长度时，可将二维表压成一行；见 [[algo.dp.lcs-space-optimization]]。
 
 [[algo.dp.modeling]] 解释了状态句子、边界和计算顺序如何一起确定。

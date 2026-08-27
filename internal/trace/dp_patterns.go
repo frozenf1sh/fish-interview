@@ -198,23 +198,28 @@ func BitmaskTrace() Trace {
 		Kind:  "bitmask-state",
 		Title: "状态压缩 DP：集合与最后位置",
 		Pseudocode: []string{
+			"for mask := range dp {",
+			"    for last := range dp[mask] { dp[mask][last] = inf }",
+			"}",
 			"dp[1<<0][0] = 0",
 			"for mask := 1; mask < 1<<n; mask++ {",
 			"    for last := 0; last < n; last++ {",
+			"        if dp[mask][last] == inf { continue }",
 			"        for next := 0; next < n; next++ {",
-			"            if mask&(1<<next) == 0 {",
-			"                dp[mask|1<<next][next] = min(...)",
-			"            }",
+			"            if mask&(1<<next) != 0 { continue }",
+			"            nextMask := mask | (1 << next)",
+			"            candidate := dp[mask][last] + cost[last][next]",
+			"            dp[nextMask][next] = min(dp[nextMask][next], candidate)",
 			"        }",
 			"    }",
 			"}",
 		},
 	}
 	for index, step := range steps {
-		line := 0
+		line := 3
 		previousLast := -1
 		if index > 0 {
-			line = 5
+			line = 11
 			previousLast = steps[index-1].Last
 		}
 		result.Frames = append(result.Frames, Frame{ActiveLine: line, Narration: step.Narration, Variables: map[string]string{"mask": binaryMask(step.Mask, 4), "last": "city " + itoa(step.Last), "cost": itoa(step.Cost)}, State: bitmaskState{Names: []string{"0", "1", "2", "3"}, Mask: step.Mask, Last: step.Last, PreviousLast: previousLast, Cost: step.Cost}})
