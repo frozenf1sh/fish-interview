@@ -1,6 +1,9 @@
 package trace
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestIntervalSchedulingTrace(t *testing.T) {
 	got := IntervalScheduling([]Interval{
@@ -67,6 +70,19 @@ func TestDPPatternTracesReachExpectedResults(t *testing.T) {
 	last := bitmask.Frames[len(bitmask.Frames)-1]
 	if last.Variables["mask"] != "1111" || last.Variables["cost"] != "18" {
 		t.Fatalf("unexpected bitmask trace: %#v", bitmask)
+	}
+}
+
+func TestIntervalTraceShowsEverySplit(t *testing.T) {
+	trace := IntervalMergeTrace()
+	splits := map[string]bool{}
+	for _, frame := range trace.Frames {
+		if strings.Contains(frame.Narration, "枚举 k=") {
+			splits[frame.Narration] = true
+		}
+	}
+	if len(splits) != 10 {
+		t.Fatalf("split frames = %d, want 10: %#v", len(splits), splits)
 	}
 }
 

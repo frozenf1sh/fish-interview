@@ -319,7 +319,7 @@ function createTracePlayer(root, trace) {
 
   code.replaceChildren(...trace.pseudocode.map((line, lineIndex) => {
     const item = document.createElement("li");
-    item.innerHTML = highlightGoSyntax(line);
+    appendHighlightedGoSyntax(item, line);
     item.dataset.line = String(lineIndex);
     return item;
   }));
@@ -360,17 +360,24 @@ function createTracePlayer(root, trace) {
   render();
 }
 
-function highlightGoSyntax(line) {
-  const escaped = line.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
-  const tokens = /(\/\/.*$|"(?:\\.|[^"\\])*"|`[^`]*`|\b(?:break|case|continue|default|defer|else|for|func|go|if|range|return|select|switch|type|var)\b|\b(?:append|len|make|max|min)\b|\b\d+\b|:=|==|!=|&lt;=|&gt;=|&amp;&amp;|&amp;|\|\||[+\-*/=&lt;&gt;])/g;
-  return escaped.replace(tokens, (token) => {
-    if (token.startsWith("//")) return `<span class="go-comment">${token}</span>`;
-    if (token.startsWith('"') || token.startsWith("`")) return `<span class="go-string">${token}</span>`;
-    if (/^(break|case|continue|default|defer|else|for|func|go|if|range|return|select|switch|type|var)$/.test(token)) return `<span class="go-keyword">${token}</span>`;
-    if (/^(append|len|make|max|min)$/.test(token)) return `<span class="go-builtin">${token}</span>`;
-    if (/^\d+$/.test(token)) return `<span class="go-number">${token}</span>`;
-    return `<span class="go-operator">${token}</span>`;
-  });
+function appendHighlightedGoSyntax(target, line) {
+  const tokens = /(\/\/.*$|"(?:\\.|[^"\\])*"|`[^`]*`|\b(?:break|case|continue|default|defer|else|for|func|go|if|range|return|select|switch|type|var)\b|\b(?:append|len|make|max|min)\b|\b\d+\b|:=|==|!=|<=|>=|&&|&|\|\||[+\-*/=<>])/g;
+  let offset = 0;
+  for (const match of line.matchAll(tokens)) {
+    target.append(document.createTextNode(line.slice(offset, match.index)));
+    const token = match[0];
+    const span = document.createElement("span");
+    if (token.startsWith("//")) span.className = "go-comment";
+    else if (token.startsWith('"') || token.startsWith("`")) span.className = "go-string";
+    else if (/^(break|case|continue|default|defer|else|for|func|go|if|range|return|select|switch|type|var)$/.test(token)) span.className = "go-keyword";
+    else if (/^(append|len|make|max|min)$/.test(token)) span.className = "go-builtin";
+    else if (/^\d+$/.test(token)) span.className = "go-number";
+    else span.className = "go-operator";
+    span.textContent = token;
+    target.append(span);
+    offset = match.index + token.length;
+  }
+  target.append(document.createTextNode(line.slice(offset)));
 }
 
 function renderTraceBoard(board, kind, state) {

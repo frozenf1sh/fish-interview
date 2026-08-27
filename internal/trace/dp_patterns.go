@@ -79,9 +79,12 @@ func IntervalMergeTrace() Trace {
 		Pseudocode: []string{
 			"for length := 2; length <= n; length++ {",
 			"    for l := 0; l+length <= n; l++ {",
-			"        r = l + length - 1; dp[l][r] = +∞",
+			"        r := l + length - 1",
+			"        dp[l][r] = inf",
 			"        for k := l; k < r; k++ {",
-			"            dp[l][r] = min(dp[l][r], dp[l][k] + dp[k+1][r] + sum(l,r))",
+			"            mergeCost := prefix[r+1] - prefix[l]",
+			"            candidate := dp[l][k] + dp[k+1][r] + mergeCost",
+			"            dp[l][r] = min(dp[l][r], candidate)",
 			"        }",
 			"    }",
 			"}",
@@ -93,19 +96,20 @@ func IntervalMergeTrace() Trace {
 			right := left + length - 1
 			total := prefix[right+1] - prefix[left]
 			best := int(^uint(0) >> 1)
-			bestSplit := left
+			result.Frames = append(result.Frames, intervalFrameGrid(values, done, left, right, nil, 3, "准备计算区间 ["+itoa(left)+","+itoa(right)+"]：先把 dp[l][r] 设为无穷大。"))
 			for split := left; split < right; split++ {
 				candidate := values[left][split] + values[split+1][right] + total
 				if candidate < best {
-					best, bestSplit = candidate, split
+					best = candidate
 				}
+				values[left][right] = best
+				result.Frames = append(result.Frames, intervalFrameGrid(values, done, left, right, []gridPoint{{left, split}, {split + 1, right}}, 7, "长度 "+itoa(length)+"，区间 ["+itoa(left)+","+itoa(right)+"]：枚举 k="+itoa(split)+"，候选代价为 "+itoa(candidate)+"，当前最小值为 "+itoa(best)+"。"))
 			}
-			values[left][right] = best
 			done[left][right] = true
-			result.Frames = append(result.Frames, intervalFrameGrid(values, done, left, right, []gridPoint{{left, bestSplit}, {bestSplit + 1, right}}, 4, "长度 "+itoa(length)+"：蓝色格子是本次最优切分用到的两个子区间，再加本段合并代价 "+itoa(total)+"。"))
+			result.Frames = append(result.Frames, intervalFrameGrid(values, done, left, right, nil, 8, "区间 ["+itoa(left)+","+itoa(right)+"] 完成，最小合并代价为 "+itoa(best)+"。"))
 		}
 	}
-	result.Frames = append(result.Frames, intervalFrameGrid(values, done, 0, n-1, nil, 7, "完整区间的最小合并代价为 "+itoa(values[0][n-1])+"。"))
+	result.Frames = append(result.Frames, intervalFrameGrid(values, done, 0, n-1, nil, 10, "完整区间的最小合并代价为 "+itoa(values[0][n-1])+"。"))
 	return result
 }
 

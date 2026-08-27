@@ -43,3 +43,4 @@ git diff --check
 5. Make engineering nodes mechanism-first: a parent can explain a subsystem, while leaves explain one concrete concept and link to related cards by ID.
 6. Use card IDs for `links` and record `source`, `year`, `role`, and `confidence` for every exam signal.
 7. Run the content validator.
+8. Visible card code and trace pseudocode must use literal Go operators (`<`, `>`, `&&`), never HTML entities. Render dynamic pseudocode through DOM text nodes, and scan all user-visible source before committing.

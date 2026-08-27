@@ -460,7 +460,6 @@ func renderLatex(formula string) string {
 	formula = strings.ReplaceAll(formula, `\begin{cases}`, `<span class="math-cases">`)
 	formula = strings.ReplaceAll(formula, `\end{cases}`, `</span>`)
 	formula = strings.ReplaceAll(formula, `\\`, `<br>`)
-	formula = strings.ReplaceAll(formula, "&amp;", "")
 	return `<div class="math-formula" aria-label="状态转移公式">` + formula + `</div>`
 }
 
