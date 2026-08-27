@@ -9,13 +9,19 @@ links: [algo.dp.modeling, algo.dp.linear]
 trace: lcs-dp
 ---
 
+## 例题
+
+[LeetCode 1143 · 最长公共子序列 ↗](https://leetcode.cn/problems/longest-common-subsequence/)
+
+`a="abcde"`、`b="ace"` 的最长公共子序列是 `ace`，长度为 `3`。
+
 ## 状态转移
 
 $$
-dp_{i,j} =
+两个前缀的公共子序列长度 =
 \begin{cases}
-dp_{i-1,j-1}+1, & a_{i-1}=b_{j-1} \\
-\max(dp_{i-1,j},dp_{i,j-1}), & a_{i-1}\neq b_{j-1}
+末尾字符相同：左上角结果 + 1 \\
+末尾字符不同：上方与左方结果中的较大值
 \end{cases}
 $$
 
@@ -23,7 +29,7 @@ $$
 
 ## 从两个前缀开始
 
-令 `dp[i][j]` 为 `a[:i]` 与 `b[:j]` 的 LCS 长度。例子 `a="abcde"`、`b="ace"`：当比较到相同字符 `c`，它可以接在两个更短前缀的公共子序列后面；字符不同则只能丢弃其中一侧末尾字符。
+令 `dp[i][j]` 为 `a[:i]` 与 `b[:j]` 的 LCS 长度。当比较到相同字符 `c`，它可以接在两个更短前缀的公共子序列后面；字符不同则只能丢弃其中一侧末尾字符。
 
 蓝色格子标记本次读取的旧状态：字符相等时取左上角；不等时比较左侧和上方。
 

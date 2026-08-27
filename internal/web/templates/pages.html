@@ -30,6 +30,7 @@
       <button type="button" data-tree-zoom-out aria-label="缩小知识树">−</button>
       <output data-tree-zoom-value>100%</output>
       <button type="button" data-tree-zoom-in aria-label="放大知识树">放大</button>
+      <button type="button" data-tree-focus aria-pressed="false">展开树</button>
     </div>
   </div>
   <div class="tree-canvas-wrap">
@@ -37,6 +38,10 @@
   </div>
   <script id="tree-data" type="application/json">{{.TreeJSON}}</script>
 </aside>
+{{end}}
+
+{{define "tree-focus-scrim"}}
+<button class="tree-focus-scrim" data-tree-focus-close aria-label="收起展开的知识树"></button>
 {{end}}
 
 {{define "home"}}
@@ -47,6 +52,7 @@
     {{template "home-content" .}}
   </section>
 </main>
+{{template "tree-focus-scrim" .}}
 <script src="/static/app.js"></script>
 </body>
 </html>
@@ -97,6 +103,7 @@
   {{template "sidebar" .}}
   {{template "card-content" .}}
 </main>
+{{template "tree-focus-scrim" .}}
 <script src="/static/app.js"></script>
 </body>
 </html>

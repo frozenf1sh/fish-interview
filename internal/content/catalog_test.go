@@ -11,11 +11,26 @@ func TestLoadDemoCatalog(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Load() error = %v", err)
 	}
-	if got, want := len(catalog.Cards), 17; got != want {
+	if got, want := len(catalog.Cards), 18; got != want {
 		t.Fatalf("card count = %d, want %d", got, want)
 	}
 	if _, ok := catalog.Find("eng.kafka.rebalance"); !ok {
 		t.Fatal("expected Kafka rebalance card")
+	}
+}
+
+func TestAlgorithmPatternsStartWithLinkedExample(t *testing.T) {
+	catalog, err := Load(filepath.Join("..", "..", "content"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for id, card := range catalog.Cards {
+		if card.Kind != "algorithm-pattern" {
+			continue
+		}
+		if !strings.HasPrefix(card.Body, "## 例题\n") || !strings.Contains(card.Body, "https://leetcode.cn/problems/") {
+			t.Fatalf("algorithm pattern %q must start with a linked example", id)
+		}
 	}
 }
 

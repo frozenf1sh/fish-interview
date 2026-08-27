@@ -161,7 +161,7 @@ if (treePayload && treeCanvas) {
   let suppressTreeClick = false;
   const finishDrag = (event) => {
     if (!drag || event.pointerId !== drag.pointerID) return;
-    if (canvasWrap.hasPointerCapture(event.pointerId)) canvasWrap.releasePointerCapture(event.pointerId);
+    if (drag.captured && canvasWrap.hasPointerCapture(event.pointerId)) canvasWrap.releasePointerCapture(event.pointerId);
     if (drag.moved) {
       suppressTreeClick = true;
       window.setTimeout(() => { suppressTreeClick = false; }, 0);
@@ -171,9 +171,7 @@ if (treePayload && treeCanvas) {
   };
   canvasWrap.addEventListener("pointerdown", (event) => {
     if (event.button !== 0) return;
-    drag = { pointerID: event.pointerId, startX: event.clientX, startY: event.clientY, scrollLeft: canvasWrap.scrollLeft, scrollTop: canvasWrap.scrollTop, moved: false };
-    canvasWrap.setPointerCapture(event.pointerId);
-    event.preventDefault();
+    drag = { pointerID: event.pointerId, startX: event.clientX, startY: event.clientY, scrollLeft: canvasWrap.scrollLeft, scrollTop: canvasWrap.scrollTop, moved: false, captured: false };
   });
   canvasWrap.addEventListener("pointermove", (event) => {
     if (!drag || event.pointerId !== drag.pointerID) return;
@@ -182,6 +180,10 @@ if (treePayload && treeCanvas) {
     if (Math.abs(deltaX) > 4 || Math.abs(deltaY) > 4) {
       drag.moved = true;
       canvasWrap.classList.add("is-dragging");
+      if (!drag.captured) {
+        canvasWrap.setPointerCapture(event.pointerId);
+        drag.captured = true;
+      }
     }
     if (drag.moved) {
       canvasWrap.scrollLeft = drag.scrollLeft - deltaX;
@@ -214,6 +216,12 @@ if (treePayload && treeCanvas) {
   });
   document.querySelector("[data-tree-zoom-in]")?.addEventListener("click", () => setTreeZoom(treeZoom + 0.25));
   document.querySelector("[data-tree-zoom-out]")?.addEventListener("click", () => setTreeZoom(treeZoom - 0.25));
+  const focusTree = (active) => {
+    document.body.classList.toggle("tree-focus", active);
+    document.querySelector("[data-tree-focus]")?.setAttribute("aria-pressed", String(active));
+  };
+  document.querySelector("[data-tree-focus]")?.addEventListener("click", () => focusTree(!document.body.classList.contains("tree-focus")));
+  document.querySelector("[data-tree-focus-close]")?.addEventListener("click", () => focusTree(false));
   drawTree();
 }
 
@@ -469,10 +477,12 @@ function renderRedBlue(board, state) {
   range.append(window);
   [["red", state.red], ["mid", state.mid], ["blue", state.blue]].forEach(([name, value]) => {
     if (value < minimum || value > maximum) return;
+    if (name === "mid" && (value === state.red || value === state.blue)) return;
     const marker = document.createElement("span");
     marker.className = `binary-marker binary-marker--${name}`;
     marker.style.left = `${toPercent(value)}%`;
-    marker.textContent = `${name}=${value}`;
+    marker.textContent = String(value);
+    marker.setAttribute("aria-label", `${name}=${value}`);
     range.append(marker);
   });
   const result = document.createElement("p");

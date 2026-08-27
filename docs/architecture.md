@@ -68,7 +68,7 @@ The algorithms root is intentionally split into two branches:
 
 A **knowledge card** explains one reusable mechanism. Start with its conclusion, derive it through one minimal example, then give the boundary where it stops applying. A non-leaf node may own such a card: for example, the “贪心原理” node explains safe local choices while its leaf cards hold specific templates.
 
-An **algorithm-pattern card** is a runnable retrieval unit. It must contain a `trace`, a short recognition condition, one progressively derived example, annotated Go code, and only the nearest confusions. The player is rendered before the Markdown body, so the card must not repeat generic text such as “how to watch the animation.” The content validator rejects an `algorithm-pattern` without a trace.
+An **algorithm-pattern card** is a runnable retrieval unit. Its Markdown starts with `## 例题`, followed by a matching LeetCode link when one exists, then a short recognition condition, one progressively derived example, annotated Go code, and only the nearest confusions. The player is rendered before the Markdown body, so the card must not repeat generic text such as “how to watch the animation.” The content validator rejects an `algorithm-pattern` without a trace.
 
 For DP patterns, place a display formula written in `$$ ... $$` immediately after the player, then split the Go implementation into state/base-case initialization and transition sections. The renderer typesets the subset of LaTex used by state transitions (subscripts, superscripts, `min`/`max`, cases, and common relation symbols). Write code comments next to the state definition, base case, transition, and boundary update; comments should explain the role of the line, not restate its syntax.
 

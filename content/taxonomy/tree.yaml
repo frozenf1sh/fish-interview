@@ -33,6 +33,10 @@ roots:
               - id: algo.dp.linear
                 card: algo.dp.linear
                 title: 斐波那契 DP
+                children:
+                  - id: algo.dp.space-optimization
+                    card: algo.dp.space-optimization
+                    title: 空间优化规律
               - id: algo.dp.lcs
                 card: algo.dp.lcs
                 title: 线性 DP：LCS

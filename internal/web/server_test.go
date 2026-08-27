@@ -115,6 +115,17 @@ func TestCardPartialEmbedsAlgorithmTraceWithoutLayout(t *testing.T) {
 	}
 }
 
+func TestCardIncludesTreeControls(t *testing.T) {
+	server := newDemoServer(t)
+	req := httptest.NewRequest(http.MethodGet, "/cards/algo.dp.linear?tree=algorithms", nil)
+	res := httptest.NewRecorder()
+	server.ServeHTTP(res, req)
+	body := res.Body.String()
+	if res.Code != http.StatusOK || !strings.Contains(body, "data-tree-zoom-in") || !strings.Contains(body, "data-tree-focus") {
+		t.Fatalf("card should include tree controls: %d", res.Code)
+	}
+}
+
 func TestMarkdownUsesChromaWithLineNumbers(t *testing.T) {
 	server := newDemoServer(t)
 	rendered, err := server.renderMarkdown("```go\nfmt.Println(\"fish\")\n```")

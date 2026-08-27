@@ -15,6 +15,12 @@ exam_signals:
     source: https://www.nowcoder.com/
 ---
 
+## 例题
+
+[LeetCode 435 · 无重叠区间 ↗](https://leetcode.cn/problems/non-overlapping-intervals/)
+
+给定若干区间，移除最少区间使剩余区间互不重叠；等价地，尽量保留更多互不重叠区间。
+
 > **先做判断**：题目是“选最多个不重叠区间”，没有权重；每次选择只会影响后续可用的时间边界。满足这两个条件，再考虑本模板。
 
 ## 模板：结束最早优先

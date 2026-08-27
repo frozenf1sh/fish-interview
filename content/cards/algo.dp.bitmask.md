@@ -9,10 +9,16 @@ links: [algo.dp.modeling]
 trace: bitmask-dp
 ---
 
+## 例题
+
+[LeetCode 943 · 最短超级串 ↗](https://leetcode.cn/problems/find-the-shortest-superstring/)
+
+这类题都要记住“已经选了哪些元素”和“最后停在哪里”；动画用 4 个城市展示同一套 `集合 + 最后位置` 状态。
+
 ## 状态转移
 
 $$
-dp_{mask | (1<<next), next} = \min(dp_{mask, last} + cost_{last,next})
+新集合、最后位置的最小代价 = 所有可到达旧状态接上 next 后的较小值
 $$
 
 > **适用条件**：元素数量较小，决策只与“已经选了哪些元素”和少量附加信息有关。常见规模是 `n≤20` 左右。
