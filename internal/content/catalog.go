@@ -29,6 +29,7 @@ type Meta struct {
 	Parents     []string     `yaml:"parents"`
 	Tags        []string     `yaml:"tags"`
 	Links       []string     `yaml:"links"`
+	Trace       string       `yaml:"trace"`
 	ExamSignals []ExamSignal `yaml:"exam_signals"`
 }
 
@@ -163,18 +164,16 @@ func validateNode(node TreeNode, cards map[string]Card, seen map[string]bool) er
 		return fmt.Errorf("duplicate taxonomy node ID %q", node.ID)
 	}
 	seen[node.ID] = true
+	if node.Title == "" && node.Card == "" {
+		return fmt.Errorf("taxonomy node %q misses title", node.ID)
+	}
 	if node.Card != "" {
-		if len(node.Children) != 0 {
-			return fmt.Errorf("leaf node %q cannot have card and children", node.ID)
-		}
 		if node.ID != node.Card {
-			return fmt.Errorf("leaf node %q must match its card ID %q", node.ID, node.Card)
+			return fmt.Errorf("node %q must match its card ID %q", node.ID, node.Card)
 		}
 		if _, ok := cards[node.Card]; !ok {
 			return fmt.Errorf("taxonomy node %q refers to missing card", node.ID)
 		}
-	} else if node.Title == "" {
-		return fmt.Errorf("group node %q misses title", node.ID)
 	}
 	for _, child := range node.Children {
 		if err := validateNode(child, cards, seen); err != nil {

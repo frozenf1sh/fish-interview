@@ -24,7 +24,7 @@ content cards + taxonomy + exam signals
           browser-native tree, cards, SVG player
 ```
 
-`internal/content` owns all file parsing and content integrity. `internal/trace` owns algorithm state transitions. `internal/web` only renders view models and never parses raw content itself.
+`internal/content` owns all file parsing and content integrity. `internal/trace` owns algorithm state transitions. `internal/web` only renders view models and never parses raw content itself. The left navigation is a browser-rendered node-and-edge canvas derived from taxonomy data; it is not a nested directory list.
 
 ## Content contracts
 
@@ -38,6 +38,7 @@ summary: 选择最多互不重叠区间时，优先保留结束最早的可行�
 parents: [algo.greedy.interval]
 tags: [greedy, interval]
 links: [algo.greedy.exchange-argument]
+trace: interval-scheduling # optional, connects an algorithm leaf to a Go Trace
 exam_signals:
   - company: meituan
     year: 2027
@@ -46,7 +47,7 @@ exam_signals:
     source: https://example.invalid/source
 ```
 
-Card IDs are stable public keys: file paths may change, IDs may not. `links` must resolve to card IDs. A taxonomy node is either a group or references exactly one card. The validator rejects duplicate IDs, broken references, tree cycles, and incomplete exam signals.
+Card IDs are stable public keys: file paths may change, IDs may not. `links` must resolve to card IDs. A taxonomy node can reference one card and still have child nodes: non-leaf concepts such as “贪心” and “Kafka” are first-class explanatory cards, not empty folders. The validator rejects duplicate IDs, broken references, tree cycles, and incomplete exam signals.
 
 ## Algorithm card structure
 

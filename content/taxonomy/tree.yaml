@@ -3,6 +3,7 @@ roots:
     title: 算法
     children:
       - id: algo.greedy
+        card: algo.greedy
         title: 贪心
         children:
           - id: algo.greedy.exchange-argument
@@ -25,10 +26,14 @@ roots:
     title: 工程基础
     children:
       - id: eng.kafka
+        card: eng.kafka
         title: Kafka
         children:
+          - id: eng.kafka.topic
+            card: eng.kafka.topic
+          - id: eng.kafka.partition
+            card: eng.kafka.partition
           - id: eng.kafka.consumer-group
             card: eng.kafka.consumer-group
           - id: eng.kafka.rebalance
             card: eng.kafka.rebalance
-

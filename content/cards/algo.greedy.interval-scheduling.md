@@ -5,7 +5,8 @@ title: 区间调度：按结束时间选择
 summary: 选择最多互不重叠区间时，优先保留结束最早的可行区间。
 parents: [algo.greedy]
 tags: [greedy, interval, scheduling]
-links: [algo.greedy.exchange-argument]
+links: [algo.greedy, algo.greedy.exchange-argument]
+trace: interval-scheduling
 exam_signals:
   - company: meituan
     year: 2027
@@ -35,6 +36,12 @@ for _, in := range intervals {
 }
 ```
 
+## 关键动画说明
+
+动画中的每一行区间都已按结束时间排序。绿色表示已经被选择；橙色表示当前候选；红色表示与 `end` 冲突而被跳过。观察 `B=[2,5)` 与 `D=[5,7)`：它们不是“长度更长所以不好”，而是开始时间早于当前边界，无法与既有选择共存。
+
+[打开逐帧动画](/lab/interval-scheduling)
+
 ## 常见误区
 
 - 按开始时间排序不能保证留下最大剩余空间。
@@ -43,4 +50,3 @@ for _, in := range intervals {
 ## 变体与关联
 
 [[algo.greedy.exchange-argument]]；可在算法实验室观看选择过程。
-

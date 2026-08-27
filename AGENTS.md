@@ -16,6 +16,8 @@ Build an offline-first, Go-based interview knowledge explorer. It is a reference
 
 - Keep Go as the only application language; use browser-native HTML/CSS and minimal vanilla JS only for interaction.
 - Preserve stable content IDs. Do not use file paths as identifiers.
+- A non-leaf taxonomy node may own a detailed mechanism card; do not model it as an empty folder.
+- Keep the left navigation as an interactive node-and-edge tree canvas, with responsive fallback for small screens.
 - Company data is evidence-tagged metadata, never the primary information architecture.
 - Do not add accounts, remote services, a database, progress tracking, or a frontend build chain without explicit approval.
 - Prefer small, coherent commits. Do not combine content changes with unrelated refactors.
@@ -37,4 +39,3 @@ git diff --check
 2. Add or verify its node in `content/taxonomy/tree.yaml`.
 3. Use card IDs for `links` and record `source`, `year`, `role`, and `confidence` for every exam signal.
 4. Run the content validator.
-
