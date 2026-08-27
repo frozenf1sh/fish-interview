@@ -5,7 +5,7 @@ title: 寻路 DP：网格最小路径和
 summary: 当移动方向构成 DAG 时，按拓扑顺序累计到达每个格子的最优代价；网格右下移动时依赖上方和左方。
 parents: [algo.patterns.dp]
 tags: [dp, grid, path]
-links: [algo.dp.modeling]
+links: [algo.dp.modeling, algo.dp.path.minimum-health]
 trace: path-dp
 ---
 
@@ -55,4 +55,4 @@ return dp[m-1][n-1] // 右下角是完整路径的最优值
 
 ## 边界
 
-允许四向移动时图可能有环，普通 DP 顺序失效；边权非负时改用 Dijkstra。
+允许四向移动时图可能有环，普通 DP 顺序失效；边权非负时改用 Dijkstra。若题目约束的是“全程资源不能跌破阈值”，从终点反推进入每格所需的最低资源，见 [[algo.dp.path.minimum-health]]。

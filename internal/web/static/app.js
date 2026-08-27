@@ -383,7 +383,7 @@ function appendHighlightedGoSyntax(target, line) {
 function renderTraceBoard(board, kind, state) {
   if (kind === "dp-table") return renderDPTable(board, state);
   if (kind === "dp-grid") return renderDPGrid(board, state);
-  if (kind === "stock-state") return renderStockState(board, state);
+  if (kind === "rolling-dependency") return renderRollingDependency(board, state);
   if (kind === "bitmask-state") return renderBitmaskState(board, state);
   if (kind === "binary-red-blue") return renderRedBlue(board, state);
   return renderIntervals(board, state);
@@ -429,6 +429,31 @@ function renderDPTable(board, state) {
   board.replaceChildren(heading, cells);
 }
 
+function renderRollingDependency(board, state) {
+  board.className = "trace-board trace-board--rolling";
+  const heading = document.createElement("p");
+  heading.className = "trace-board-label";
+  heading.textContent = `第 ${state.index} 轮：先读取，再写 current，最后覆盖滚动变量`;
+  const cells = document.createElement("div");
+  cells.className = "rolling-cells";
+  const values = [
+    ["previousTwo", state.previousTwo, state.stage === "read" || state.stage === "write" ? "dependency" : "ready"],
+    ["previousOne", state.previousOne, state.stage === "read" || state.stage === "write" ? "dependency" : "ready"],
+    ["current", state.hasCurrent ? state.current : "—", !state.hasCurrent ? "pending" : state.stage === "write" ? "current" : "ready"],
+  ];
+  values.forEach(([name, value, status]) => {
+    const item = document.createElement("div");
+    item.className = `dp-cell dp-cell--${status}${status === "dependency" ? " is-dependency" : ""}`;
+    const key = document.createElement("small");
+    key.textContent = name;
+    const output = document.createElement("strong");
+    output.textContent = String(value);
+    item.append(key, output);
+    cells.append(item);
+  });
+  board.replaceChildren(heading, cells);
+}
+
 function renderDPGrid(board, state) {
   board.className = "trace-board trace-board--grid";
   const heading = document.createElement("p");
@@ -460,22 +485,6 @@ function renderDPGrid(board, state) {
     table.append(line);
   });
   board.replaceChildren(heading, table);
-}
-
-function renderStockState(board, state) {
-  board.className = "trace-board trace-board--stock";
-  const heading = document.createElement("p");
-  heading.className = "trace-board-label";
-  heading.textContent = "每列是一天结束时，持仓与空仓的最优收益";
-  const timeline = document.createElement("div");
-  timeline.className = "stock-timeline";
-  state.days.forEach((day) => {
-    const item = document.createElement("div");
-    item.className = `stock-day stock-day--${day.state}`;
-    item.innerHTML = `<small>第 ${day.day} 天 · 价格 ${day.price}</small><strong>hold ${day.hold}</strong><strong>cash ${day.cash}</strong>`;
-    timeline.append(item);
-  });
-  board.replaceChildren(heading, timeline);
 }
 
 function renderBitmaskState(board, state) {

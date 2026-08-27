@@ -63,6 +63,54 @@ func dpFrame(values []int, current, line int, narration string) Frame {
 	}
 }
 
+// SpaceOptimizationTrace shows the read, write, and roll order for a two-value DP window.
+func SpaceOptimizationTrace() Trace {
+	previousTwo, previousOne := 1, 1
+	result := Trace{
+		Kind:  "rolling-dependency",
+		Title: "空间优化：依赖读取与变量覆盖顺序",
+		Pseudocode: []string{
+			"previousTwo, previousOne := 1, 1",
+			"for i := 2; i <= n; i++ {",
+			"    current := previousTwo + previousOne",
+			"    previousTwo, previousOne = previousOne, current",
+			"}",
+			"return previousOne",
+		},
+	}
+	result.Frames = append(result.Frames, rollingFrame(1, previousTwo, previousOne, 0, false, "ready", 0, "初始化：两个变量覆盖了下一次转移会读取的完整依赖窗口。"))
+	for index := 2; index <= 5; index++ {
+		current := previousTwo + previousOne
+		result.Frames = append(result.Frames, rollingFrame(index, previousTwo, previousOne, 0, false, "read", 2, "计算 dp["+itoa(index)+"] 前，蓝色的 previousTwo 与 previousOne 都必须保持旧值。"))
+		result.Frames = append(result.Frames, rollingFrame(index, previousTwo, previousOne, current, true, "write", 2, "先写 current="+itoa(current)+"；旧依赖直到这一步完成前都不能覆盖。"))
+		previousTwo, previousOne = previousOne, current
+		result.Frames = append(result.Frames, rollingFrame(index, previousTwo, previousOne, current, true, "roll", 3, "最后整体前移：previousTwo 接住旧 previousOne，previousOne 接住 current。"))
+	}
+	result.Frames = append(result.Frames, rollingFrame(5, previousTwo, previousOne, previousOne, true, "ready", 5, "最终 previousOne 就是 dp[5]="+itoa(previousOne)+"。"))
+	return result
+}
+
+type rollingState struct {
+	Index       int    `json:"index"`
+	PreviousTwo int    `json:"previousTwo"`
+	PreviousOne int    `json:"previousOne"`
+	Current     int    `json:"current"`
+	HasCurrent  bool   `json:"hasCurrent"`
+	Stage       string `json:"stage"`
+}
+
+func rollingFrame(index, previousTwo, previousOne, current int, hasCurrent bool, stage string, line int, narration string) Frame {
+	return Frame{
+		ActiveLine: line,
+		Narration:  narration,
+		Variables: map[string]string{
+			"i":           itoa(index),
+			"read window": "dp[i-2], dp[i-1]",
+		},
+		State: rollingState{Index: index, PreviousTwo: previousTwo, PreviousOne: previousOne, Current: current, HasCurrent: hasCurrent, Stage: stage},
+	}
+}
+
 // BinaryRedBluePartition traces the left-open, right-closed red-blue template.
 func BinaryRedBluePartition() Trace {
 	nums := []int{7, 2, 5, 10, 8}

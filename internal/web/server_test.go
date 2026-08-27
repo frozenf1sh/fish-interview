@@ -76,8 +76,8 @@ func TestTraceEndpointReturnsReplayableFrames(t *testing.T) {
 func TestPatternTraceEndpoints(t *testing.T) {
 	server := newDemoServer(t)
 	for _, path := range []string{
-		"/api/traces/linear-dp", "/api/traces/lcs-dp", "/api/traces/interval-dp",
-		"/api/traces/stock-dp", "/api/traces/bitmask-dp", "/api/traces/path-dp", "/api/traces/binary-red-blue",
+		"/api/traces/linear-dp", "/api/traces/space-rolling", "/api/traces/lcs-dp", "/api/traces/interval-dp",
+		"/api/traces/stock-dp", "/api/traces/bitmask-dp", "/api/traces/path-dp", "/api/traces/reverse-path-dp", "/api/traces/binary-red-blue",
 	} {
 		req := httptest.NewRequest(http.MethodGet, path, nil)
 		res := httptest.NewRecorder()
@@ -98,6 +98,7 @@ func TestPatternCardsEmbedKnownTraces(t *testing.T) {
 		"algo.dp.stock":                   "/api/traces/stock-dp",
 		"algo.dp.bitmask":                 "/api/traces/bitmask-dp",
 		"algo.dp.path":                    "/api/traces/path-dp",
+		"algo.dp.path.minimum-health":     "/api/traces/reverse-path-dp",
 		"algo.binary-search.answer":       "/api/traces/binary-red-blue",
 	}
 	for id, traceURL := range traces {
@@ -175,7 +176,7 @@ func TestMarkdownRendersLatexStateTransition(t *testing.T) {
 
 func TestDPCardsRenderFormulaAndSegmentedImplementation(t *testing.T) {
 	server := newDemoServer(t)
-	for _, id := range []string{"algo.dp.linear", "algo.dp.lcs", "algo.dp.interval", "algo.dp.stock", "algo.dp.bitmask", "algo.dp.path"} {
+	for _, id := range []string{"algo.dp.linear", "algo.dp.lcs", "algo.dp.interval", "algo.dp.stock", "algo.dp.bitmask", "algo.dp.path", "algo.dp.path.minimum-health"} {
 		t.Run(id, func(t *testing.T) {
 			req := httptest.NewRequest(http.MethodGet, "/cards/"+id, nil)
 			res := httptest.NewRecorder()

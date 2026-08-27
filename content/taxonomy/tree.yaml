@@ -16,6 +16,9 @@ roots:
             children:
               - id: algo.dp.modeling
                 card: algo.dp.modeling
+              - id: algo.dp.bit-operations
+                card: algo.dp.bit-operations
+                title: 状态压缩：位运算技巧
           - id: algo.binary-search.red-blue
             card: algo.binary-search.red-blue
             title: 红蓝染色法
@@ -59,6 +62,10 @@ roots:
               - id: algo.dp.path
                 card: algo.dp.path
                 title: 寻路 DP
+                children:
+                  - id: algo.dp.path.minimum-health
+                    card: algo.dp.path.minimum-health
+                    title: 逆推：最低初始生命值
           - id: algo.binary-search
             title: 二分答案
             children:

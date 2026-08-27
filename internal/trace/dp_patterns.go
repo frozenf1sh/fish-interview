@@ -133,13 +133,13 @@ func intervalFrameGrid(values [][]int, done [][]bool, currentRow, currentColumn 
 	return Frame{ActiveLine: line, Narration: narration, Variables: map[string]string{"order": "区间长度从短到长", "current": intervalName(currentRow, currentColumn)}, State: state}
 }
 
-// StockTrace tracks the two end-of-day states for unlimited stock transactions.
+// StockTrace fills a two-row DP table: holding and cash at the end of each day.
 func StockTrace() Trace {
 	prices := []int{7, 1, 5, 3, 6, 4}
 	hold, cash := -prices[0], 0
-	state := stockState{Days: []stockDay{{Day: 0, Price: prices[0], Hold: hold, Cash: cash, State: "current"}}, Current: 0}
+	holds, cashes := []int{hold}, []int{cash}
 	result := Trace{
-		Kind:  "stock-state",
+		Kind:  "dp-grid",
 		Title: "股票状态 DP：持仓与空仓",
 		Pseudocode: []string{
 			"hold, cash = -prices[0], 0",
@@ -151,43 +151,42 @@ func StockTrace() Trace {
 			"return cash",
 		},
 	}
-	result.Frames = append(result.Frames, stockFrame(state, 0, "第 0 天：买入后持仓收益为 -7，什么也不做的空仓收益为 0。"))
+	result.Frames = append(result.Frames, stockGridFrame(prices, holds, cashes, 0, 0, "第 0 天：持仓与空仓是同一位置的两个状态。"))
 	for day, price := range prices[1:] {
 		prevHold, prevCash := hold, cash
 		hold = max(prevHold, prevCash-price)
 		cash = max(prevCash, prevHold+price)
-		state.Days = append(state.Days, stockDay{Day: day + 1, Price: price, Hold: hold, Cash: cash, State: "current"})
-		state.Current = day + 1
-		result.Frames = append(result.Frames, stockFrame(state, 4, "第 "+itoa(day+1)+" 天价格为 "+itoa(price)+"：两个新状态都只读取昨天的 hold 与 cash。"))
+		holds, cashes = append(holds, hold), append(cashes, cash)
+		result.Frames = append(result.Frames, stockGridFrame(prices, holds, cashes, day+1, 4, "第 "+itoa(day+1)+" 天价格为 "+itoa(price)+"：蓝色的昨天持仓/空仓共同推导橙色的今天两个状态。"))
 	}
-	result.Frames = append(result.Frames, stockFrame(state, 6, "最后一天空仓收益为 "+itoa(cash)+"，这就是可实现的最大收益。"))
+	result.Frames = append(result.Frames, stockGridFrame(prices, holds, cashes, len(prices)-1, 6, "最后一天空仓收益为 "+itoa(cash)+"，这就是可实现的最大收益。"))
 	return result
 }
 
-type stockState struct {
-	Days    []stockDay `json:"days"`
-	Current int        `json:"current"`
-}
-
-type stockDay struct {
-	Day   int    `json:"day"`
-	Price int    `json:"price"`
-	Hold  int    `json:"hold"`
-	Cash  int    `json:"cash"`
-	State string `json:"state"`
-}
-
-func stockFrame(state stockState, line int, narration string) Frame {
-	view := stockState{Current: state.Current, Days: append([]stockDay(nil), state.Days...)}
-	for i := range view.Days {
-		view.Days[i].State = "ready"
+func stockGridFrame(prices, holds, cashes []int, current, line int, narration string) Frame {
+	columns := make([]string, len(prices))
+	for day, price := range prices {
+		columns[day] = "D" + itoa(day) + "·" + itoa(price)
 	}
-	view.Days[len(view.Days)-1].State = "current"
-	if len(view.Days) > 1 {
-		view.Days[len(view.Days)-2].State = "dependency"
+	state := gridState{Title: "行是账户状态，列是日期（D·价格）", Rows: []string{"持仓 hold", "空仓 cash"}, Columns: columns}
+	for row, values := range [][]int{holds, cashes} {
+		for day := range prices {
+			cellState := "pending"
+			if day < len(values) {
+				cellState = "ready"
+			}
+			if day == current {
+				cellState = "current"
+			}
+			dependency := current > 0 && day == current-1
+			value := 0
+			if day < len(values) {
+				value = values[day]
+			}
+			state.Cells = append(state.Cells, gridCell{Row: row, Column: day, Value: value, State: cellState, Dependency: dependency})
+		}
 	}
-	last := view.Days[len(view.Days)-1]
-	return Frame{ActiveLine: line, Narration: narration, Variables: map[string]string{"price": itoa(last.Price), "hold": itoa(last.Hold), "cash": itoa(last.Cash)}, State: view}
+	return Frame{ActiveLine: line, Narration: narration, Variables: map[string]string{"price": itoa(prices[current]), "hold": itoa(holds[current]), "cash": itoa(cashes[current])}, State: state}
 }
 
 // BitmaskTrace demonstrates expanding a visit set while retaining the last city.
@@ -289,6 +288,80 @@ func PathTrace() Trace {
 	}
 	result.Frames = append(result.Frames, pathFrame(grid, values, done, rows-1, columns-1, []gridPoint{{rows - 2, columns - 1}, {rows - 1, columns - 2}}, 7, "右下角的最小路径和为 "+itoa(values[rows-1][columns-1])+"。"))
 	return result
+}
+
+// ReversePathTrace finds the minimum health needed before entering each dungeon cell.
+func ReversePathTrace() Trace {
+	dungeon := [][]int{{-2, -3, 3}, {-5, -10, 1}, {10, 30, -5}}
+	rows, columns := len(dungeon), len(dungeon[0])
+	values := make([][]int, rows)
+	done := make([][]bool, rows)
+	for row := range values {
+		values[row] = make([]int, columns)
+		done[row] = make([]bool, columns)
+	}
+	result := Trace{
+		Kind:  "dp-grid",
+		Title: "逆推寻路 DP：进入格子前需要的最低生命值",
+		Pseudocode: []string{
+			"need[m][n-1], need[m-1][n] = 1, 1",
+			"for r := m - 1; r >= 0; r-- {",
+			"    for c := n - 1; c >= 0; c-- {",
+			"        nextNeed := min(need[r+1][c], need[r][c+1])",
+			"        need[r][c] = max(1, nextNeed-dungeon[r][c])",
+			"    }",
+			"}",
+			"return need[0][0]",
+		},
+	}
+	result.Frames = append(result.Frames, reversePathFrame(dungeon, values, done, -1, -1, nil, 0, "终点外侧设置为 1：离开地下城后仍必须保持生命值大于 0。"))
+	for row := rows - 1; row >= 0; row-- {
+		for column := columns - 1; column >= 0; column-- {
+			dependencies := make([]gridPoint, 0, 2)
+			nextNeed := int(^uint(0) >> 1)
+			if row+1 < rows {
+				nextNeed = values[row+1][column]
+				dependencies = append(dependencies, gridPoint{row + 1, column})
+			}
+			if column+1 < columns && values[row][column+1] < nextNeed {
+				nextNeed = values[row][column+1]
+				dependencies = append(dependencies, gridPoint{row, column + 1})
+			} else if column+1 < columns {
+				dependencies = append(dependencies, gridPoint{row, column + 1})
+			}
+			if row == rows-1 && column == columns-1 {
+				nextNeed = 1
+			}
+			values[row][column] = max(1, nextNeed-dungeon[row][column])
+			done[row][column] = true
+			result.Frames = append(result.Frames, reversePathFrame(dungeon, values, done, row, column, dependencies, 4, "从终点反推 ("+itoa(row)+","+itoa(column)+")：后继最低门槛为 "+itoa(nextNeed)+"，进入当前格至少需要 "+itoa(values[row][column])+"。"))
+		}
+	}
+	result.Frames = append(result.Frames, reversePathFrame(dungeon, values, done, 0, 0, []gridPoint{{0, 1}, {1, 0}}, 7, "左上角需要的最低初始生命值为 "+itoa(values[0][0])+"。"))
+	return result
+}
+
+func reversePathFrame(dungeon, values [][]int, done [][]bool, currentRow, currentColumn int, dependencies []gridPoint, line int, narration string) Frame {
+	state := gridState{Title: "need[r][c]：进入该格前至少需要的生命值", Rows: []string{"r=0", "r=1", "r=2"}, Columns: []string{"c=0", "c=1", "c=2"}}
+	dependencySet := gridPointSet(dependencies)
+	for row := range values {
+		for column := range values[row] {
+			cellState := "pending"
+			if done[row][column] {
+				cellState = "ready"
+			}
+			if row == currentRow && column == currentColumn {
+				cellState = "current"
+			}
+			state.Cells = append(state.Cells, gridCell{Row: row, Column: column, Value: values[row][column], State: cellState, Dependency: dependencySet[gridPoint{row, column}]})
+		}
+	}
+	variables := map[string]string{"order": "右下 → 左上"}
+	if currentRow >= 0 && currentColumn >= 0 {
+		variables["cell"] = "(" + itoa(currentRow) + "," + itoa(currentColumn) + ")"
+		variables["effect"] = itoa(dungeon[currentRow][currentColumn])
+	}
+	return Frame{ActiveLine: line, Narration: narration, Variables: variables, State: state}
 }
 
 func pathFrame(grid, values [][]int, done [][]bool, currentRow, currentColumn int, dependencies []gridPoint, line int, narration string) Frame {

@@ -61,6 +61,8 @@ func TestDPPatternTracesReachExpectedResults(t *testing.T) {
 	assertGridValue(t, LCSTrace(), 5, 3, 3)
 	assertGridValue(t, IntervalMergeTrace(), 0, 3, 22)
 	assertGridValue(t, PathTrace(), 2, 2, 7)
+	assertGridValue(t, ReversePathTrace(), 0, 0, 7)
+	assertGridValue(t, StockTrace(), 1, 5, 7)
 
 	stock := StockTrace()
 	if len(stock.Frames) < 4 || stock.Frames[len(stock.Frames)-1].Variables["cash"] != "7" {
@@ -70,6 +72,11 @@ func TestDPPatternTracesReachExpectedResults(t *testing.T) {
 	last := bitmask.Frames[len(bitmask.Frames)-1]
 	if last.Variables["mask"] != "1111" || last.Variables["cost"] != "18" {
 		t.Fatalf("unexpected bitmask trace: %#v", bitmask)
+	}
+	rolling := SpaceOptimizationTrace()
+	rollingState, ok := rolling.Frames[len(rolling.Frames)-1].State.(rollingState)
+	if !ok || rollingState.PreviousOne != 8 {
+		t.Fatalf("unexpected rolling trace: %#v", rolling.Frames[len(rolling.Frames)-1])
 	}
 }
 
@@ -92,7 +99,7 @@ func TestDPTracesMarkDependencies(t *testing.T) {
 	if !ok || !linearState.Cells[0].Dependency || !linearState.Cells[1].Dependency {
 		t.Fatalf("fibonacci trace should mark dp[0] and dp[1]: %#v", linear.Frames[3].State)
 	}
-	for _, trace := range []Trace{LCSTrace(), IntervalMergeTrace(), PathTrace()} {
+	for _, trace := range []Trace{LCSTrace(), IntervalMergeTrace(), PathTrace(), ReversePathTrace(), StockTrace()} {
 		found := false
 		for _, frame := range trace.Frames {
 			state, ok := frame.State.(gridState)
@@ -106,11 +113,6 @@ func TestDPTracesMarkDependencies(t *testing.T) {
 		if !found {
 			t.Fatalf("trace %q never marks a dependency", trace.Title)
 		}
-	}
-	stock := StockTrace()
-	stockState, ok := stock.Frames[1].State.(stockState)
-	if !ok || stockState.Days[0].State != "dependency" {
-		t.Fatalf("stock trace should mark the previous day: %#v", stock.Frames[1].State)
 	}
 	bitmask := BitmaskTrace()
 	bitmaskState, ok := bitmask.Frames[1].State.(bitmaskState)

@@ -5,7 +5,7 @@ title: 状态压缩 DP：访问集合与最后位置
 summary: 用二进制掩码表示已经处理的元素集合，再配合最后位置记录下一步受什么限制。
 parents: [algo.patterns.dp.state]
 tags: [dp, bitmask, subset]
-links: [algo.dp.modeling]
+links: [algo.dp.modeling, algo.dp.bit-operations]
 trace: bitmask-dp
 ---
 
@@ -28,6 +28,8 @@ $$
 从城市 `0` 出发，访问所有城市且每个城市只访问一次。令 `dp[mask][last]` 为已访问集合为 `mask`、最后停在 `last` 的最短路程。
 
 `mask` 的第 `i` 位为 1 表示城市 `i` 已访问。若去往未访问城市 `next`，新集合为 `mask | (1<<next)`；路径代价增加 `cost[last][next]`。动画展示一个集合如何逐位扩张。
+
+位测试、置位、枚举子集与低位提取见 [[algo.dp.bit-operations]]；它们决定 `mask` 的写法，但不改变“集合 + 最后位置”的状态含义。
 
 ## 分段实现
 

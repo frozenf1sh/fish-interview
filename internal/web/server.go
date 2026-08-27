@@ -125,6 +125,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.intervalTrace(w, r)
 	case r.URL.Path == "/api/traces/linear-dp":
 		s.linearDPTrace(w, r)
+	case r.URL.Path == "/api/traces/space-rolling":
+		s.spaceRollingTrace(w, r)
 	case r.URL.Path == "/api/traces/lcs-dp":
 		s.lcsTrace(w, r)
 	case r.URL.Path == "/api/traces/interval-dp":
@@ -135,6 +137,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.bitmaskTrace(w, r)
 	case r.URL.Path == "/api/traces/path-dp":
 		s.pathTrace(w, r)
+	case r.URL.Path == "/api/traces/reverse-path-dp":
+		s.reversePathTrace(w, r)
 	case r.URL.Path == "/api/traces/binary-red-blue":
 		s.binaryRedBlueTrace(w, r)
 	case r.URL.Path == "/static/app.css":
@@ -172,6 +176,11 @@ func (s *Server) linearDPTrace(w http.ResponseWriter, _ *http.Request) {
 	_ = json.NewEncoder(w).Encode(trace.LinearDPClimbStairs())
 }
 
+func (s *Server) spaceRollingTrace(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	_ = json.NewEncoder(w).Encode(trace.SpaceOptimizationTrace())
+}
+
 func (s *Server) lcsTrace(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	_ = json.NewEncoder(w).Encode(trace.LCSTrace())
@@ -195,6 +204,11 @@ func (s *Server) bitmaskTrace(w http.ResponseWriter, _ *http.Request) {
 func (s *Server) pathTrace(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	_ = json.NewEncoder(w).Encode(trace.PathTrace())
+}
+
+func (s *Server) reversePathTrace(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	_ = json.NewEncoder(w).Encode(trace.ReversePathTrace())
 }
 
 func (s *Server) binaryRedBlueTrace(w http.ResponseWriter, _ *http.Request) {
@@ -348,6 +362,8 @@ func traceURL(name string) string {
 		return "/api/traces/interval-scheduling"
 	case "linear-dp":
 		return "/api/traces/linear-dp"
+	case "space-rolling":
+		return "/api/traces/space-rolling"
 	case "lcs-dp":
 		return "/api/traces/lcs-dp"
 	case "interval-dp":
@@ -358,6 +374,8 @@ func traceURL(name string) string {
 		return "/api/traces/bitmask-dp"
 	case "path-dp":
 		return "/api/traces/path-dp"
+	case "reverse-path-dp":
+		return "/api/traces/reverse-path-dp"
 	case "binary-red-blue":
 		return "/api/traces/binary-red-blue"
 	}
