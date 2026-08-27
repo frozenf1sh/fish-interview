@@ -19,15 +19,25 @@ a { color: inherit; text-decoration: none; }
 .brand { font-size: 18px; font-weight: 760; letter-spacing: -0.04em; }
 .brand span { color: var(--green); }
 .brand-note, .eyebrow, .overview, .signals small { color: var(--muted); font-size: 13px; }
-.shell { display: grid; grid-template-columns: 255px minmax(0, 1fr); margin: 0 auto; max-width: 1280px; min-height: calc(100vh - 60px); }
-.sidebar { border-right: 1px solid var(--line); padding: 32px 22px 48px 0; }
+.shell { display: grid; grid-template-columns: 330px minmax(0, 1fr); margin: 0 auto; max-width: 1360px; min-height: calc(100vh - 60px); }
+.sidebar { border-right: 1px solid var(--line); padding: 28px 20px 48px 0; }
 .eyebrow { font-size: 12px; font-weight: 750; letter-spacing: .09em; margin: 0 0 14px; text-transform: uppercase; }
-.tree, .tree ul { list-style: none; margin: 0; padding: 0; }
-.tree ul { border-left: 1px solid #dce4db; margin: 3px 0 3px 7px; padding-left: 14px; }
-.tree li { color: #4e5d54; font-size: 14px; line-height: 1.45; padding: 4px 0; }
-.tree summary { cursor: pointer; font-weight: 650; }
-.tree a { border-radius: 4px; display: inline-block; padding: 2px 4px; }
-.tree a:hover { background: var(--green-pale); color: var(--green); }
+.tree-heading { align-items: baseline; display: flex; justify-content: space-between; }
+.tree-heading span { color: var(--muted); font-size: 11px; }
+.tree-switch { display: flex; gap: 7px; margin-bottom: 14px; }
+.tree-switch button { background: transparent; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); cursor: pointer; font: inherit; font-size: 12px; padding: 6px 10px; }
+.tree-switch button[aria-selected="true"] { background: var(--green); border-color: var(--green); color: white; font-weight: 700; }
+.tree-canvas-wrap { background: #fbfcf8; border: 1px solid var(--line); border-radius: 10px; max-height: calc(100vh - 178px); min-height: 260px; overflow: auto; }
+.tree-canvas { display: block; min-width: 330px; }
+.tree-edge { fill: none; stroke: #bdcbbf; stroke-width: 1.5; }
+.tree-node { cursor: default; outline: none; }
+.tree-node rect { fill: #eef1eb; stroke: #cbd5cb; stroke-width: 1; transition: fill .15s, stroke .15s; }
+.tree-node text { fill: #49574d; font-family: Inter, ui-sans-serif, system-ui, sans-serif; font-size: 10px; font-weight: 700; pointer-events: none; }
+.tree-node--card { cursor: pointer; }
+.tree-node--card:hover rect, .tree-node--card:focus rect { fill: var(--green-pale); stroke: var(--green); stroke-width: 1.5; }
+.tree-node--group rect { fill: #203c2e; stroke: #203c2e; }
+.tree-node--group text { fill: white; }
+.tree-node.is-active rect { fill: #e9b86e; stroke: #a75e11; stroke-width: 2; }
 .main-content, .article { padding: 54px clamp(28px, 5vw, 76px) 80px; }
 .lab { max-width: 1050px; padding: 54px clamp(28px, 5vw, 76px) 80px; }
 .main-content { max-width: 1050px; }
@@ -65,6 +75,8 @@ h2 { font-size: 21px; letter-spacing: -.035em; margin: 0 0 17px; }
 .back { color: var(--green); display: inline-block; font-size: 14px; font-weight: 700; margin-bottom: 34px; }
 .article h1 { font-size: clamp(34px, 4vw, 48px); margin: 16px 0 10px; }
 .article-summary { border-left: 3px solid var(--green); color: #4f5d55; font-size: 17px; line-height: 1.65; margin: 0 0 36px; padding-left: 16px; }
+.trace-link { background: #e8f2eb; border: 1px solid #c8dfcc; border-radius: 8px; color: var(--green); display: inline-block; font-size: 14px; font-weight: 750; margin: -16px 0 24px; padding: 10px 13px; }
+.trace-link:hover { background: #dcefe1; }
 .markdown { font-family: ui-serif, Georgia, "Noto Serif SC", serif; font-size: 16px; line-height: 1.85; }
 .markdown h2 { font-family: Inter, ui-sans-serif, system-ui, sans-serif; font-size: 22px; margin: 40px 0 10px; }
 .markdown p { margin: 0 0 16px; }
@@ -108,8 +120,7 @@ h2 { font-size: 21px; letter-spacing: -.035em; margin: 0 0 17px; }
   .shell { display: block; }
   .sidebar { border-bottom: 1px solid var(--line); border-right: 0; padding: 18px; }
   .sidebar .eyebrow { margin-bottom: 6px; }
-  .tree { display: flex; gap: 10px; overflow-x: auto; }
-  .tree > li { min-width: 135px; }
+  .tree-canvas-wrap { max-height: 315px; min-height: 190px; }
   .main-content, .article { padding: 38px 20px 60px; }
   .lab { padding: 38px 20px 60px; }
   .cards { grid-template-columns: 1fr; }

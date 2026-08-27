@@ -19,6 +19,8 @@ mise exec go@1.26 -- go run ./cmd/fish-interview
 
 Open <http://localhost:8080>.
 
+The server listens on `0.0.0.0:8080` by default, so devices on the same LAN can use the Mac's LAN IP and port `8080`. Use `-addr 127.0.0.1:8080` when local-only binding is required.
+
 ## Quality checks
 
 ```sh
@@ -28,4 +30,3 @@ git diff --check
 ```
 
 See [architecture.md](docs/architecture.md) for content contracts and extension boundaries.
-

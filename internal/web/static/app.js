@@ -5,6 +5,108 @@ document.addEventListener("keydown", (event) => {
   }
 });
 
+const treePayload = document.querySelector("#tree-data");
+const treeCanvas = document.querySelector("[data-tree-canvas]");
+if (treePayload && treeCanvas) {
+  const treeRoots = JSON.parse(treePayload.textContent).roots;
+  const rootByID = new Map(treeRoots.map((root) => [root.id, root]));
+  let currentTreeID = treeCanvas.dataset.treeId;
+
+  const drawTree = () => {
+    const root = rootByID.get(currentTreeID) || treeRoots[0];
+    currentTreeID = root.id;
+    const positions = new Map();
+    let leafIndex = 0;
+    let maxDepth = 0;
+    const layout = (node, depth) => {
+      maxDepth = Math.max(maxDepth, depth);
+      const children = node.children || [];
+      let y;
+      if (children.length === 0) {
+        y = 38 + leafIndex * 72;
+        leafIndex += 1;
+      } else {
+        const childYs = children.map((child) => layout(child, depth + 1));
+        y = childYs.reduce((sum, value) => sum + value, 0) / childYs.length;
+      }
+      positions.set(node.id, { x: 65 + depth * 164, y, node });
+      return y;
+    };
+    layout(root, 0);
+    const width = Math.max(330, 130 + maxDepth * 164);
+    const height = Math.max(150, leafIndex * 72 + 18);
+    treeCanvas.setAttribute("viewBox", `0 0 ${width} ${height}`);
+    treeCanvas.setAttribute("height", String(height));
+    treeCanvas.setAttribute("width", String(width));
+    treeCanvas.replaceChildren();
+
+    const svg = (tag) => document.createElementNS("http://www.w3.org/2000/svg", tag);
+    const drawEdges = (node) => {
+      const from = positions.get(node.id);
+      for (const child of node.children || []) {
+        const to = positions.get(child.id);
+        const line = svg("path");
+        const middle = (from.x + to.x) / 2;
+        line.setAttribute("d", `M ${from.x + 54} ${from.y} H ${middle} V ${to.y} H ${to.x - 54}`);
+        line.setAttribute("class", "tree-edge");
+        treeCanvas.append(line);
+        drawEdges(child);
+      }
+    };
+    drawEdges(root);
+    [...positions.values()].forEach(({ node, x, y }) => {
+      const group = svg("g");
+      const active = node.card && node.card === treeCanvas.dataset.activeId;
+      group.setAttribute("class", `tree-node${node.card ? " tree-node--card" : " tree-node--group"}${active ? " is-active" : ""}`);
+      group.setAttribute("transform", `translate(${x - 54} ${y - 22})`);
+      group.setAttribute("tabindex", node.card ? "0" : "-1");
+      group.setAttribute("aria-label", node.card ? `打开：${node.title}` : node.title);
+      if (node.card) group.setAttribute("role", "link");
+      const rect = svg("rect");
+      rect.setAttribute("width", "108");
+      rect.setAttribute("height", "44");
+      rect.setAttribute("rx", "8");
+      group.append(rect);
+      const lines = splitTreeLabel(node.title);
+      lines.forEach((line, index) => {
+        const label = svg("text");
+        label.setAttribute("x", "54");
+        label.setAttribute("y", String(lines.length === 1 ? 27 : 19 + index * 13));
+        label.setAttribute("text-anchor", "middle");
+        label.textContent = line;
+        group.append(label);
+      });
+      const title = svg("title");
+      title.textContent = node.title;
+      group.append(title);
+      const open = () => {
+        if (node.card) window.location.href = `/cards/${node.card}?tree=${currentTreeID}`;
+      };
+      group.addEventListener("click", open);
+      group.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" || event.key === " ") { event.preventDefault(); open(); }
+      });
+      treeCanvas.append(group);
+    });
+  };
+  document.querySelectorAll("[data-tree-switch]").forEach((button) => {
+    button.addEventListener("click", () => {
+      currentTreeID = button.dataset.treeId;
+      document.querySelectorAll("[data-tree-switch]").forEach((item) => item.setAttribute("aria-selected", String(item === button)));
+      const url = new URL(window.location.href);
+      url.searchParams.set("tree", currentTreeID);
+      window.history.replaceState({}, "", url);
+      drawTree();
+    });
+  });
+  drawTree();
+}
+
+function splitTreeLabel(label) {
+  if (label.length <= 10) return [label];
+  return [label.slice(0, 10), `${label.slice(10, 19)}${label.length > 19 ? "…" : ""}`];
+}
+
 const player = document.querySelector("[data-trace]");
 if (player) {
   fetch(player.dataset.trace)

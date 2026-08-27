@@ -15,25 +15,19 @@
 </header>
 {{end}}
 
-{{define "tree"}}
-<li>
-  {{if .Children}}
-  <details open>
-    <summary>{{nodeTitle .}}</summary>
-    <ul>{{range .Children}}{{template "tree" .}}{{end}}</ul>
-  </details>
-  {{else}}
-  <a href="/cards/{{.Card}}">{{nodeTitle .}}</a>
-  {{end}}
-</li>
-{{end}}
-
 {{define "sidebar"}}
 <aside class="sidebar">
-  <p class="eyebrow">知识地图</p>
-  <nav aria-label="知识树">
-    <ul class="tree">{{range .Roots}}{{template "tree" .}}{{end}}</ul>
+  <div class="tree-heading">
+    <p class="eyebrow">知识树</p>
+    <span>点击节点定位卡片</span>
+  </div>
+  <nav class="tree-switch" aria-label="切换知识树" role="tablist">
+    {{range .TreeOptions}}<button type="button" role="tab" data-tree-switch data-tree-id="{{.ID}}" aria-selected="{{if eq $.TreeID .ID}}true{{else}}false{{end}}">{{.Title}}</button>{{end}}
   </nav>
+  <div class="tree-canvas-wrap">
+    <svg class="tree-canvas" data-tree-canvas data-tree-id="{{.TreeID}}" data-active-id="{{.ActiveCardID}}" role="img" aria-label="可交互知识树画布"></svg>
+  </div>
+  <script id="tree-data" type="application/json">{{.TreeJSON}}</script>
 </aside>
 {{end}}
 
@@ -92,6 +86,7 @@
     <div class="card-top"><span class="{{tagClass .Card.Kind}}">{{.Card.Kind}}</span>{{range .Card.Tags}}<span class="plain-tag">{{.}}</span>{{end}}</div>
     <h1>{{.Card.Title}}</h1>
     <p class="article-summary">{{.Card.Summary}}</p>
+    {{if .TraceURL}}<a class="trace-link" href="{{.TraceURL}}">进入关键动画：逐帧查看模板如何执行 <span>→</span></a>{{end}}
     <div class="markdown">{{.Body}}</div>
     {{if .Related}}
     <section class="related">

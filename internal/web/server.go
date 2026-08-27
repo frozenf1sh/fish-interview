@@ -26,31 +26,51 @@ type Server struct {
 }
 
 type homeData struct {
+	navigationData
 	Title      string
 	Query      string
-	Roots      []content.TreeNode
 	Results    []content.Card
 	Signals    []signalCount
 	TotalCards int
 }
 
 type cardData struct {
-	Title   string
-	Card    content.Card
-	Body    template.HTML
-	Related []content.Card
-	Signals []content.ExamSignal
-	Roots   []content.TreeNode
+	navigationData
+	Title    string
+	Card     content.Card
+	Body     template.HTML
+	Related  []content.Card
+	Signals  []content.ExamSignal
+	TraceURL string
 }
 
 type labData struct {
+	navigationData
 	Title string
-	Roots []content.TreeNode
 }
 
 type signalCount struct {
 	Company string
 	Count   int
+}
+
+type navigationData struct {
+	TreeID       string
+	TreeOptions  []treeOption
+	TreeJSON     template.JS
+	ActiveCardID string
+}
+
+type treeOption struct {
+	ID    string `json:"id"`
+	Title string `json:"title"`
+}
+
+type treeViewNode struct {
+	ID       string         `json:"id"`
+	Title    string         `json:"title"`
+	Card     string         `json:"card,omitempty"`
+	Children []treeViewNode `json:"children,omitempty"`
 }
 
 func New(catalog content.Catalog) (*Server, error) {
@@ -92,7 +112,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) lab(w http.ResponseWriter, r *http.Request) {
-	s.render(w, "lab", labData{Title: "区间调度实验室 · Fish Interview", Roots: s.catalog.Roots})
+	nav := s.navigation("algorithms")
+	s.render(w, "lab", labData{navigationData: nav, Title: "区间调度实验室 · Fish Interview"})
 }
 
 func (s *Server) intervalTrace(w http.ResponseWriter, _ *http.Request) {
@@ -108,13 +129,14 @@ func (s *Server) intervalTrace(w http.ResponseWriter, _ *http.Request) {
 
 func (s *Server) home(w http.ResponseWriter, r *http.Request) {
 	query := strings.TrimSpace(r.URL.Query().Get("q"))
+	nav := s.navigation(r.URL.Query().Get("tree"))
 	data := homeData{
-		Title:      "Fish Interview · 知识地图",
-		Query:      query,
-		Roots:      s.catalog.Roots,
-		Results:    s.search(query),
-		Signals:    s.signalCounts(),
-		TotalCards: len(s.catalog.Cards),
+		navigationData: nav,
+		Title:          "Fish Interview · 知识地图",
+		Query:          query,
+		Results:        s.search(query),
+		Signals:        s.signalCounts(),
+		TotalCards:     len(s.catalog.Cards),
 	}
 	s.render(w, "home", data)
 }
@@ -137,14 +159,95 @@ func (s *Server) card(w http.ResponseWriter, r *http.Request) {
 			related = append(related, target)
 		}
 	}
+	requestedTree := r.URL.Query().Get("tree")
+	if requestedTree == "" {
+		requestedTree = s.rootForCard(card.ID)
+	}
+	nav := s.navigation(requestedTree)
+	nav.ActiveCardID = card.ID
 	s.render(w, "card", cardData{
-		Title:   card.Title + " · Fish Interview",
-		Card:    card,
-		Body:    template.HTML(body), // Generated from repository-owned Markdown.
-		Related: related,
-		Signals: card.ExamSignals,
-		Roots:   s.catalog.Roots,
+		navigationData: nav,
+		Title:          card.Title + " · Fish Interview",
+		Card:           card,
+		Body:           template.HTML(body), // Generated from repository-owned Markdown.
+		Related:        related,
+		Signals:        card.ExamSignals,
+		TraceURL:       traceURL(card.Trace),
 	})
+}
+
+func (s *Server) navigation(requestedID string) navigationData {
+	options := make([]treeOption, 0, len(s.catalog.Roots))
+	for _, root := range s.catalog.Roots {
+		options = append(options, treeOption{ID: root.ID, Title: s.nodeTitle(root)})
+	}
+	selected := requestedID
+	if !s.hasRoot(selected) && len(s.catalog.Roots) > 0 {
+		selected = s.catalog.Roots[0].ID
+	}
+	roots := make([]treeViewNode, 0, len(s.catalog.Roots))
+	for _, root := range s.catalog.Roots {
+		roots = append(roots, s.viewNode(root))
+	}
+	payload, _ := json.Marshal(struct {
+		Roots []treeViewNode `json:"roots"`
+	}{Roots: roots})
+	return navigationData{TreeID: selected, TreeOptions: options, TreeJSON: template.JS(payload)}
+}
+
+func (s *Server) viewNode(node content.TreeNode) treeViewNode {
+	children := make([]treeViewNode, 0, len(node.Children))
+	for _, child := range node.Children {
+		children = append(children, s.viewNode(child))
+	}
+	return treeViewNode{ID: node.ID, Title: s.nodeTitle(node), Card: node.Card, Children: children}
+}
+
+func (s *Server) nodeTitle(node content.TreeNode) string {
+	if node.Title != "" {
+		return node.Title
+	}
+	if card, ok := s.catalog.Find(node.Card); ok {
+		return card.Title
+	}
+	return node.ID
+}
+
+func (s *Server) hasRoot(id string) bool {
+	for _, root := range s.catalog.Roots {
+		if root.ID == id {
+			return true
+		}
+	}
+	return false
+}
+
+func (s *Server) rootForCard(cardID string) string {
+	for _, root := range s.catalog.Roots {
+		if treeContains(root, cardID) {
+			return root.ID
+		}
+	}
+	return ""
+}
+
+func treeContains(node content.TreeNode, id string) bool {
+	if node.ID == id || node.Card == id {
+		return true
+	}
+	for _, child := range node.Children {
+		if treeContains(child, id) {
+			return true
+		}
+	}
+	return false
+}
+
+func traceURL(name string) string {
+	if name == "interval-scheduling" {
+		return "/lab/interval-scheduling"
+	}
+	return ""
 }
 
 func (s *Server) render(w http.ResponseWriter, name string, data any) {

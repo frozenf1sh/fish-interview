@@ -10,7 +10,7 @@ import (
 )
 
 func main() {
-	addr := flag.String("addr", ":8080", "HTTP listen address")
+	addr := flag.String("addr", "0.0.0.0:8080", "HTTP listen address")
 	contentDir := flag.String("content", "content", "content directory")
 	flag.Parse()
 
