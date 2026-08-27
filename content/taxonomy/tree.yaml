@@ -162,6 +162,36 @@ roots:
               - id: algo.list.merge
                 card: algo.list.merge
                 title: 合并有序链表
+          - id: algo.patterns.tree
+            title: 树题
+            children:
+              - id: algo.tree.bst
+                card: algo.tree.bst
+                title: BST 范围与中序
+              - id: algo.tree.lca
+                card: algo.tree.lca
+                title: 最近公共祖先 LCA
+              - id: algo.tree.path-sum
+                card: algo.tree.path-sum
+                title: 根到叶路径
+              - id: algo.tree.dp
+                card: algo.tree.dp
+                title: 树形 DP
+          - id: algo.patterns.string
+            title: 字符串
+            children:
+              - id: algo.string.golang
+                card: algo.string.golang
+                title: Go 字符串处理
+              - id: algo.string.window
+                card: algo.string.window
+                title: 滑动窗口与计数
+              - id: algo.string.palindrome
+                card: algo.string.palindrome
+                title: 回文中心扩展
+              - id: algo.string.kmp
+                card: algo.string.kmp
+                title: KMP 前缀函数
           - id: algo.binary-search
             title: 二分答案
             children:
