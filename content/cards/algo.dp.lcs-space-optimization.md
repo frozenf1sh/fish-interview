@@ -6,6 +6,7 @@ summary: 逐行更新 LCS 表时，保存左上角旧值即可把 O(mn) 空间�
 parents: [algo.dp.lcs]
 tags: [dp, lcs, space-optimization]
 links: [algo.dp.lcs, algo.dp.space-optimization]
+trace: flow-lcs-space
 ---
 
 ## 例题

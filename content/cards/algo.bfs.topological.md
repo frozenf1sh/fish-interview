@@ -6,6 +6,7 @@ summary: 有向图中反复取入度为 0 的节点；处理完所有节点说�
 parents: [algo.patterns.bfs]
 tags: [bfs, graph, topological-sort]
 links: [algo.dfs.path-enumeration]
+trace: flow-bfs-topological
 ---
 
 ## 例题

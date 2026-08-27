@@ -6,6 +6,7 @@ summary: 每个回文由一个中心向两侧对称扩展；奇数和偶数长�
 parents: [algo.patterns.string]
 tags: [string, palindrome, two-pointers]
 links: []
+trace: flow-string-palindrome
 ---
 
 ## 例题

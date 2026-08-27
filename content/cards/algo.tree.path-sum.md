@@ -6,6 +6,7 @@ summary: 根到叶路径题把当前路径和或 path 作为递归状态；叶�
 parents: [algo.patterns.tree]
 tags: [tree, path, dfs]
 links: [algo.dfs.path-enumeration]
+trace: flow-tree-path-sum
 ---
 
 ## 例题

@@ -132,6 +132,9 @@ func (c Catalog) Validate() error {
 		if err := validateNode(root, c.Cards, nodeIDs); err != nil {
 			return err
 		}
+		if err := validatePatternTraces(root, c.Cards, root.ID == "algo.patterns"); err != nil {
+			return err
+		}
 	}
 	for id, card := range c.Cards {
 		if card.ID == "" || card.Kind == "" || card.Title == "" || card.Summary == "" {
@@ -154,6 +157,19 @@ func (c Catalog) Validate() error {
 			if signal.Company == "" || signal.Year == 0 || signal.Role == "" || signal.Confidence == "" || signal.Source == "" {
 				return fmt.Errorf("card %q has incomplete exam signal", id)
 			}
+		}
+	}
+	return nil
+}
+
+func validatePatternTraces(node TreeNode, cards map[string]Card, underPatterns bool) error {
+	underPatterns = underPatterns || node.ID == "algo.patterns"
+	if underPatterns && node.Card != "" && cards[node.Card].Trace == "" {
+		return fmt.Errorf("algorithm pattern card %q misses trace", node.Card)
+	}
+	for _, child := range node.Children {
+		if err := validatePatternTraces(child, cards, underPatterns); err != nil {
+			return err
 		}
 	}
 	return nil

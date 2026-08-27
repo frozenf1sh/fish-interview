@@ -6,6 +6,7 @@ summary: 当每一步要从一组剩余候选中选一个时，用 for 循环枚
 parents: [algo.patterns.backtracking]
 tags: [backtracking, permutation, combination]
 links: [algo.backtracking.choose-skip, algo.math.permutation, algo.math.combination]
+trace: flow-backtracking-enumeration
 ---
 
 ## 排列、组合、子集的分界

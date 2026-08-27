@@ -6,6 +6,7 @@ summary: 二叉搜索树满足左子树小于根、右子树大于根；中序�
 parents: [algo.patterns.tree]
 tags: [tree, bst, inorder]
 links: [algo.tree.traversal]
+trace: flow-tree-bst
 ---
 
 ## 例题

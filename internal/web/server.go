@@ -143,6 +143,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.reversePathTrace(w, r)
 	case r.URL.Path == "/api/traces/binary-red-blue":
 		s.binaryRedBlueTrace(w, r)
+	case strings.HasPrefix(r.URL.Path, "/api/traces/flow-"):
+		s.flowTrace(w, r)
 	case r.URL.Path == "/static/app.css":
 		s.static(w, r, "static/app.css", "text/css; charset=utf-8")
 	case r.URL.Path == "/static/app.js":
@@ -221,6 +223,17 @@ func (s *Server) reversePathTrace(w http.ResponseWriter, _ *http.Request) {
 func (s *Server) binaryRedBlueTrace(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	_ = json.NewEncoder(w).Encode(trace.BinaryRedBluePartition())
+}
+
+func (s *Server) flowTrace(w http.ResponseWriter, r *http.Request) {
+	name := strings.TrimPrefix(r.URL.Path, "/api/traces/")
+	result, ok := trace.FlowTrace(name)
+	if !ok {
+		http.NotFound(w, r)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	_ = json.NewEncoder(w).Encode(result)
 }
 
 func (s *Server) home(w http.ResponseWriter, r *http.Request) {
@@ -387,6 +400,9 @@ func traceURL(name string) string {
 		return "/api/traces/reverse-path-dp"
 	case "binary-red-blue":
 		return "/api/traces/binary-red-blue"
+	}
+	if strings.HasPrefix(name, "flow-") {
+		return "/api/traces/" + name
 	}
 	return ""
 }

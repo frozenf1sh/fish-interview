@@ -6,6 +6,7 @@ summary: 扫描数组时维护当前最远可达位置；只要当前位置未�
 parents: [algo.patterns.greedy]
 tags: [greedy, array, reachability]
 links: [algo.greedy.interval-scheduling]
+trace: flow-greedy-reachability
 ---
 
 ## 例题

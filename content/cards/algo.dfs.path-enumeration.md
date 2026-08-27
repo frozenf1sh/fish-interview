@@ -6,6 +6,7 @@ summary: 当题目要求所有路径或存在性时，维护当前 path；进入
 parents: [algo.patterns.dfs]
 tags: [dfs, graph, path]
 links: [algo.backtracking.choose-skip]
+trace: flow-dfs-path
 ---
 
 ## 例题

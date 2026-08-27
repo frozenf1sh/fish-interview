@@ -6,6 +6,7 @@ summary: 递归函数先定义“当前节点要返回什么”，再决定在�
 parents: [algo.patterns.dfs]
 tags: [dfs, tree, recursion]
 links: [algo.tree.traversal]
+trace: flow-dfs-tree
 ---
 
 ## 例题

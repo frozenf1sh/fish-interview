@@ -6,6 +6,7 @@ summary: byte 适合 ASCII 下标访问，rune 适合 Unicode 字符；频繁拼
 parents: [algo.patterns.string]
 tags: [string, golang, unicode]
 links: [algo.string.window]
+trace: flow-string-golang
 ---
 
 ## 先判断题目字符集

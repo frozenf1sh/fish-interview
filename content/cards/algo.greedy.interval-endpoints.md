@@ -6,6 +6,7 @@ summary: 最大兼容数量按结束时间早的优先；最少箭数或最少�
 parents: [algo.patterns.greedy]
 tags: [greedy, interval, sorting]
 links: [algo.greedy.interval-scheduling]
+trace: flow-greedy-interval-endpoints
 ---
 
 ## 两类题先分清目标

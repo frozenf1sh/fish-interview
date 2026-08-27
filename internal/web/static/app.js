@@ -384,6 +384,7 @@ function renderTraceBoard(board, kind, state) {
   if (kind === "dp-table") return renderDPTable(board, state);
   if (kind === "dp-grid") return renderDPGrid(board, state);
   if (kind === "rolling-dependency") return renderRollingDependency(board, state);
+  if (kind === "flow-steps") return renderFlowSteps(board, state);
   if (kind === "bitmask-state") return renderBitmaskState(board, state);
   if (kind === "linked-list") return renderLinkedList(board, state);
   if (kind === "binary-red-blue") return renderRedBlue(board, state);
@@ -455,6 +456,32 @@ function renderRollingDependency(board, state) {
   board.replaceChildren(heading, cells);
 }
 
+function renderFlowSteps(board, state) {
+  board.className = "trace-board trace-board--flow";
+  const heading = document.createElement("p");
+  heading.className = "trace-board-label";
+  heading.textContent = "绿色为已完成步骤，橙色为当前步骤";
+  const steps = document.createElement("div");
+  steps.className = "flow-steps";
+  state.steps.forEach((label, index) => {
+    const item = document.createElement("div");
+    item.className = `flow-step${index < state.current ? " is-done" : ""}${index === state.current ? " is-current" : ""}`;
+    const number = document.createElement("small");
+    number.textContent = String(index + 1);
+    const text = document.createElement("strong");
+    text.textContent = label;
+    item.append(number, text);
+    steps.append(item);
+    if (index < state.steps.length - 1) {
+      const arrow = document.createElement("span");
+      arrow.className = "flow-arrow";
+      arrow.textContent = "→";
+      steps.append(arrow);
+    }
+  });
+  board.replaceChildren(heading, steps);
+}
+
 function renderDPGrid(board, state) {
   board.className = "trace-board trace-board--grid";
   const heading = document.createElement("p");
@@ -519,7 +546,9 @@ function renderLinkedList(board, state) {
     const node = document.createElement("div");
     const labels = Object.entries(state.pointers || {}).filter(([, target]) => target === value).map(([name]) => name);
     node.className = `linked-node${value === "D" ? " is-dummy" : ""}${detached ? " is-detached" : ""}${labels.length ? " is-pointed" : ""}`;
-    node.textContent = value === "D" ? "dummy" : value;
+    const nodeValue = document.createElement("strong");
+    nodeValue.textContent = value === "D" ? "dummy" : value;
+    node.append(nodeValue);
     if (labels.length) {
       const pointer = document.createElement("small");
       pointer.textContent = labels.join(" · ");

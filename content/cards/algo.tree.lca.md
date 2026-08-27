@@ -6,6 +6,7 @@ summary: 在普通二叉树中，递归返回“子树是否找到目标”；�
 parents: [algo.patterns.tree]
 tags: [tree, lca, dfs]
 links: [algo.dfs.tree]
+trace: flow-tree-lca
 ---
 
 ## 例题

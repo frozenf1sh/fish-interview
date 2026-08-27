@@ -6,6 +6,7 @@ summary: 边权相同或都为 1 时，队列按距离层扩展；节点第一�
 parents: [algo.patterns.bfs]
 tags: [bfs, graph, shortest-path]
 links: [algo.bfs.multi-source]
+trace: flow-bfs-shortest-path
 ---
 
 ## 例题

@@ -6,6 +6,7 @@ summary: next/pi[j] 记录模式串前缀与后缀的最长相等长度；失配
 parents: [algo.patterns.string]
 tags: [string, kmp, pattern-matching]
 links: []
+trace: flow-string-kmp
 ---
 
 ## 例题

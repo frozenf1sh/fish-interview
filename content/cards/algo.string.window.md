@@ -6,6 +6,7 @@ summary: 窗口右端扩张以覆盖条件，左端收缩以恢复条件；用�
 parents: [algo.patterns.string]
 tags: [string, sliding-window, hashmap]
 links: [algo.string.golang]
+trace: flow-string-window
 ---
 
 ## 例题

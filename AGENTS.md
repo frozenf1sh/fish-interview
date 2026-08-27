@@ -48,7 +48,7 @@ git diff --check
 
 1. Add a card under `content/cards/` with frontmatter matching the documented schema.
 2. Add or verify its node in `content/taxonomy/tree.yaml`.
-3. Keep algorithm concepts under `algo.knowledge`; add runnable templates only under `algo.patterns`. Every `algorithm-pattern` needs a `trace` and a matching Go trace test.
+3. Keep algorithm concepts under `algo.knowledge`; add runnable templates only under `algo.patterns`. Every card beneath `algo.patterns` needs a `trace` and a matching Go trace test; use a state-level visualization when data structure state changes, and a flow trace only for template control flow.
 4. Start every algorithm pattern with `## 例题`; link its matching LeetCode problem when one exists, then give a minimal progressive example and precise Go comments. Do not add standalone instructions for watching its embedded animation.
 5. Make engineering nodes mechanism-first: a parent can explain a subsystem, while leaves explain one concrete concept and link to related cards by ID.
 6. Use card IDs for `links` and record `source`, `year`, `role`, and `confidence` for every exam signal.

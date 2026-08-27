@@ -24,7 +24,7 @@ func LinkedListRewireTrace() Trace {
 			"return dummy.Next",
 		},
 	}
-	result.Frames = append(result.Frames, linkedListFrame([]string{"D", "1", "2", "3", "4", "5"}, nil, map[string]string{"dummy": "D", "head": "1"}, 0, "dummy 指向原 head：即使翻转从第一个节点开始，返回头也不需要特判。"))
+	result.Frames = append(result.Frames, linkedListFrame([]string{"D", "1", "2", "3", "4", "5"}, nil, map[string]string{"head": "1"}, 0, "dummy 指向原 head：即使翻转从第一个节点开始，返回头也不需要特判。"))
 	result.Frames = append(result.Frames, linkedListFrame([]string{"D", "1", "2", "3", "4", "5"}, nil, map[string]string{"pre": "1", "cur": "2"}, 2, "left=2，因此 pre 停在节点 1，cur 是翻转段当前头节点 2。"))
 	result.Frames = append(result.Frames, linkedListFrame([]string{"D", "1", "2", "4", "5"}, []string{"3"}, map[string]string{"pre": "1", "cur": "2", "next": "3"}, 5, "先断开 3：2 的 next 改为 4，3 暂时脱离主链。"))
 	result.Frames = append(result.Frames, linkedListFrame([]string{"D", "1", "3", "2", "4", "5"}, nil, map[string]string{"pre": "1", "cur": "2"}, 7, "把 3 头插到 pre 后：局部顺序从 2→3 变为 3→2。"))

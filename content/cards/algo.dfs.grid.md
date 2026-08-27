@@ -6,6 +6,7 @@ summary: 把网格坐标当作图节点；DFS 负责访问一个连通块，外�
 parents: [algo.patterns.dfs]
 tags: [dfs, grid, flood-fill]
 links: [algo.bfs.multi-source]
+trace: flow-dfs-grid
 ---
 
 ## 例题

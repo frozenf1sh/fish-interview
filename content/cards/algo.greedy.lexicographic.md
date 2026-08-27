@@ -6,6 +6,7 @@ summary: 当每个元素只能保留一次且希望字典序最小，遇到更�
 parents: [algo.patterns.greedy]
 tags: [greedy, monotonic-stack, string]
 links: []
+trace: flow-greedy-lexicographic
 ---
 
 ## 例题

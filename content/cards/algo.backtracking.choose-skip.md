@@ -6,6 +6,7 @@ summary: 每个位置只有“选/不选”两种独立决策时，用 index 沿
 parents: [algo.patterns.backtracking]
 tags: [backtracking, subset, recursion]
 links: [algo.backtracking.enumeration]
+trace: flow-backtracking-choose-skip
 ---
 
 ## 例题

@@ -6,6 +6,7 @@ summary: 树形 DP 从叶子向根后序计算；状态描述“选当前节点/
 parents: [algo.patterns.tree]
 tags: [tree, dp, postorder]
 links: [algo.dfs.tree, algo.dp.modeling]
+trace: flow-tree-dp
 ---
 
 ## 例题

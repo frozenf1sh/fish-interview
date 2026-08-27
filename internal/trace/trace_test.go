@@ -37,6 +37,20 @@ func TestLinkedListRewireTrace(t *testing.T) {
 	}
 }
 
+func TestFlowTraceHasReplayableSteps(t *testing.T) {
+	got, ok := FlowTrace("flow-bfs-shortest-path")
+	if !ok || got.Kind != "flow-steps" || len(got.Frames) != 4 {
+		t.Fatalf("unexpected flow trace: %#v, ok=%v", got, ok)
+	}
+	state, ok := got.Frames[1].State.(flowState)
+	if !ok || state.Current != 1 || len(state.Steps) != 4 {
+		t.Fatalf("unexpected flow state: %#v", got.Frames[1].State)
+	}
+	if _, ok := FlowTrace("flow-not-found"); ok {
+		t.Fatal("unknown flow trace should not resolve")
+	}
+}
+
 func TestBinaryRedBlueTrace(t *testing.T) {
 	got := BinaryRedBluePartition()
 	last := got.Frames[len(got.Frames)-1]

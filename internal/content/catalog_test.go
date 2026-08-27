@@ -34,6 +34,26 @@ func TestAlgorithmPatternsStartWithLinkedExample(t *testing.T) {
 	}
 }
 
+func TestAlgorithmPatternTreeCardsHaveTraces(t *testing.T) {
+	catalog, err := Load(filepath.Join("..", "..", "content"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var check func(TreeNode, bool)
+	check = func(node TreeNode, underPatterns bool) {
+		underPatterns = underPatterns || node.ID == "algo.patterns"
+		if underPatterns && node.Card != "" && catalog.Cards[node.Card].Trace == "" {
+			t.Fatalf("pattern tree card %q misses trace", node.Card)
+		}
+		for _, child := range node.Children {
+			check(child, underPatterns)
+		}
+	}
+	for _, root := range catalog.Roots {
+		check(root, false)
+	}
+}
+
 func TestParseCardRejectsMissingFrontmatter(t *testing.T) {
 	if _, _, err := parseCard([]byte("# no frontmatter")); err == nil {
 		t.Fatal("parseCard() error = nil, want error")

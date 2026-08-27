@@ -6,6 +6,7 @@ summary: fast 每次两步、slow 每次一步；它们的相对速度为 1，�
 parents: [algo.patterns.linked-list]
 tags: [linked-list, two-pointers, cycle]
 links: [algo.list.dummy-rewire]
+trace: flow-list-fast-slow
 ---
 
 ## 例题

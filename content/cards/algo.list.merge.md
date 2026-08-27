@@ -6,6 +6,7 @@ summary: 用 dummy 固定结果头，用 tail 只向后移动；每步接入两�
 parents: [algo.patterns.linked-list]
 tags: [linked-list, merge, dummy]
 links: [algo.list.dummy-rewire]
+trace: flow-list-merge
 ---
 
 ## 例题

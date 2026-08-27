@@ -6,6 +6,7 @@ summary: 多个起点同时入队，第一次到达某格的层数就是它到�
 parents: [algo.patterns.bfs]
 tags: [bfs, grid, multi-source]
 links: [algo.bfs.shortest-path]
+trace: flow-bfs-multi-source
 ---
 
 ## 例题
