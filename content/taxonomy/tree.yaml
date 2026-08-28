@@ -276,6 +276,8 @@ roots:
                 card: eng.kafka.consumer.pull-poll
               - id: eng.kafka.consumer.offset-commit
                 card: eng.kafka.consumer.offset-commit
+              - id: eng.kafka.consumer.commit-modes
+                card: eng.kafka.consumer.commit-modes
               - id: eng.kafka.consumer.processing-idempotence
                 card: eng.kafka.consumer.processing-idempotence
           - id: eng.kafka.group
@@ -287,8 +289,12 @@ roots:
                 card: eng.kafka.group.pubsub-queue
               - id: eng.kafka.group.coordinator-assignment
                 card: eng.kafka.group.coordinator-assignment
+              - id: eng.kafka.group.assignment-strategies
+                card: eng.kafka.group.assignment-strategies
               - id: eng.kafka.rebalance
                 card: eng.kafka.rebalance
+              - id: eng.kafka.group.rebalance-lifecycle
+                card: eng.kafka.group.rebalance-lifecycle
               - id: eng.kafka.group.heartbeat-poll
                 card: eng.kafka.group.heartbeat-poll
           - id: eng.kafka.semantics

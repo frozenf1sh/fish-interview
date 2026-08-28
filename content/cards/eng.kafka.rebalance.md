@@ -5,7 +5,7 @@ title: Kafka Rebalance：重新交接 Partition 归属
 summary: Consumer Group 成员、订阅或 Partition 发生变化时，协调器会重新计算分配；交接期间可能暂停消费并重放未提交处理。
 parents: [eng.kafka.group]
 tags: [kafka, rebalance, coordination]
-links: [eng.kafka.consumer-group, eng.kafka.group.coordinator-assignment, eng.kafka.group.heartbeat-poll, eng.kafka.consumer.offset-commit]
+links: [eng.kafka.consumer-group, eng.kafka.group.coordinator-assignment, eng.kafka.group.assignment-strategies, eng.kafka.group.rebalance-lifecycle, eng.kafka.group.heartbeat-poll, eng.kafka.consumer.offset-commit]
 ---
 
 ## 什么时候发生
@@ -18,6 +18,8 @@ Consumer 加入、退出、崩溃、订阅变化以及 Topic Partition 数变化
 ```
 
 不同协议的暂停范围不同，但应用都应假定 Partition 可能暂时不可消费，且交接前没有妥善提交的处理可能被重新执行。
+
+不要把所有版本的 Rebalance 都理解成完全相同的全组停顿：经典协议与增量/合作式协议在交接范围和时序上存在差异。通用生命周期见 [[eng.kafka.group.rebalance-lifecycle]]，具体 Assignment 策略的取舍见 [[eng.kafka.group.assignment-strategies]]。
 
 ## 为什么会频繁发生
 

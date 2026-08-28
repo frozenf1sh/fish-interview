@@ -5,7 +5,7 @@ title: Kafka Offset Commit：提交的是下一次读取位置
 summary: Consumer Commit 记录某个 Group 在某个 Partition 的恢复位置；它不是对业务数据库写入的自动确认。
 parents: [eng.kafka.consumer]
 tags: [kafka, consumer, offset, commit]
-links: [eng.kafka.offset-retention, eng.kafka.consumer.processing-idempotence, eng.kafka.consumer-group, eng.kafka.rebalance]
+links: [eng.kafka.offset-retention, eng.kafka.consumer.commit-modes, eng.kafka.consumer.processing-idempotence, eng.kafka.consumer-group, eng.kafka.rebalance]
 ---
 
 ## 位置与状态
@@ -27,5 +27,7 @@ fetch 10 → process 10 → commit 11
 - 自动提交：减少样板代码，但提交时机可能与业务副作用脱节。
 
 Kafka 只知道位点提交到哪里，不知道数据库写入、RPC 或文件操作是否成功；这些边界见 [[eng.kafka.consumer.processing-idempotence]]。
+
+自动、同步与异步提交的等待和失败语义，见 [[eng.kafka.consumer.commit-modes]]；分区交接时提交旧归属，还要结合 [[eng.kafka.group.rebalance-lifecycle]]。
 
 面试追问“提交 Offset 是提交当前消息还是下一条消息”时，应回答：通常提交下一次要读取的位置；具体 API 以客户端的 offset 约定为准。

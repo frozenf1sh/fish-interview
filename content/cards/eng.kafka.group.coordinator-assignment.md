@@ -5,7 +5,7 @@ title: Kafka Group Coordinator 与 Partition Assignment
 summary: Group Coordinator 负责维护组状态，客户端参与加入、同步和分区分配，使每个 Partition 在组内有唯一 owner。
 parents: [eng.kafka.group]
 tags: [kafka, consumer-group, coordinator, assignment]
-links: [eng.kafka.consumer-group, eng.kafka.rebalance, eng.kafka.group.heartbeat-poll]
+links: [eng.kafka.consumer-group, eng.kafka.group.assignment-strategies, eng.kafka.rebalance, eng.kafka.group.rebalance-lifecycle, eng.kafka.group.heartbeat-poll]
 ---
 
 ## 协调过程
@@ -30,3 +30,5 @@ Group Coordinator
 | 变化后果 | Metadata 刷新和重试 | Rebalance、分区交接和位点恢复 |
 
 Group Coordinator 负责组状态和协调，不是一个把所有消息转发给 Consumer 的中心 Router。
+
+Assignment 策略的均衡与迁移取舍见 [[eng.kafka.group.assignment-strategies]]；加入、撤销、重新分配和恢复的时序见 [[eng.kafka.group.rebalance-lifecycle]]。
