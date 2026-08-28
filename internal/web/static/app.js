@@ -298,10 +298,41 @@ function initTracePlayers(scope = document) {
   scope?.querySelectorAll("[data-trace]").forEach((player) => {
     if (player.dataset.initialized) return;
     player.dataset.initialized = "true";
-    fetch(player.dataset.trace)
-      .then((response) => response.json())
-      .then((trace) => createTracePlayer(player, trace))
-      .catch(() => { player.querySelector("[data-narration]").textContent = "无法加载执行轨迹。"; });
+    loadTracePlayer(player, 0);
+  });
+}
+
+async function loadTracePlayer(player, attempt) {
+  try {
+    const response = await fetch(player.dataset.trace, { cache: "no-store" });
+    if (!response.ok) throw new Error(`trace request failed: ${response.status}`);
+    const trace = await response.json();
+    validateTracePayload(trace);
+    createTracePlayer(player, trace);
+  } catch (error) {
+    if (attempt === 0) {
+      window.setTimeout(() => loadTracePlayer(player, 1), 120);
+      return;
+    }
+    player.dataset.initialized = "";
+    player.querySelector("[data-narration]").textContent = "无法加载执行轨迹；点击此处重试。";
+    player.querySelector("[data-narration]").onclick = () => {
+      player.dataset.initialized = "true";
+      player.querySelector("[data-narration]").onclick = null;
+      player.querySelector("[data-narration]").textContent = "正在加载执行轨迹…";
+      loadTracePlayer(player, 0);
+    };
+  }
+}
+
+function validateTracePayload(trace) {
+  if (!trace || !Array.isArray(trace.pseudocode) || trace.pseudocode.length === 0 || !Array.isArray(trace.frames) || trace.frames.length === 0) {
+    throw new Error("trace has no renderable frames");
+  }
+  trace.frames.forEach((frame, index) => {
+    if (!frame || frame.state == null || typeof frame.narration !== "string" || !frame.variables || !Number.isInteger(frame.activeLine) || frame.activeLine < 0 || frame.activeLine >= trace.pseudocode.length) {
+      throw new Error(`trace frame ${index} violates player contract`);
+    }
   });
 }
 
@@ -385,12 +416,94 @@ function renderTraceBoard(board, kind, state) {
   if (kind === "dp-grid") return renderDPGrid(board, state);
   if (kind === "rolling-dependency") return renderRollingDependency(board, state);
   if (kind === "flow-steps") return renderFlowSteps(board, state);
+  if (kind === "example-state") return renderExampleState(board, state);
+  if (kind === "matrix-state") return renderMatrixState(board, state);
+  if (kind === "node-link-state") return renderNodeLinkState(board, state);
   if (kind === "sequence-tails") return renderSequenceTails(board, state);
   if (kind === "row-gravity") return renderRowGravity(board, state);
   if (kind === "bitmask-state") return renderBitmaskState(board, state);
   if (kind === "linked-list") return renderLinkedList(board, state);
   if (kind === "binary-red-blue") return renderRedBlue(board, state);
   return renderIntervals(board, state);
+}
+
+function renderExampleState(board, state) {
+  board.className = "trace-board trace-board--example";
+  const heading = document.createElement("p");
+  heading.className = "trace-board-label";
+  heading.textContent = state.caption;
+  const lanes = document.createElement("div");
+  lanes.className = "example-lanes";
+  state.lanes.forEach((lane) => {
+    const row = document.createElement("div");
+    row.className = "example-lane";
+    const label = document.createElement("small");
+    label.textContent = lane.label;
+    const tokens = document.createElement("div");
+    tokens.className = "example-tokens";
+    lane.items.forEach((token) => {
+      const item = document.createElement("span");
+      item.className = `example-token is-${token.state || "ready"}`;
+      item.textContent = token.label;
+      tokens.append(item);
+    });
+    row.append(label, tokens);
+    lanes.append(row);
+  });
+  board.replaceChildren(heading, lanes);
+}
+
+function renderMatrixState(board, state) {
+  board.className = "trace-board trace-board--matrix";
+  const heading = document.createElement("p");
+  heading.className = "trace-board-label";
+  heading.textContent = state.caption;
+  const grid = document.createElement("div");
+  grid.className = "matrix-grid";
+  grid.style.gridTemplateColumns = `repeat(${state.columns}, minmax(40px, 1fr))`;
+  const byPosition = new Map(state.cells.map((cell) => [`${cell.row}:${cell.column}`, cell]));
+  for (let row = 0; row < state.rows; row++) {
+    for (let column = 0; column < state.columns; column++) {
+      const cell = byPosition.get(`${row}:${column}`) || { label: "", state: "pending" };
+      const item = document.createElement("div");
+      item.className = `matrix-cell is-${cell.state || "pending"}`;
+      item.textContent = cell.label;
+      grid.append(item);
+    }
+  }
+  board.replaceChildren(heading, grid);
+}
+
+function renderNodeLinkState(board, state) {
+  board.className = "trace-board trace-board--node-link";
+  const heading = document.createElement("p");
+  heading.className = "trace-board-label";
+  heading.textContent = state.caption;
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("class", "node-link-canvas");
+  svg.setAttribute("viewBox", "0 0 360 190");
+  const nodesByID = new Map(state.nodes.map((node) => [node.id, node]));
+  state.links.forEach((link) => {
+    const from = nodesByID.get(link.from);
+    const to = nodesByID.get(link.to);
+    if (!from || !to) return;
+    const line = document.createElementNS(svg.namespaceURI, "line");
+    line.setAttribute("x1", String(from.x)); line.setAttribute("y1", String(from.y));
+    line.setAttribute("x2", String(to.x)); line.setAttribute("y2", String(to.y));
+    line.setAttribute("class", "node-link-edge");
+    svg.append(line);
+  });
+  state.nodes.forEach((node) => {
+    const group = document.createElementNS(svg.namespaceURI, "g");
+    group.setAttribute("class", `node-link-node is-${node.state || "ready"}`);
+    const circle = document.createElementNS(svg.namespaceURI, "circle");
+    circle.setAttribute("cx", String(node.x)); circle.setAttribute("cy", String(node.y)); circle.setAttribute("r", "21");
+    const text = document.createElementNS(svg.namespaceURI, "text");
+    text.setAttribute("x", String(node.x)); text.setAttribute("y", String(node.y + 4)); text.setAttribute("text-anchor", "middle");
+    text.textContent = node.label;
+    group.append(circle, text); svg.append(group);
+  });
+  board.replaceChildren(heading, svg);
 }
 
 function renderSequenceTails(board, state) {
@@ -411,9 +524,9 @@ function renderSequenceTails(board, state) {
   tailsLabel.textContent = "tails";
   const tails = document.createElement("div");
   tails.className = "sequence-tails";
-  state.tails.forEach((value, index) => {
+  (state.tails || []).forEach((value, index) => {
     const item = document.createElement("div");
-    item.className = "sequence-tail";
+    item.className = `sequence-tail is-${state.tailStates?.[index] || "ready"}`;
     item.textContent = `长度 ${index + 1}: ${value}`;
     tails.append(item);
   });
@@ -581,6 +694,7 @@ function renderBitmaskState(board, state) {
 }
 
 function renderLinkedList(board, state) {
+  const previousPositions = new Map([...board.querySelectorAll("[data-list-value]")].map((node) => [node.dataset.listValue, node.getBoundingClientRect()]));
   board.className = "trace-board trace-board--linked-list";
   const heading = document.createElement("p");
   heading.className = "trace-board-label";
@@ -590,7 +704,9 @@ function renderLinkedList(board, state) {
   const renderNode = (value, detached = false) => {
     const node = document.createElement("div");
     const labels = Object.entries(state.pointers || {}).filter(([, target]) => target === value).map(([name]) => name);
-    node.className = `linked-node${value === "D" ? " is-dummy" : ""}${detached ? " is-detached" : ""}${labels.length ? " is-pointed" : ""}`;
+    const highlighted = state.highlight?.includes(value);
+    node.className = `linked-node${value === "D" ? " is-dummy" : ""}${detached ? " is-detached" : ""}${labels.length ? " is-pointed" : ""}${highlighted ? " is-active" : ""}${!highlighted && !detached ? " is-stable" : ""}`;
+    node.dataset.listValue = value;
     const nodeValue = document.createElement("strong");
     nodeValue.textContent = value === "D" ? "dummy" : value;
     node.append(nodeValue);
@@ -616,9 +732,24 @@ function renderLinkedList(board, state) {
     detached.append(document.createTextNode("暂离主链："));
     state.detached.forEach((value) => detached.append(renderNode(value, true)));
     board.replaceChildren(heading, chain, detached);
-    return;
+  } else {
+    board.replaceChildren(heading, chain);
   }
-  board.replaceChildren(heading, chain);
+  board.querySelectorAll("[data-list-value]").forEach((node) => {
+    const before = previousPositions.get(node.dataset.listValue);
+    if (!before) return;
+    const after = node.getBoundingClientRect();
+    const deltaX = before.left - after.left;
+    const deltaY = before.top - after.top;
+    if (deltaX === 0 && deltaY === 0) return;
+    node.style.transition = "none";
+    node.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+    void node.offsetWidth;
+    requestAnimationFrame(() => {
+      node.style.transition = "transform 300ms ease";
+      node.style.transform = "";
+    });
+  });
 }
 
 function renderRedBlue(board, state) {

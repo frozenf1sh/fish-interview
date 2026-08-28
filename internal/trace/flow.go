@@ -12,8 +12,11 @@ type flowState struct {
 	Current int      `json:"current"`
 }
 
-// FlowTrace is a lightweight visual replay for template-oriented algorithm cards.
+// FlowTrace keeps the stable trace names used by cards while returning concrete example replays.
 func FlowTrace(name string) (Trace, bool) {
+	if result, ok := concreteFlowTrace(name); ok {
+		return result, true
+	}
 	spec, ok := flowSpecs[name]
 	if !ok {
 		return Trace{}, false

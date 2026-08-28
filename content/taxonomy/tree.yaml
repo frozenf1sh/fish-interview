@@ -81,6 +81,21 @@ roots:
               - id: algo.greedy.interval-endpoints
                 card: algo.greedy.interval-endpoints
                 title: 区间端点贪心
+              - id: algo.greedy.interval-start-merge
+                card: algo.greedy.interval-start-merge
+                title: 区间按开始时间合并
+              - id: algo.greedy.meeting-rooms
+                card: algo.greedy.meeting-rooms
+                title: 最少会议室
+              - id: algo.greedy.weighted-intervals
+                card: algo.greedy.weighted-intervals
+                title: 带权区间调度
+              - id: algo.sequence.lis
+                card: algo.sequence.lis
+                title: LIS：最小结尾贪心
+              - id: algo.greedy.kadane
+                card: algo.greedy.kadane
+                title: 最大子数组 Kadane
           - id: algo.patterns.dp
             title: 动态规划
             children:
@@ -192,12 +207,6 @@ roots:
               - id: algo.string.kmp
                 card: algo.string.kmp
                 title: KMP 前缀函数
-          - id: algo.patterns.sequence
-            title: 序列与二分
-            children:
-              - id: algo.sequence.lis
-                card: algo.sequence.lis
-                title: 最长递增子序列 LIS
           - id: algo.patterns.simulation
             title: 模拟
             children:

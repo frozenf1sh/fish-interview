@@ -3,10 +3,11 @@ package trace
 import "sort"
 
 type sequenceState struct {
-	Numbers []int  `json:"numbers"`
-	Current int    `json:"current"`
-	Tails   []int  `json:"tails"`
-	Action  string `json:"action"`
+	Numbers    []int    `json:"numbers"`
+	Current    int      `json:"current"`
+	Tails      []int    `json:"tails"`
+	TailStates []string `json:"tailStates"`
+	Action     string   `json:"action"`
 }
 
 // LISTrace shows how tails[length-1] keeps the smallest tail for each length.
@@ -25,32 +26,49 @@ func LISTrace() Trace {
 			"return len(tails)",
 		},
 	}
-	result.Frames = append(result.Frames, lisFrame(numbers, -1, nil, "长度为 0 的序列还没有结尾；tails 的下标加 1 就是长度。", 0))
+	result.Frames = append(result.Frames, lisFrame(numbers, -1, []int{}, []string{}, "长度为 0 的序列还没有结尾；tails 的下标加 1 就是长度。", 0))
 	tails := []int{}
 	for index, value := range numbers {
 		position := sort.SearchInts(tails, value)
+		beforeStates := stableTailStates(len(tails))
+		if position < len(beforeStates) {
+			beforeStates[position] = "dependency"
+		}
+		result.Frames = append(result.Frames, lisFrame(numbers, index, tails, beforeStates, "读入 x="+itoa(value)+"，二分定位第一个 >= x 的 tails 位置。蓝色结尾参与本次判断。", 2))
 		if position == len(tails) {
 			tails = append(tails, value)
-			result.Frames = append(result.Frames, lisFrame(numbers, index, tails, "x="+itoa(value)+" 大于所有已有结尾，新增一个更长的长度。", 3))
+			states := stableTailStates(len(tails))
+			states[len(states)-1] = "current"
+			result.Frames = append(result.Frames, lisFrame(numbers, index, tails, states, "x="+itoa(value)+" 大于所有已有结尾，新增长度 "+itoa(len(tails))+" 的最小结尾。", 3))
 			continue
 		}
 		old := tails[position]
 		tails[position] = value
-		result.Frames = append(result.Frames, lisFrame(numbers, index, tails, "x="+itoa(value)+" 替换长度 "+itoa(position+1)+" 的结尾 "+itoa(old)+"；长度不变，但更容易接后续数字。", 4))
+		states := stableTailStates(len(tails))
+		states[position] = "current"
+		result.Frames = append(result.Frames, lisFrame(numbers, index, tails, states, "把长度 "+itoa(position+1)+" 的结尾 "+itoa(old)+" 写成 "+itoa(value)+"。长度不变，但后续更容易接数字。", 4))
 	}
-	result.Frames = append(result.Frames, lisFrame(numbers, -1, tails, "tails 长度为 "+itoa(len(tails))+"，即最长严格递增子序列长度。", 6))
+	result.Frames = append(result.Frames, lisFrame(numbers, -1, tails, stableTailStates(len(tails)), "tails 长度为 "+itoa(len(tails))+"，即最长严格递增子序列长度。", 6))
 	return result
 }
 
-func lisFrame(numbers []int, current int, tails []int, action string, line int) Frame {
+func lisFrame(numbers []int, current int, tails []int, tailStates []string, action string, line int) Frame {
 	return Frame{
 		ActiveLine: line,
 		Narration:  action,
 		Variables: map[string]string{
 			"LIS 长度": itoa(len(tails)),
 		},
-		State: sequenceState{Numbers: append([]int(nil), numbers...), Current: current, Tails: append([]int(nil), tails...), Action: action},
+		State: sequenceState{Numbers: append(make([]int, 0, len(numbers)), numbers...), Current: current, Tails: append(make([]int, 0, len(tails)), tails...), TailStates: append(make([]string, 0, len(tailStates)), tailStates...), Action: action},
 	}
+}
+
+func stableTailStates(length int) []string {
+	states := make([]string, length)
+	for index := range states {
+		states[index] = "ready"
+	}
+	return states
 }
 
 type gravityState struct {
@@ -72,13 +90,19 @@ func RowGravityTrace() Trace {
 			"}",
 		},
 	}
-	cells := []string{"#", ".", "*", ".", "."}
-	result.Frames = append(result.Frames, gravityFrame(cells, -1, 4, 0, "从右端开始，write 指向当前无障碍区间最右的可落位置。"))
-	result.Frames = append(result.Frames, gravityFrame(cells, 4, 4, 1, "空格不占位置，继续向左扫描。"))
-	result.Frames = append(result.Frames, gravityFrame(cells, 2, 1, 2, "遇到固定块 *：它切断两侧，左侧区间的新 write 变为它左边一格。"))
-	result.Frames = append(result.Frames, gravityFrame(cells, 0, 1, 3, "遇到可下落块 #：移动到 write=1，随后 write 左移。"))
-	cells = []string{".", "#", "*", ".", "."}
-	result.Frames = append(result.Frames, gravityFrame(cells, -1, 0, 4, "这一行稳定为 . # * . .；逐行使用同一规则即可处理矩阵。"))
+	cells := []string{"#", ".", ".", "*", "#", "."}
+	result.Frames = append(result.Frames, gravityFrame(cells, -1, 5, 0, "从右端开始，write=5 指向右侧区间的最右可落位置。"))
+	result.Frames = append(result.Frames, gravityFrame(cells, 5, 5, 1, "读取 row[5]='.'：空位不写入，write 保持 5。"))
+	result.Frames = append(result.Frames, gravityFrame(cells, 4, 5, 3, "读取 row[4]='#'：先高亮当前块和蓝色落点 write=5。"))
+	cells = []string{"#", ".", ".", "*", ".", "#"}
+	result.Frames = append(result.Frames, gravityFrame(cells, 5, 4, 3, "执行交换：# 落到 5，原位置变为空位，write 左移到 4。"))
+	result.Frames = append(result.Frames, gravityFrame(cells, 3, 2, 2, "读取 row[3]='*'：障碍切断区间，左侧的 write 重置为 2。"))
+	result.Frames = append(result.Frames, gravityFrame(cells, 2, 2, 1, "读取 row[2]='.'：空位不写入，继续扫描。"))
+	result.Frames = append(result.Frames, gravityFrame(cells, 1, 2, 1, "读取 row[1]='.'：空位不写入，write 仍为 2。"))
+	result.Frames = append(result.Frames, gravityFrame(cells, 0, 2, 3, "读取 row[0]='#'：当前块将落到左侧区间的 write=2。"))
+	cells = []string{".", ".", "#", "*", ".", "#"}
+	result.Frames = append(result.Frames, gravityFrame(cells, 2, 1, 3, "执行交换并让 write 左移；右侧已稳定，不会再被改动。"))
+	result.Frames = append(result.Frames, gravityFrame(cells, -1, 1, 4, "这一行稳定为 . . # * . #；逐行使用同一规则即可处理矩阵。"))
 	return result
 }
 

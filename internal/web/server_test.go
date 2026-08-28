@@ -1,6 +1,7 @@
 package web
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
@@ -8,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/frozenf1sh/fish-interview/internal/content"
+	"github.com/frozenf1sh/fish-interview/internal/trace"
 )
 
 func newDemoServer(t *testing.T) *Server {
@@ -80,6 +82,7 @@ func TestPatternTraceEndpoints(t *testing.T) {
 		"/api/traces/stock-dp", "/api/traces/bitmask-dp", "/api/traces/linked-list-rewire", "/api/traces/path-dp", "/api/traces/reverse-path-dp", "/api/traces/binary-red-blue",
 		"/api/traces/flow-bfs-shortest-path", "/api/traces/flow-tree-dp", "/api/traces/flow-string-golang",
 		"/api/traces/lis", "/api/traces/row-gravity",
+		"/api/traces/interval-start-merge", "/api/traces/meeting-rooms", "/api/traces/weighted-intervals", "/api/traces/kadane",
 	} {
 		req := httptest.NewRequest(http.MethodGet, path, nil)
 		res := httptest.NewRecorder()
@@ -90,24 +93,50 @@ func TestPatternTraceEndpoints(t *testing.T) {
 	}
 }
 
+func TestEveryTraceEndpointMeetsPlayerContract(t *testing.T) {
+	server := newDemoServer(t)
+	for name := range trace.AllTraces() {
+		t.Run(name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, "/api/traces/"+name, nil)
+			res := httptest.NewRecorder()
+			server.ServeHTTP(res, req)
+			if res.Code != http.StatusOK {
+				t.Fatalf("trace response = %d: %s", res.Code, res.Body.String())
+			}
+
+			var playerTrace trace.Trace
+			if err := json.Unmarshal(res.Body.Bytes(), &playerTrace); err != nil {
+				t.Fatalf("decode trace response: %v", err)
+			}
+			if err := trace.ValidatePlayerContract(playerTrace); err != nil {
+				t.Fatalf("invalid trace response: %v", err)
+			}
+		})
+	}
+}
+
 func TestPatternCardsEmbedKnownTraces(t *testing.T) {
 	server := newDemoServer(t)
 	traces := map[string]string{
-		"algo.greedy.interval-scheduling": "/api/traces/interval-scheduling",
-		"algo.dp.linear":                  "/api/traces/linear-dp",
-		"algo.dp.lcs":                     "/api/traces/lcs-dp",
-		"algo.dp.interval":                "/api/traces/interval-dp",
-		"algo.dp.stock":                   "/api/traces/stock-dp",
-		"algo.dp.bitmask":                 "/api/traces/bitmask-dp",
-		"algo.list.dummy-rewire":          "/api/traces/linked-list-rewire",
-		"algo.dp.path":                    "/api/traces/path-dp",
-		"algo.dp.path.minimum-health":     "/api/traces/reverse-path-dp",
-		"algo.binary-search.answer":       "/api/traces/binary-red-blue",
-		"algo.bfs.shortest-path":          "/api/traces/flow-bfs-shortest-path",
-		"algo.tree.dp":                    "/api/traces/flow-tree-dp",
-		"algo.string.golang":              "/api/traces/flow-string-golang",
-		"algo.sequence.lis":               "/api/traces/lis",
-		"algo.simulation.gravity":         "/api/traces/row-gravity",
+		"algo.greedy.interval-scheduling":  "/api/traces/interval-scheduling",
+		"algo.dp.linear":                   "/api/traces/linear-dp",
+		"algo.dp.lcs":                      "/api/traces/lcs-dp",
+		"algo.dp.interval":                 "/api/traces/interval-dp",
+		"algo.dp.stock":                    "/api/traces/stock-dp",
+		"algo.dp.bitmask":                  "/api/traces/bitmask-dp",
+		"algo.list.dummy-rewire":           "/api/traces/linked-list-rewire",
+		"algo.dp.path":                     "/api/traces/path-dp",
+		"algo.dp.path.minimum-health":      "/api/traces/reverse-path-dp",
+		"algo.binary-search.answer":        "/api/traces/binary-red-blue",
+		"algo.bfs.shortest-path":           "/api/traces/flow-bfs-shortest-path",
+		"algo.tree.dp":                     "/api/traces/flow-tree-dp",
+		"algo.string.golang":               "/api/traces/flow-string-golang",
+		"algo.sequence.lis":                "/api/traces/lis",
+		"algo.simulation.gravity":          "/api/traces/row-gravity",
+		"algo.greedy.interval-start-merge": "/api/traces/interval-start-merge",
+		"algo.greedy.meeting-rooms":        "/api/traces/meeting-rooms",
+		"algo.greedy.weighted-intervals":   "/api/traces/weighted-intervals",
+		"algo.greedy.kadane":               "/api/traces/kadane",
 	}
 	for id, traceURL := range traces {
 		t.Run(id, func(t *testing.T) {

@@ -1,11 +1,11 @@
 ---
 id: algo.sequence.lis
 kind: algorithm-pattern
-title: 序列：最长递增子序列 LIS 的二分优化
+title: 贪心：最长递增子序列 LIS 的二分优化
 summary: 用 tails[len-1] 保存每个长度能达到的最小结尾；新数替换第一个不小于它的结尾，或延长一个长度。
-parents: [algo.patterns.sequence]
+parents: [algo.patterns.greedy]
 tags: [sequence, lis, binary-search, dp]
-links: [algo.binary-search.answer, algo.dp.linear]
+links: [algo.greedy.lexicographic, algo.binary-search.answer, algo.dp.linear]
 trace: lis
 exam_signals:
   - company: alibaba

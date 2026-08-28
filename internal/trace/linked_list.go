@@ -1,9 +1,10 @@
 package trace
 
 type linkedListState struct {
-	Chain    []string          `json:"chain"`
-	Detached []string          `json:"detached"`
-	Pointers map[string]string `json:"pointers"`
+	Chain     []string          `json:"chain"`
+	Detached  []string          `json:"detached"`
+	Pointers  map[string]string `json:"pointers"`
+	Highlight []string          `json:"highlight"`
 }
 
 // LinkedListRewireTrace demonstrates dummy-head based head insertion for reversing a sublist.
@@ -24,16 +25,22 @@ func LinkedListRewireTrace() Trace {
 			"return dummy.Next",
 		},
 	}
-	result.Frames = append(result.Frames, linkedListFrame([]string{"D", "1", "2", "3", "4", "5"}, nil, map[string]string{"head": "1"}, 0, "dummy 指向原 head：即使翻转从第一个节点开始，返回头也不需要特判。"))
-	result.Frames = append(result.Frames, linkedListFrame([]string{"D", "1", "2", "3", "4", "5"}, nil, map[string]string{"pre": "1", "cur": "2"}, 2, "left=2，因此 pre 停在节点 1，cur 是翻转段当前头节点 2。"))
-	result.Frames = append(result.Frames, linkedListFrame([]string{"D", "1", "2", "4", "5"}, []string{"3"}, map[string]string{"pre": "1", "cur": "2", "next": "3"}, 5, "先断开 3：2 的 next 改为 4，3 暂时脱离主链。"))
-	result.Frames = append(result.Frames, linkedListFrame([]string{"D", "1", "3", "2", "4", "5"}, nil, map[string]string{"pre": "1", "cur": "2"}, 7, "把 3 头插到 pre 后：局部顺序从 2→3 变为 3→2。"))
-	result.Frames = append(result.Frames, linkedListFrame([]string{"D", "1", "3", "2", "5"}, []string{"4"}, map[string]string{"pre": "1", "cur": "2", "next": "4"}, 5, "下一轮断开 4：cur 始终是翻转段尾部，不需要移动。"))
-	result.Frames = append(result.Frames, linkedListFrame([]string{"D", "1", "4", "3", "2", "5"}, nil, map[string]string{"pre": "1", "cur": "2"}, 7, "4 再头插，区间 [2,4] 完成反转。dummy.Next 仍是最终头。"))
-	result.Frames = append(result.Frames, linkedListFrame([]string{"D", "1", "4", "3", "2", "5"}, nil, map[string]string{"head": "1"}, 9, "返回 dummy.Next，得到 1→4→3→2→5。"))
+	result.Frames = append(result.Frames, linkedListFrame([]string{"D", "1", "2", "3", "4", "5"}, nil, map[string]string{"head": "1"}, []string{"D", "1"}, 0, "建立 dummy.Next=head。D 与 head 先高亮，返回头从这里统一取得。"))
+	result.Frames = append(result.Frames, linkedListFrame([]string{"D", "1", "2", "3", "4", "5"}, nil, map[string]string{"pre": "1", "cur": "2"}, []string{"1", "2"}, 2, "定位完成：pre=1 在翻转区间前，cur=2 是当前尾节点。"))
+	result.Frames = append(result.Frames, linkedListFrame([]string{"D", "1", "2", "3", "4", "5"}, nil, map[string]string{"pre": "1", "cur": "2"}, []string{"2", "3"}, 4, "读取 cur.Next：先高亮 2→3，下一步把 next 保存为节点 3。"))
+	result.Frames = append(result.Frames, linkedListFrame([]string{"D", "1", "2", "3", "4", "5"}, nil, map[string]string{"pre": "1", "cur": "2", "next": "3"}, []string{"3"}, 4, "next=3 已保存；后续可以修改 2 的 Next 而不丢失节点 3。"))
+	result.Frames = append(result.Frames, linkedListFrame([]string{"D", "1", "2", "4", "5"}, []string{"3"}, map[string]string{"pre": "1", "cur": "2", "next": "3"}, []string{"2", "3", "4"}, 5, "执行 cur.Next=next.Next：2 直接连到 4，3 暂时脱离主链。"))
+	result.Frames = append(result.Frames, linkedListFrame([]string{"D", "1", "2", "4", "5"}, []string{"3"}, map[string]string{"pre": "1", "cur": "2", "next": "3"}, []string{"1", "2", "3"}, 6, "执行 next.Next=pre.Next：脱离的 3 先指向原翻转段头 2。"))
+	result.Frames = append(result.Frames, linkedListFrame([]string{"D", "1", "3", "2", "4", "5"}, nil, map[string]string{"pre": "1", "cur": "2"}, []string{"1", "3"}, 7, "执行 pre.Next=next：3 插到 1 后，第一轮头插完成。"))
+	result.Frames = append(result.Frames, linkedListFrame([]string{"D", "1", "3", "2", "4", "5"}, nil, map[string]string{"pre": "1", "cur": "2"}, []string{"2", "4"}, 4, "第二轮读取 cur.Next：cur 仍是 2，next 候选是 4。"))
+	result.Frames = append(result.Frames, linkedListFrame([]string{"D", "1", "3", "2", "4", "5"}, nil, map[string]string{"pre": "1", "cur": "2", "next": "4"}, []string{"4"}, 4, "next=4 已保存。"))
+	result.Frames = append(result.Frames, linkedListFrame([]string{"D", "1", "3", "2", "5"}, []string{"4"}, map[string]string{"pre": "1", "cur": "2", "next": "4"}, []string{"2", "4", "5"}, 5, "执行 cur.Next=next.Next：2 直接连到 5，4 脱离主链。"))
+	result.Frames = append(result.Frames, linkedListFrame([]string{"D", "1", "3", "2", "5"}, []string{"4"}, map[string]string{"pre": "1", "cur": "2", "next": "4"}, []string{"1", "3", "4"}, 6, "执行 next.Next=pre.Next：4 指向当前翻转段头 3。"))
+	result.Frames = append(result.Frames, linkedListFrame([]string{"D", "1", "4", "3", "2", "5"}, nil, map[string]string{"pre": "1", "cur": "2"}, []string{"1", "4"}, 7, "执行 pre.Next=next：4 插到 1 后，区间 [2,4] 已反转。"))
+	result.Frames = append(result.Frames, linkedListFrame([]string{"D", "1", "4", "3", "2", "5"}, nil, map[string]string{"head": "1"}, []string{"D", "1"}, 9, "返回 dummy.Next，得到 1→4→3→2→5。"))
 	return result
 }
 
-func linkedListFrame(chain, detached []string, pointers map[string]string, line int, narration string) Frame {
-	return Frame{ActiveLine: line, Narration: narration, Variables: map[string]string{"operation": "断开 → 头插 → 重连"}, State: linkedListState{Chain: chain, Detached: detached, Pointers: pointers}}
+func linkedListFrame(chain, detached []string, pointers map[string]string, highlight []string, line int, narration string) Frame {
+	return Frame{ActiveLine: line, Narration: narration, Variables: map[string]string{"operation": "保存 next → 断开 → 重连"}, State: linkedListState{Chain: chain, Detached: detached, Pointers: pointers, Highlight: highlight}}
 }

@@ -147,6 +147,14 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.lisTrace(w, r)
 	case r.URL.Path == "/api/traces/row-gravity":
 		s.rowGravityTrace(w, r)
+	case r.URL.Path == "/api/traces/interval-start-merge":
+		s.startSortedIntervalsTrace(w, r)
+	case r.URL.Path == "/api/traces/meeting-rooms":
+		s.meetingRoomsTrace(w, r)
+	case r.URL.Path == "/api/traces/weighted-intervals":
+		s.weightedIntervalsTrace(w, r)
+	case r.URL.Path == "/api/traces/kadane":
+		s.kadaneTrace(w, r)
 	case strings.HasPrefix(r.URL.Path, "/api/traces/flow-"):
 		s.flowTrace(w, r)
 	case r.URL.Path == "/static/app.css":
@@ -237,6 +245,26 @@ func (s *Server) lisTrace(w http.ResponseWriter, _ *http.Request) {
 func (s *Server) rowGravityTrace(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	_ = json.NewEncoder(w).Encode(trace.RowGravityTrace())
+}
+
+func (s *Server) startSortedIntervalsTrace(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	_ = json.NewEncoder(w).Encode(trace.StartSortedIntervalsTrace())
+}
+
+func (s *Server) meetingRoomsTrace(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	_ = json.NewEncoder(w).Encode(trace.MeetingRoomsTrace())
+}
+
+func (s *Server) weightedIntervalsTrace(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	_ = json.NewEncoder(w).Encode(trace.WeightedIntervalsTrace())
+}
+
+func (s *Server) kadaneTrace(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	_ = json.NewEncoder(w).Encode(trace.KadaneTrace())
 }
 
 func (s *Server) flowTrace(w http.ResponseWriter, r *http.Request) {
@@ -418,6 +446,14 @@ func traceURL(name string) string {
 		return "/api/traces/lis"
 	case "row-gravity":
 		return "/api/traces/row-gravity"
+	case "interval-start-merge":
+		return "/api/traces/interval-start-merge"
+	case "meeting-rooms":
+		return "/api/traces/meeting-rooms"
+	case "weighted-intervals":
+		return "/api/traces/weighted-intervals"
+	case "kadane":
+		return "/api/traces/kadane"
 	}
 	if strings.HasPrefix(name, "flow-") {
 		return "/api/traces/" + name

@@ -54,3 +54,5 @@ git diff --check
 6. Use card IDs for `links` and record `source`, `year`, `role`, and `confidence` for every exam signal.
 7. Run the content validator.
 8. Visible card code and trace pseudocode must use literal Go operators (`<`, `>`, `&&`), never HTML entities. Render dynamic pseudocode through DOM text nodes, and scan all user-visible source before committing.
+9. Every algorithm animation must replay one concrete card example. Split a mutation into the smallest meaningful reads, highlights, writes, and structural changes; green means stable state, blue means state read by the current step, orange means current input/write, and red is a rejected/conflicting state. A flow-only animation is not a substitute for an example-state animation.
+10. Before every content or trace commit, run `mise exec go@1.26 -- go run ./cmd/tracecheck`. It validates every HTTP-exposed trace before its first render and after JSON round-trip, then rejects HTML-escaped comparison operators in user-visible source. Add a trace-specific regression assertion for the final state and one important intermediate state.
