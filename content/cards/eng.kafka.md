@@ -1,44 +1,59 @@
 ---
 id: eng.kafka
 kind: engineering
-title: Kafka：从追加日志到消息生命周期
-summary: Kafka 先用 Partition 保存可重放的追加日志，再用 Producer、Replica、Consumer Group 和 Offset 把写入、复制与消费连接起来。
+title: Kafka：先看一条消息如何旅行
+summary: Kafka 可以先想成一组不会因“被读过”就消失的事件日志；本卡从订单事件出发，串起 Topic、Partition、Broker、Consumer Group 和 Offset。
 parents: [engineering]
 tags: [kafka, messaging, distributed-systems]
-links: [eng.kafka.topic, eng.kafka.partition, eng.kafka.broker, eng.kafka.key-partitioner, eng.kafka.bootstrap-metadata, eng.kafka.producer.send, eng.kafka.replication.write-ack, eng.kafka.consumer.pull-poll, eng.kafka.consumer-group, eng.kafka.delivery-semantics]
+links: [eng.kafka.topic, eng.kafka.partition, eng.kafka.broker, eng.kafka.record, eng.kafka.offset-retention, eng.kafka.key-partitioner, eng.kafka.bootstrap-metadata, eng.kafka.producer.send, eng.kafka.replication.write-ack, eng.kafka.consumer.pull-poll, eng.kafka.consumer-group, eng.kafka.delivery-semantics]
 ---
 
-## 先记住一条主线
+## 先看一个订单事件
 
-Kafka 可以先理解成一个**分布式、可持久化、可复制、按 Offset 读取的追加日志系统**。消息写入某个 Topic 的某个 Partition 后，不会因为一个 Consumer 读过就被拿走；Kafka 保存数据，Consumer Group 保存自己的读取位置。
+订单服务创建订单时，发出一条 `OrderCreated` 事件。库存、推荐和风控都想看到它，而且推荐系统以后还可能想把过去 7 天的订单重新计算一遍。
+
+如果消息被第一个消费者取走就删除，其他系统就看不到它，也很难重跑。Kafka 的做法是：先把事件追加到日志里，各个消费者只记录自己的阅读位置。
 
 ```text
-Producer
-  → Partitioner 选择 Partition
-  → Leader Broker 追加 Log 并分配 Offset
-  → Follower Replica 复制
-  → Consumer Group 按自己的 Offset 拉取
-  → 处理后提交位点
+订单服务 → Kafka 日志：OrderCreated
+                         ├── 库存系统：读到第 100 页
+                         ├── 推荐系统：读到第 80 页
+                         └── 风控系统：读到第 50 页
 ```
 
-这条链上的边界必须分开：Topic 是逻辑命名空间，Partition 是顺序和并行的基本单位，Broker 是服务器节点，Replica 是副本，Consumer Group 是消费进度的隔离边界。
+## 把名词翻译成人话
+
+- **Topic**：给一类事件起的逻辑名字，例如 `orders`；它像“订单事件这本书的书名”，不是一个被取走消息的队列。
+- **Record**：书中的一条记录，也就是一次具体事件。
+- **Partition**：把一本很大的书分成几册；每册内部有顺序，也可以并行读写。
+- **Offset**：某一册中的页码，用来表示一条记录的位置。
+- **Broker**：保存这些书册的 Kafka Server 节点。
+- **Producer**：写入 Record 的客户端，例如订单服务。
+- **Consumer**：读取 Record 的客户端，例如库存服务。
+- **Consumer Group**：一组协同工作的 Consumer；组内分摊 Partition，组与组之间各自保存阅读进度。
+- **Replica**：同一个 Partition 的副本，用来应对 Broker 故障。
 
 ![Kafka 数据模型：Cluster、Broker、Topic、Partition 与 Replica](/static/kafka-model.drawio.svg)
 
-## 为什么不是“消息被取走”
+## 一条消息经过哪些边界
 
-同一个 Partition 可以被多个 Consumer Group 分别读取。库存组、推荐组和风控组各自维护 `P0` 的 committed offset；它们竞争的是组内的 Partition，不是 Topic 中的物理消息。
+```text
+Producer
+  → 选择 Topic 下的某个 Partition
+  → Partition 的 Leader Broker 追加记录并分配 Offset
+  → 其他 Replica 复制这条记录
+  → Consumer Group 从自己的 Offset 读取
+  → 业务处理后提交下一次读取位置
+```
 
-因此 Kafka 同时具备两种使用语义：不同 Group 之间像发布订阅，同一 Group 内像竞争消费者。Replay 也不是把消息恢复出来，而是把某个 Group 的读取位置移回仍在 Retention 范围内的 Offset。
+这里有三个容易混淆的事实：消息物理上只写入一个 Partition；不同 Group 可以分别读取同一条记录；消息何时还能读取由 Retention 或 Compaction 决定，而不是由某个 Consumer 的 ACK 决定。**Retention** 是按时间或空间清理旧日志，**Compaction** 是按 Key 清理被新值覆盖的旧记录，先记住名字，细节见 [[eng.kafka.offset-retention]] 和 [[eng.kafka.log-compaction]]。
 
-## 面试时的边界回答
+## 先按这条路线学习
 
-- Kafka 只保证 Partition 内有序，不保证 Topic 全局有序。
-- 同一个稳定 Key 通常会被映射到同一个 Partition，但扩容可能改变映射，不能把默认分区逻辑称为经典一致性哈希。
-- Producer 的幂等性主要处理发送重试造成的重复写入，不等于跨 Kafka、数据库和外部副作用的 Exactly-Once。
-- `send()` 返回不等于 Broker 已确认；Producer 可能还在序列化、缓冲或等待 Sender Thread 发送。
-- `acks=all`、ISR 和 `min.insync.replicas`共同定义写入确认边界；“写成功”仍需结合 Consumer 提交和业务幂等来讨论。
+先看 [[eng.kafka.topic]]、[[eng.kafka.partition]]、[[eng.kafka.record]] 和 [[eng.kafka.broker]]，建立“数据是什么、放在哪里”的模型；再看 [[eng.kafka.key-partitioner]] 和 [[eng.kafka.bootstrap-metadata]]，理解 Producer 如何找到位置；最后沿 [[eng.kafka.producer.send]]、[[eng.kafka.replication.write-ack]]、[[eng.kafka.consumer.pull-poll]] 和 [[eng.kafka.consumer-group]] 走完整生命周期。
 
-## 按什么顺序继续
+## 面试时不要说过头
 
-先看 [[eng.kafka.topic]]、[[eng.kafka.partition]] 和 [[eng.kafka.broker]]，再沿 [[eng.kafka.key-partitioner]]、[[eng.kafka.bootstrap-metadata]] 进入 Producer 链路；之后连接 [[eng.kafka.replication.write-ack]]、[[eng.kafka.consumer.pull-poll]] 与 [[eng.kafka.consumer-group]]。
+- Kafka 首先是可追加、可按位置读取的分布式日志，也可以通过 Consumer Group 表现出队列式负载均衡。
+- Kafka 默认只保证一个 Partition 内的顺序，不自动保证整个 Topic 的全局顺序。
+- Producer 幂等性只解决发送重试的一部分重复问题，不等于跨数据库和外部 RPC 的 Exactly-Once。

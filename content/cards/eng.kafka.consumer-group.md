@@ -1,34 +1,33 @@
 ---
 id: eng.kafka.consumer-group
 kind: engineering
-title: Kafka Consumer Group：消费进度与组内分工
-summary: 同一个 Consumer Group 共享一套分区归属和消费进度；一个 Partition 同一时刻只分给组内一个 Consumer。
+title: Kafka Consumer Group：谁来读哪个 Partition
+summary: Consumer Group 是一组协同读取 Kafka 的 Consumer；组内分摊 Partition，组间各自保存读取进度，因此同时具备负载均衡和发布订阅效果。
 parents: [eng.kafka.group]
 tags: [kafka, consumer-group, offset]
 links: [eng.kafka.partition, eng.kafka.group.pubsub-queue, eng.kafka.group.coordinator-assignment, eng.kafka.consumer.offset-commit, eng.kafka.rebalance]
 ---
 
-## 两个维度
+## 先看两组读者
 
-Consumer Group 是一组协同消费的实例。对同一个 Group：
-
-- 一个 Partition 同一时刻只由一个 Consumer 负责；多个 Partition 可以被多个 Consumer 并行处理。
-- Group 自己保存每个 Partition 的 committed offset；另一个 Group 有另一套独立位点。
+Topic `orders` 有 P0、P1、P2：
 
 ```text
-Topic orders
-P0 ── Group inventory 的 C1
-P0 ── Group recommendation 的 C3
+inventory Group：       C1 → P0、P1；C2 → P2
+recommendation Group：  C3 → P0；C4 → P1；C5 → P2
 ```
 
-这里没有给 Group 复制一份消息。两个 Group 都从同一个 Partition Log 拉取，只是书签不同。Group 内部是负载分摊，Group 之间是独立订阅。
+**Consumer Group** 是一组使用同一个 `group.id`、一起分工的 Consumer。一个 Partition 在同一个 Group 内同一时刻只交给一个 Consumer；但不同 Group 可以同时读取同一个 Partition。
+
+## 为什么既像队列又像发布订阅
+
+- Group 内：成员瓜分 Partition，每条记录通常只由其中一个成员处理，像“多个工人分工”，也叫竞争消费者。
+- Group 间：每个 Group 有自己的读取位置，都能看完整份日志，像发布订阅。
+
+消息没有被复制成每组一份，Group 只是各自保存自己的“书签”。位点和重放见 [[eng.kafka.consumer.offset-commit]] 与 [[eng.kafka.group.pubsub-queue]]。
 
 ## 并行度上限
 
-一个 Group 的有效消费并行度最多受订阅 Partition 数限制。四个 Partition 配八个 Consumer 时，最多四个 Consumer 有分区，其余处于空闲状态。若只有少数 Partition 热，增加 Consumer 也不会自动解决热点。
+一个 Group 有 4 个 Partition、8 个 Consumer，最多 4 个 Consumer 同时拥有分区，另外 4 个会空闲。增加 Consumer 只有在还有未分配 Partition、并且处理能力确实能扩展时才有用；某个热点 Key 让 P0 很忙时，增加成员不会把 P0 自动拆开。
 
-## 位点不是业务成功证明
-
-Consumer 的本地读取位置、已经提交到 Kafka 的位点、业务数据库写入成功，可能处在不同阶段。提交策略和业务副作用必须在 [[eng.kafka.consumer.offset-commit]] 与 [[eng.kafka.consumer.processing-idempotence]] 中一起设计。
-
-成员变化会进入 [[eng.kafka.rebalance]]；Group 与 Pub/Sub 的关系见 [[eng.kafka.group.pubsub-queue]]。
+成员变化后，谁拥有哪个 Partition 会重新计算，这叫 **Rebalance（重新分配）**，见 [[eng.kafka.rebalance]]。

@@ -1,25 +1,46 @@
 ---
 id: eng.kafka.record
 kind: engineering
-title: Kafka Record：Key、Value 与定位信息
-summary: Kafka 处理的是带有 Topic、Partition、Offset 和字节载荷的 Record；业务对象要先由客户端序列化。
+title: Kafka Record：一条事件到底带什么
+summary: Record 是 Producer 要写入 Kafka 的一条记录；业务对象会先被序列化成字节，Partition 和 Offset 则分别在路由与追加时确定。
 parents: [eng.kafka.model]
 tags: [kafka, record, serialization]
 links: [eng.kafka.key-partitioner, eng.kafka.producer.send, eng.kafka.partition]
 ---
 
-## Record 由什么组成
+## 先看一张“寄件单”
 
-业务代码看到的可能是一个订单对象，但 Kafka 客户端最终处理的是类似下面的记录：
+业务代码可能准备的是一个订单对象：
+
+```text
+orderId = 123
+event   = OrderCreated
+amount  = 100
+```
+
+Producer 发送给 Kafka 的 **Record** 可以理解成带地址和内容的一张寄件单：
 
 ```text
 Record = topic + partition? + key? + value + headers + timestamp
 ```
 
-`value` 是业务载荷，`key` 常用于决定分区和表达同一业务实体；`partition` 可以由调用方显式指定，也可以交给 Partitioner；`offset` 则是在 Leader 追加时确定，不由 Producer 预先生成。
+- `topic`：写入哪类事件。
+- `partition`：可由调用方指定，也可让客户端计算；问号表示它可能还没确定。
+- `key`：可选的业务关联字段，例如 `orderId`。
+- `value`：真正的业务内容。
+- `headers`、`timestamp`：附加元数据。
 
-## Kafka 不理解业务对象
+## Kafka 为什么看不懂 Order 对象
 
-JSON、Protobuf、Avro 或自定义结构都要经 Serializer 转成字节，Consumer 再用对应 Deserializer 还原。序列化协议、Schema 演进和兼容性是业务契约，不应误认为 Kafka 自动提供。
+Kafka Broker 主要保存字节，不理解 Java 对象、Go 结构体或业务字段。Producer 用 **Serializer（序列化器）** 把对象变成字节，Consumer 再用 **Deserializer（反序列化器）** 还原：
 
-完整定位一条 Record 时，要把 `Topic + Partition + Offset` 放在一起；单独一个 Offset 没有全局含义。
+```text
+OrderCreated 对象 → Serializer → bytes → Kafka
+Kafka 中的 bytes → Deserializer → OrderCreated 对象
+```
+
+JSON、Protobuf、Avro 都是不同的编码方式。编码格式、字段兼容和版本升级属于业务契约，Kafka 不会自动替你解决。
+
+## 谁决定哪个字段什么时候出现
+
+Producer 的 Partitioner 可以利用 `key` 选择 Partition；Broker 的 Leader 把 Record 追加成功后才分配 Offset。也就是说，Key 影响写入分片，Offset 是日志位置，不是 Producer 自己提前生成的业务 ID，见 [[eng.kafka.key-partitioner]]。

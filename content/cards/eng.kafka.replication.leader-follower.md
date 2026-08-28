@@ -1,24 +1,38 @@
 ---
 id: eng.kafka.replication.leader-follower
 kind: engineering
-title: Kafka Replica、Leader 与 Follower：一个分区的多份副本
-summary: Partition 的 Replica 分布在多个 Broker 上，Leader 承担主要读写，Follower 通过复制追赶日志并在故障时参与接任。
+title: Kafka Replica、Leader 与 Follower：给一册日志留副本
+summary: Replica 是同一个 Partition 的副本；Leader 负责主要读写，Follower 通过拉取日志追赶 Leader，副本让 Broker 故障时有机会恢复服务。
 parents: [eng.kafka.replication]
 tags: [kafka, replica, leader, follower]
 links: [eng.kafka.partition, eng.kafka.broker, eng.kafka.replication.isr-election, eng.kafka.replication.write-ack]
 ---
 
-## 物理结构
+## 先看为什么要复制
+
+如果 P0 只有 Broker 1 一份，Broker 1 挂掉，P0 的数据和服务入口都可能一起消失。Kafka 可以把 P0 放在多个 Broker：
 
 ```text
-P0 Replica
-├── Broker 1：Leader
-├── Broker 2：Follower
-└── Broker 3：Follower
+P0 的三份 Replica
+├── Broker 1：Leader，主要接收读写
+├── Broker 2：Follower，保存复制日志
+└── Broker 3：Follower，保存复制日志
 ```
 
-Producer 的写入和 Consumer 的读取通常围绕 Partition Leader 进行；Follower 保存自己的日志副本并主动从 Leader Fetch 数据。Replica Factor 描述副本数量，Broker 是副本实际所在的节点。
+**Replica** 就是副本；**Leader** 是当前承担主要请求的副本；**Follower** 是跟随 Leader 保存日志的副本。Broker 是服务器，Replica 是服务器上存放的一份 Partition 数据，不能混为一谈。
 
-## 这解决什么问题
+## Follower 如何追上
 
-单个 Broker 故障时，只要有满足条件的副本，Partition 仍可能选出新的 Leader。复制提高故障容忍度，但不会改变 Partition 内顺序，也不会让一个 Partition 产生多路消费并行度。
+Follower 通常主动向 Leader 发 **Fetch** 请求，意思是“把我还没有的日志给我”：
+
+```text
+Follower：我目前到 Offset 100
+        → Fetch：请给我 101 之后的记录
+Leader：返回新增记录
+```
+
+所以不要想成 Leader 为每条消息单独推送给每个 Follower。Consumer 读取也采用类似的主动拉取思路。
+
+## 复制解决什么、不解决什么
+
+副本提高的是故障容忍度：Leader 故障后，符合条件的 Follower 可能接任。它不会把一个 Partition 变成多条可并行消费的队列，也不会改变同一 Partition 内的顺序。哪些副本可以接任，见 [[eng.kafka.replication.isr-election]]。

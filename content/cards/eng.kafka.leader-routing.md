@@ -1,24 +1,44 @@
 ---
 id: eng.kafka.leader-routing
 kind: engineering
-title: Kafka Partition Leader 路由：过期拓扑下的重试
-summary: Producer 先选 Partition，再从 Metadata 找 Leader；遇到 NotLeader 或连接失败时刷新拓扑并按错误语义重试。
+title: Kafka Partition Leader 路由：地图过期后重新找路
+summary: Producer 先选 Partition，再根据 Metadata 找到该 Partition 的 Leader；Leader 变化后，客户端刷新路由并按错误类型决定是否重试。
 parents: [eng.kafka.routing]
 tags: [kafka, leader, metadata, retry]
 links: [eng.kafka.bootstrap-metadata, eng.kafka.replication.leader-follower, eng.kafka.producer.retry-idempotence]
 ---
 
-## 请求路径
+## 先看一次写入怎么找到服务器
+
+先假设 Producer 选中了 P2：
 
 ```text
 Record
-  → Partitioner 选 P2
-  → Metadata：P2 Leader = Broker 3
-  → ProduceRequest 发给 Broker 3
+  → Partitioner 选择 P2
+  → Metadata 说 P2 Leader 在 Broker 3
+  → Producer 把 ProduceRequest 发给 Broker 3
 ```
 
-如果 Broker 3 下线，集群完成选举后 P2 可能改由 Broker 1 负责。Producer 原来的路由表仍可能指向 Broker 3，直到收到可重试错误或发现连接异常，再刷新 Metadata 并定位新 Leader。
+**Leader** 是某个 Partition 当前负责主要读写的副本；**Metadata** 是 Producer 保存的路由表。Producer 不需要先把消息交给一台固定 Router，再由 Router 转发。
 
-## 这不是无条件重发
+## Leader 挂掉时发生什么
 
-客户端要区分可刷新 Metadata 的错误、可重试的暂时故障和不可重试的业务或配置错误。重试还会带来超时、重复写入和顺序风险，必须和 [[eng.kafka.producer.retry-idempotence]] 一起理解。
+```text
+旧地图：P2 Leader = Broker 3
+Broker 3 故障
+集群选出新 Leader = Broker 1
+Producer 刷新 Metadata
+Producer → Broker 1 重试
+```
+
+这里的“选出新 Leader”由 Kafka 集群完成；Producer 的任务是发现旧地图失效并重新定位。刷新可能由错误响应、连接异常或定期更新触发。
+
+## 不是所有错误都能重试
+
+客户端需要区分：
+
+- **可刷新路由**：说明当前 Leader 信息过期，应更新 Metadata。
+- **暂时性故障**：例如短暂网络问题，可能适合重试。
+- **不可重试失败**：例如记录过大、权限不足或配置错误，继续重试没有意义。
+
+重试虽然能提高暂时故障下的成功率，也可能带来重复写入和顺序风险。要把这条路由故障链和 [[eng.kafka.producer.retry-idempotence]] 放在一起看。

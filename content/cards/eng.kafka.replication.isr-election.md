@@ -2,23 +2,35 @@
 id: eng.kafka.replication.isr-election
 kind: engineering
 title: Kafka ISR 与 Leader Election：只让跟得上的副本接任
-summary: ISR 是与 Leader 保持同步边界的 Replica 集合；Leader 故障后，选举优先从可接受的同步副本中选择，避免盲目提升严重落后的副本。
+summary: ISR 是当前跟得上 Leader 的副本集合；Leader 故障时优先从这个集合中选新 Leader，以降低已经确认数据丢失的风险。
 parents: [eng.kafka.replication]
 tags: [kafka, isr, election, availability]
 links: [eng.kafka.replication.leader-follower, eng.kafka.replication.write-ack, eng.kafka.leader-routing]
 ---
 
-## ISR 表达什么
+## 先看三个副本的进度
+
+假设 P0 的 Leader 已经写到 Offset 100：
 
 ```text
-Leader offset=100
-Follower A offset=100  → ISR
-Follower B offset=99   → 可能仍在 ISR
-Follower C offset=20   → 可能被移出 ISR
+Broker 1：Leader，Offset 100
+Broker 2：Follower，Offset 100  → 跟得上
+Broker 3：Follower，Offset 20   → 落后很多
 ```
 
-ISR 不是“所有曾经配置过的 Replica”，而是当前满足同步条件的集合，Leader 也在其中。Follower 长时间落后或不可用时，可能退出 ISR；恢复并追上后才可能重新加入。
+**ISR（In-Sync Replicas）** 的中文常译是“同步副本集合”。它表示当前满足同步条件、可以被视为跟得上的 Replica；Leader 自己也属于 ISR。落后太久的 Follower 可能暂时被移出，追上后再回来。
 
-## 为什么不能随便选
+## 为什么不能随便选副本
 
-如果旧 Leader 已写到 `G`，某个副本只追到 `C`，直接提升它可能让 `D、E、F、G` 暂时不可见甚至丢失。Leader 选举、Producer Metadata 刷新和重试因此是同一条故障链上的三个环节。
+如果 Leader 已经有 `A B C D E`，某个 Follower 只有 `A B C`，却让它直接当新 Leader，那么 `D E` 可能暂时不可见甚至丢失。ISR 的意义就是把“可以承担接任风险的副本”与“只是曾经配置过的副本”区分开。
+
+## 故障链怎么串
+
+```text
+Leader 故障
+  → 集群从可接受副本中选新 Leader
+  → Producer 的旧 Metadata 失效
+  → Producer 刷新路由并处理重试
+```
+
+ISR 不是“数据绝对不会丢”的单独保证；它要和 Producer 的 ACK、最小同步副本数量一起看，见 [[eng.kafka.replication.write-ack]]。

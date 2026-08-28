@@ -1,25 +1,39 @@
 ---
 id: eng.kafka.bootstrap-metadata
 kind: engineering
-title: Kafka Bootstrap Server 与 Metadata：Producer 的集群路由表
-summary: bootstrap.servers 只是客户端进入集群并获取 Metadata 的入口，Producer 随后依据路由表直接访问目标 Partition Leader。
+title: Kafka Bootstrap Server 与 Metadata：Producer 先找到集群地图
+summary: bootstrap.servers 是 Producer 进入 Kafka 集群的起点；Metadata 是客户端维护的路由信息，告诉它每个 Partition 的 Leader 在哪。
 parents: [eng.kafka.routing]
 tags: [kafka, bootstrap, metadata, producer]
 links: [eng.kafka.broker, eng.kafka.leader-routing, eng.kafka.producer.send]
 ---
 
-## Bootstrap 不是固定网关
+## 先看 Producer 刚启动时什么都不知道
 
-Producer 启动时并不知道整个集群的 Broker、Topic Partition 或 Leader。它先尝试连接 `bootstrap.servers` 中的一个或多个地址，获取类似这样的 Metadata：
+假设配置里写着：
 
 ```text
-orders / P0 → Broker 1
-orders / P1 → Broker 3
-orders / P2 → Broker 2
+bootstrap.servers = broker-1:9092, broker-2:9092
 ```
 
-配置多个入口的目的主要是提高初始发现的成功率，不是把 P0 永久发给第一台、P1 永久发给第二台。拿到 Metadata 后，Producer 会根据目标 Partition 找 Leader。
+**Bootstrap Server** 就是“引导地址”：Producer 先尝试连接其中一个可用 Broker，请它返回集群信息。它不是一个永远站在中间转发所有消息的网关。
 
-## Metadata 会变化
+## Metadata 是什么
 
-Leader 切换、Topic 扩分区或 Broker 拓扑变化都会使本地 Metadata 过期。客户端会根据错误、定期刷新或下一次访问触发 Metadata 更新，再重新选择目标 Broker。Bootstrap 地址因此是引导信息，不是整个发送路径中的中心 Router。
+**Metadata** 可以理解成 Producer 手里的集群地图，里面至少需要知道：有哪些 Broker、某个 Topic 有哪些 Partition、每个 Partition 当前由哪个 **Leader** 副本负责写入。
+
+```text
+orders / P0 → Broker 2（Leader）
+orders / P1 → Broker 3（Leader）
+orders / P2 → Broker 1（Leader）
+```
+
+Producer 先由 [[eng.kafka.key-partitioner]] 选 P2，再查这张地图，直接把请求发给 Broker 1。
+
+## 为什么通常写多个引导地址
+
+如果只写 `broker-1`，恰好它重启，Producer 可能连不上集群、拿不到第一张地图；写多个地址是为了提高初始发现成功率，不是规定 P0 永远去第一台、P1 永远去第二台。
+
+## 地图会过期
+
+Broker 故障、Partition Leader 切换、Topic 增加 Partition，都可能让本地 Metadata 变旧。Producer 收到“你找错 Leader”一类响应，或发现连接失败后，会刷新地图，再把请求发往新的 Leader。完整路径见 [[eng.kafka.leader-routing]]。

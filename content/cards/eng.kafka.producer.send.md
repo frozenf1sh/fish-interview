@@ -1,29 +1,48 @@
 ---
 id: eng.kafka.producer.send
 kind: engineering
-title: Kafka Producer send：从业务对象到待发送 Record
-summary: producer.send() 通常先完成序列化和分区决策，再把 Record 放入本地缓冲；它返回 Future 不等于 Broker 已确认。
+title: Kafka Producer send：一次发送不是一次网络请求
+summary: producer.send() 先把业务对象编码、选择 Partition 并放入本地缓冲，后台线程再批量发送；返回 Future 不代表 Broker 已确认。
 parents: [eng.kafka.producer]
 tags: [kafka, producer, send, serialization]
 links: [eng.kafka.record, eng.kafka.key-partitioner, eng.kafka.producer.accumulator, eng.kafka.producer.sender]
 ---
 
-## 调用发生了什么
+## 先看业务代码背后发生了什么
+
+业务代码可能只有一行：
 
 ```text
-send(topic, key, value)
-  → Key/Value Serializer
-  → Partitioner 选择 Partition
-  → 放入 RecordAccumulator
-  → Sender Thread 发送
+producer.send(topic="orders", key="order-123", value=OrderCreated)
 ```
 
-Kafka 客户端不理解业务对象。序列化失败、Topic 元数据暂时不可用或本地缓冲区不足，都可能在真正收到 Broker 响应前影响调用结果。
+但 Kafka Producer（生产者客户端）通常会按这条路径处理：
+
+```text
+业务对象
+  → Serializer：对象变成字节
+  → Partitioner：决定放进哪个 Partition
+  → Accumulator：放进本地待发送 Batch
+  → Sender Thread：后台线程发网络请求
+  → Broker：追加并返回结果
+```
+
+**Serializer** 是序列化器，负责把对象编码成 Kafka 能保存的字节；**Partitioner** 是分区器，负责选择 Partition；**Batch** 是为了批量发送而暂存的一组 Record；**Future** 是以后可以拿到发送结果的对象。
 
 ![Kafka Producer 从 send 到 Broker 的链路](/static/kafka-producer-path.drawio.svg)
 
-## Future 的含义
+## 为什么 `send()` 看起来很快
 
-`send()` 返回的 Future 表示这次异步发送最终可以得到结果。消息可能仍在 Producer 内存、等待 Batch、等待 Metadata 或等待 Broker 的 ACK；只有回调或 Future 完成并报告成功，才有 Producer 侧的确认。
+`send()` 通常先把 Record 放入 Producer 内存中的缓冲区，不必为每条消息立即发一次网络请求。后台 **Sender Thread**（发送线程）稍后把同一 Partition 的记录组成 Batch，再发给对应 Leader。
 
-Producer 应长期复用，让 Metadata、连接和 Batch 发挥作用，而不是每条消息都创建和关闭一个客户端。
+所以三件事不是一回事：
+
+1. `send()` 方法被调用并返回。
+2. Record 离开 Producer，真正发到网络。
+3. Broker 追加成功并返回 ACK。
+
+只有 Future 或 Callback 报告成功，才说明 Producer 侧拿到了成功响应；如果应用直接退出，仍在缓冲区的记录可能没有发出。缓冲细节见 [[eng.kafka.producer.accumulator]]。
+
+## 使用边界
+
+Producer 是带连接、路由表、缓冲区和后台线程的长期客户端。通常应用启动时创建、多个请求复用、退出时关闭，不要每条消息都创建一个 Producer。完整生命周期见 [[eng.kafka.producer.lifecycle]]。

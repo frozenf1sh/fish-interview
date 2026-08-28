@@ -1,33 +1,40 @@
 ---
 id: eng.kafka.consumer.offset-commit
 kind: engineering
-title: Kafka Offset Commit：提交的是下一次读取位置
-summary: Consumer Commit 记录某个 Group 在某个 Partition 的恢复位置；它不是对业务数据库写入的自动确认。
+title: Kafka Offset Commit：提交下一次从哪里读
+summary: Consumer Group 提交的是某个 Partition 的恢复位置，通常是下一条要读取的 Offset；它不是数据库写成功的自动确认。
 parents: [eng.kafka.consumer]
 tags: [kafka, consumer, offset, commit]
 links: [eng.kafka.offset-retention, eng.kafka.consumer.commit-modes, eng.kafka.consumer.processing-idempotence, eng.kafka.consumer-group, eng.kafka.rebalance]
 ---
 
-## 位置与状态
+## 先用书签理解
 
-假设 Consumer 拉取并处理了 Offset `10`，通常提交的是下一次从 `11` 开始读取的位置。进程重启或分区重新分配时，客户端根据 Group 的 committed offset 恢复。
+Partition 像一本不断追加的书，Consumer Group 像一个读者：
+
+```text
+读取：    Offset 10 的 Record
+处理成功：业务副作用完成
+提交：    Offset 11
+含义：    下次从 11 继续，而不是重复从 10 开始
+```
+
+**Offset** 是 Partition 内的记录位置；**Commit** 是把 Group 的恢复位置保存下来。提交 `11` 通常表示 `10` 已经处理完，下一次读取从 `11` 开始。
 
 ![Kafka Consumer 处理、提交与崩溃重放](/static/kafka-consumer-failure.drawio.svg)
 
+## 两个位置不要混
+
+- **Position**：当前 Consumer 客户端准备继续读取的位置，可能已经随着 `poll()` 前进。
+- **Committed Offset**：已经保存到 Kafka Group 位点存储的位置，Consumer 重启或 Partition 交接时会用它恢复。
+
+Position 领先 Committed Offset 很正常：客户端可以先把数据拉到本地，处理完成后再提交。
+
+## 提交时机决定故障结果
+
 ```text
-fetch 10 → process 10 → commit 11
+先处理 → 再提交：崩溃时可能重复，但不容易跳过尚未处理的记录
+先提交 → 再处理：处理前崩溃可能直接跳过记录
 ```
 
-要区分两个位置：Consumer 当前已经拉到的 position 可以领先于已持久化的 committed position。前者表示客户端准备继续读哪里，后者才是故障恢复时 Kafka 能提供的起点。
-
-## 提交时机决定故障语义
-
-- 先处理、后提交：崩溃窗口会重复处理，但不容易跳过未处理消息。
-- 先提交、后处理：处理前崩溃可能造成消息被跳过。
-- 自动提交：减少样板代码，但提交时机可能与业务副作用脱节。
-
-Kafka 只知道位点提交到哪里，不知道数据库写入、RPC 或文件操作是否成功；这些边界见 [[eng.kafka.consumer.processing-idempotence]]。
-
-自动、同步与异步提交的等待和失败语义，见 [[eng.kafka.consumer.commit-modes]]；分区交接时提交旧归属，还要结合 [[eng.kafka.group.rebalance-lifecycle]]。
-
-面试追问“提交 Offset 是提交当前消息还是下一条消息”时，应回答：通常提交下一次要读取的位置；具体 API 以客户端的 offset 约定为准。
+Kafka 只知道位点有没有提交，不知道数据库、RPC 或文件操作是否成功。自动、同步和异步提交的差异见 [[eng.kafka.consumer.commit-modes]]；业务副作用的去重见 [[eng.kafka.consumer.processing-idempotence]]。

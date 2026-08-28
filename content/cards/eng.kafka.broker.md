@@ -1,26 +1,35 @@
 ---
 id: eng.kafka.broker
 kind: engineering
-title: Kafka Broker：承载 Partition 的服务器节点
-summary: Broker 是 Kafka Server 实例，负责接收请求、存储本机副本、参与复制并响应客户端；它不是 Partition 本身。
+title: Kafka Broker：真正运行 Kafka 的服务器
+summary: Broker 是一个 Kafka Server 实例，负责接收请求、保存本机的 Partition 副本、参与复制并响应客户端；它不是 Partition。
 parents: [eng.kafka.model]
 tags: [kafka, broker, cluster]
 links: [eng.kafka.partition, eng.kafka.replication.leader-follower, eng.kafka.bootstrap-metadata]
 ---
 
-## 先分清两种对象
+## 先区分“机器”和“数据册”
 
-Broker 是物理或进程层面的 Kafka Server；Partition 是 Topic 的逻辑数据分片。一个 Broker 可以同时承载多个 Partition 的 Leader 和 Follower，一个 Partition 的不同 Replica 也可以分布在多个 Broker 上。
+**Broker** 是运行 Kafka 进程的服务器节点；**Partition** 是 Topic 的一册数据日志。一个 Broker 可以同时保存很多 Partition，也可以在同一个 Partition 上保存 Leader 或 Follower 副本。
 
 ```text
-Cluster
+Kafka Cluster（集群）
 ├── Broker 1：P0 Leader、P1 Follower
 ├── Broker 2：P1 Leader、P0 Follower
 └── Broker 3：P0 Follower、P1 Follower
 ```
 
-Producer 写入时最终要找到目标 Partition 的 Leader Broker；Consumer 拉取时也通常向该 Partition 的 Leader 请求。Broker 的数量影响承载和容错，Partition 的数量影响分片和并行度。
+**Cluster** 就是多个 Broker 共同组成的 Kafka 集群。**Leader** 是某个 Partition 当前负责主要读写的副本，**Follower** 是跟着 Leader 复制日志的副本；这两个词只描述副本角色，不是两种服务器。
 
-## 面试边界
+## Broker 收到什么请求
 
-不要回答“消息发给某个 Broker 后 Broker 再帮我路由到 Partition”作为默认模型。Producer 通过 Metadata 感知 Partition Leader，并直接向目标 Broker 发请求；Leader 负责追加和副本协作。
+- Producer 找到目标 Partition 的 Leader，发送写入请求。
+- Leader 把 Record 追加到日志，并把结果复制给 Follower。
+- Consumer 通常向 Partition Leader 拉取数据。
+- 集群在 Leader 故障时重新选择副本接任，并告诉客户端新的位置。
+
+因此，Producer 不是把消息随便丢给一台 Broker 再等它转发。Producer 会先取得集群信息，找到目标 Partition 的 Leader，见 [[eng.kafka.bootstrap-metadata]]。
+
+## 记住两种数量
+
+Broker 数量更多，通常意味着可承载的节点和故障余量更多；Partition 数量更多，意味着更细的分片和并行边界。两者不是同一个旋钮，复制关系见 [[eng.kafka.replication.leader-follower]]。

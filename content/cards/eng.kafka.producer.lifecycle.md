@@ -2,18 +2,34 @@
 id: eng.kafka.producer.lifecycle
 kind: engineering
 title: Kafka Producer 生命周期：复用、Flush 与 Close
-summary: KafkaProducer 是带连接、Metadata、缓冲和后台线程的重量级客户端，应长期复用并在进程退出前完成 Flush/Close。
+summary: Producer 不只是一个发送函数，而是持有连接、路由表、缓冲区和后台线程的客户端；应长期复用，并在退出时完成 Flush/Close。
 parents: [eng.kafka.producer]
 tags: [kafka, producer, flush, lifecycle]
 links: [eng.kafka.producer.send, eng.kafka.producer.accumulator, eng.kafka.delivery-semantics]
 ---
 
-## `flush()` 做什么
+## 先看为什么不能每条消息创建一次
 
-`flush()` 会推动此前积累的 Record 尽快发送，并等待这些发送完成。它适合明确的阶段边界，不适合每发一条消息就调用；后者会破坏 Batch 和异步 I/O 的优势。
+Producer 第一次使用时要建立连接、获取 Metadata（集群路由表）、启动 Sender Thread（后台发送线程）并积累 Batch。合理生命周期是：
 
-## `close()` 做什么
+```text
+应用启动 → 创建一个长期复用的 Producer
+业务运行 → send、批量发送、处理回调
+应用退出 → Flush / Close → 释放资源
+```
 
-进程直接退出时，Accumulator 中的 Record 可能还没有发出。正常关闭 Producer 要给 Sender 处理待发送数据、完成资源释放和失败回调的机会。
+如果每条消息都执行 `new → send → close`，刚建立的连接、路由表和批量机会马上被丢掉，吞吐和资源使用都会变差。
 
-推荐的生命周期是：应用启动时创建，多个业务请求复用，优雅关闭时 Flush/Close。每条消息都 `new → send → close` 会反复丢弃连接、Metadata 和 Batch 的收益。
+## `flush()` 是什么
+
+`flush()` 可以理解为“把此前交给 Producer 的待发送记录尽快推完，并等待结果”。它适合批处理阶段结束、测试或明确的边界，不适合每发一条就调用：
+
+```text
+send(m1); flush(); send(m2); flush()
+```
+
+这样会把许多小消息强行拆成小批次，削弱 Kafka 的异步和 Batch 优势。
+
+## `close()` 是什么
+
+进程直接退出时，Accumulator 中可能还有未发出的 Record。正常 `close()` 会让客户端处理剩余发送、完成回调并释放连接；如果关闭时已经发生不可恢复失败，应用仍要记录并处理失败结果，不能把 Close 当成成功证明。

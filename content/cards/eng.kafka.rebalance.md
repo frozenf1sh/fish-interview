@@ -1,30 +1,31 @@
 ---
 id: eng.kafka.rebalance
 kind: engineering
-title: Kafka Rebalance：重新交接 Partition 归属
-summary: Consumer Group 成员、订阅或 Partition 发生变化时，协调器会重新计算分配；交接期间可能暂停消费并重放未提交处理。
+title: Kafka Rebalance：重新决定谁读哪个 Partition
+summary: Rebalance 是 Consumer Group 因成员或订阅变化而重新分配 Partition 的过程；它会影响消费暂停、位点提交和未提交处理的重放。
 parents: [eng.kafka.group]
 tags: [kafka, rebalance, coordination]
 links: [eng.kafka.consumer-group, eng.kafka.group.coordinator-assignment, eng.kafka.group.assignment-strategies, eng.kafka.group.rebalance-lifecycle, eng.kafka.group.heartbeat-poll, eng.kafka.consumer.offset-commit]
 ---
 
-## 什么时候发生
-
-Consumer 加入、退出、崩溃、订阅变化以及 Topic Partition 数变化，都可能触发 Rebalance。协调器需要确认新成员集合，再把 Partition 重新分配给组内成员。
+## 先看一个成员变化
 
 ```text
-变更前：C1 → P0、P1；C2 → P2、P3
-加入 C3：重新分配 P0、P1、P2、P3
+原来：C1 → P0、P1；C2 → P2、P3
+C3 加入
+结果：重新决定 P0、P1、P2、P3 分给谁
 ```
 
-不同协议的暂停范围不同，但应用都应假定 Partition 可能暂时不可消费，且交接前没有妥善提交的处理可能被重新执行。
+**Rebalance** 的直译是“重新平衡”，在 Kafka 中就是 Consumer Group 重新确认 Partition owner。触发原因包括 Consumer 加入、退出、崩溃、订阅变化和 Topic 增加 Partition。
 
-不要把所有版本的 Rebalance 都理解成完全相同的全组停顿：经典协议与增量/合作式协议在交接范围和时序上存在差异。通用生命周期见 [[eng.kafka.group.rebalance-lifecycle]]，具体 Assignment 策略的取舍见 [[eng.kafka.group.assignment-strategies]]。
+## 它为什么会造成重复
 
-## 为什么会频繁发生
+旧 Consumer 失去 P0 后，新 Consumer 会从 Group 已保存的 committed offset 继续。如果旧 Consumer 在处理完成后还没提交书签就被交接，同一条记录可能再次处理；这不是 Rebalance 自己复制了消息，而是恢复位置没有越过它。
 
-处理线程长时间阻塞、没有按预期继续 `poll`、网络抖动、滚动发布和实例反复重启，都会让组认为成员不再健康。`max.poll.interval`、心跳和会话超时应与实际处理模型匹配，而不是只靠调大超时掩盖阻塞。
+不同协议的暂停范围不同：经典协议常见更明显的全组同步，增量/合作式协议可以缩小交接范围。因此不要笼统说“每次 Rebalance 都会全组停顿”，但应用必须接受分区暂时不可用和位点重放。
 
-## 排查顺序
+## 为什么线上会频繁发生
 
-先看成员变更和协调器事件，再对照处理耗时、poll 间隔和提交失败，最后检查部署与网络。若重复消费只发生在分区交接窗口，应联查 [[eng.kafka.consumer.offset-commit]]。
+处理线程长时间阻塞、不再按时 `poll()`、心跳或网络异常、滚动发布和实例反复重启，都可能让 Group 认为成员不再健康。`max.poll.interval` 是两次 `poll`/处理循环之间的时间约束；它不是把慢业务自动变快的开关。
+
+加入、撤销、重新分配和恢复的顺序见 [[eng.kafka.group.rebalance-lifecycle]]；排查提交窗口时看 [[eng.kafka.consumer.offset-commit]]。
