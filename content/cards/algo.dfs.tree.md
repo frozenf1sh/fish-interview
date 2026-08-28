@@ -13,6 +13,8 @@ trace: flow-dfs-tree
 
 [LeetCode 104 · 二叉树的最大深度 ↗](https://leetcode.cn/problems/maximum-depth-of-binary-tree/)。每棵子树返回自身高度，父节点取左右较大值加一。
 
+动画使用固定二叉树展示真实递归调用栈：进入节点、走左/右子树、回到节点组合高度分别占一步，节点和边不会被抽象成一串文字。
+
 ## 递归三问
 
 1. 参数代表哪棵子树？

@@ -13,6 +13,8 @@ trace: flow-backtracking-choose-skip
 
 [LeetCode 78 · 子集 ↗](https://leetcode.cn/problems/subsets/)。每个数只面对两种选择：放入当前集合，或跳过。
 
+动画固定 `nums=[1,2,3]` 和当前 `path`，每一步只展开一个“选/不选”分支，并保留递归栈与回退后的路径。
+
 ```go
 path := make([]int, 0)
 var dfs func(int)

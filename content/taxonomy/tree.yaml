@@ -184,6 +184,9 @@ roots:
               - id: algo.list.merge-sort
                 card: algo.list.merge-sort
                 title: 链表归并排序
+              - id: algo.list.reverse-k-group
+                card: algo.list.reverse-k-group
+                title: 链表：k 个一组翻转
           - id: algo.patterns.tree
             title: 树题
             children:

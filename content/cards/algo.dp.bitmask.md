@@ -11,9 +11,11 @@ trace: bitmask-dp
 
 ## 例题
 
-[LeetCode 943 · 最短超级串 ↗](https://leetcode.cn/problems/find-the-shortest-superstring/)
+[LeetCode 847 · 访问所有节点的最短路径 ↗](https://leetcode.cn/problems/shortest-path-visiting-all-nodes/)
 
-这类题都要记住“已经选了哪些元素”和“最后停在哪里”；动画用 4 个城市展示同一套 `集合 + 最后位置` 状态。
+这类题都要记住“已经选了哪些元素”和“最后停在哪里”。动画用 4 个城市 A、B、C、D：从 A 出发，每次访问一个未访问城市，目标是覆盖全集合并取得最小代价。
+
+动画前半段固定显示 `mask` 的 4 位和城市状态，后半段固定显示 `dp[mask][last]` 的已写状态；每一次都按“读旧状态 → 检查 next → 算候选 → 写新状态”展开。
 
 ## 状态转移
 

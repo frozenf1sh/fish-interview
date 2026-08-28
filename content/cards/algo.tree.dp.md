@@ -13,6 +13,8 @@ trace: flow-tree-dp
 
 [LeetCode 337 · 打家劫舍 III ↗](https://leetcode.cn/problems/house-robber-iii/)。相邻父子不能同时选，求最大金额。
 
+动画用一棵带金额的具体二叉树，从叶子向根展开 DFS；每个节点旁固定显示 `take/skip`，回溯时再合并到父节点。
+
 ## 让子树返回两种答案
 
 `take` 表示选当前节点时的最大值，`skip` 表示不选当前节点时的最大值。孩子必须先算完，所以处理位置在后序。

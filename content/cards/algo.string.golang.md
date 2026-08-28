@@ -9,7 +9,13 @@ links: [algo.string.window]
 trace: flow-string-golang
 ---
 
+## 例题
+
+动画使用一个同时含 ASCII 和 Unicode 的字符串，固定展示 byte 下标、rune 下标和 Builder 输出；变量含义放在播放器的变量列表中。
+
 ## 先判断题目字符集
+
+代表情景是混合 ASCII 与 Unicode 的字符串处理：动画先固定字符串和当前下标，再分别展示 byte、rune 遍历与 Builder 构造，避免把字符和字节长度混为一谈。
 
 小写英文字母可直接按 byte：`s[i]` 与 `[26]int` 最快。可能含中文、emoji 或任意 Unicode 时，转为 rune：
 

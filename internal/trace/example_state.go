@@ -102,13 +102,26 @@ type mergeListState struct {
 }
 
 type mergeSortListState struct {
-	Caption string        `json:"caption"`
-	Source  []exampleItem `json:"source"`
-	Left    []exampleItem `json:"left"`
-	Right   []exampleItem `json:"right"`
-	Result  []exampleItem `json:"result"`
-	Stack   []string      `json:"stack"`
-	Phase   string        `json:"phase"`
+	Caption  string        `json:"caption"`
+	Original []exampleItem `json:"original"`
+	Source   []exampleItem `json:"source"`
+	Left     []exampleItem `json:"left"`
+	Right    []exampleItem `json:"right"`
+	Result   []exampleItem `json:"result"`
+	Active   []string      `json:"active"`
+	Stack    []string      `json:"stack"`
+	Phase    string        `json:"phase"`
+}
+
+type kGroupListState struct {
+	Caption   string            `json:"caption"`
+	Chain     []string          `json:"chain"`
+	Detached  []string          `json:"detached"`
+	Working   []string          `json:"working"`
+	Pointers  map[string]string `json:"pointers"`
+	Highlight []string          `json:"highlight"`
+	Group     []string          `json:"group"`
+	Phase     string            `json:"phase"`
 }
 
 func item(label, state string) exampleItem { return exampleItem{Label: label, State: state} }
@@ -175,13 +188,52 @@ func mergeSortListFrame(line int, narration, caption string, variables map[strin
 	}
 	copyVariables["example"] = caption
 	return Frame{ActiveLine: line, Narration: narration, Variables: copyVariables, State: mergeSortListState{
-		Caption: caption,
-		Source:  append([]exampleItem{}, source...),
-		Left:    append([]exampleItem{}, left...),
-		Right:   append([]exampleItem{}, right...),
-		Result:  append([]exampleItem{}, result...),
-		Stack:   append([]string{}, stack...),
-		Phase:   phase,
+		Caption:  caption,
+		Original: mergeSortItems([]string{"4", "2", "1", "3"}, nil),
+		Source:   append([]exampleItem{}, source...),
+		Left:     append([]exampleItem{}, left...),
+		Right:    append([]exampleItem{}, right...),
+		Result:   append([]exampleItem{}, result...),
+		Active:   mergeSortActive(source, left, right),
+		Stack:    append([]string{}, stack...),
+		Phase:    phase,
+	}}
+}
+
+func mergeSortActive(source, left, right []exampleItem) []string {
+	active := make([]string, 0, len(source)+len(left)+len(right))
+	appendUnique := func(items []exampleItem) {
+		for _, value := range items {
+			found := false
+			for _, current := range active {
+				if current == value.Label {
+					found = true
+					break
+				}
+			}
+			if !found {
+				active = append(active, value.Label)
+			}
+		}
+	}
+	if len(left)+len(right) > 0 {
+		appendUnique(left)
+		appendUnique(right)
+	} else {
+		appendUnique(source)
+	}
+	return active
+}
+
+func kGroupListFrame(line int, narration, caption string, variables map[string]string, chain, detached, working []string, pointers map[string]string, highlight, group []string, phase string) Frame {
+	copyVariables := make(map[string]string, len(variables)+1)
+	for key, value := range variables {
+		copyVariables[key] = value
+	}
+	copyVariables["example"] = caption
+	return Frame{ActiveLine: line, Narration: narration, Variables: copyVariables, State: kGroupListState{
+		Caption: caption, Chain: append([]string{}, chain...), Detached: append([]string{}, detached...), Working: append([]string{}, working...),
+		Pointers: cloneStringMap(pointers), Highlight: append([]string{}, highlight...), Group: append([]string{}, group...), Phase: phase,
 	}}
 }
 

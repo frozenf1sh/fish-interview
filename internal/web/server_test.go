@@ -111,7 +111,7 @@ func TestPatternTraceEndpoints(t *testing.T) {
 	server := newDemoServer(t)
 	for _, path := range []string{
 		"/api/traces/linear-dp", "/api/traces/space-rolling", "/api/traces/lcs-dp", "/api/traces/interval-dp",
-		"/api/traces/stock-dp", "/api/traces/bitmask-dp", "/api/traces/linked-list-rewire", "/api/traces/list-merge-sort", "/api/traces/path-dp", "/api/traces/reverse-path-dp", "/api/traces/binary-red-blue",
+		"/api/traces/stock-dp", "/api/traces/bitmask-dp", "/api/traces/linked-list-rewire", "/api/traces/list-merge-sort", "/api/traces/list-k-group", "/api/traces/path-dp", "/api/traces/reverse-path-dp", "/api/traces/binary-red-blue",
 		"/api/traces/flow-bfs-shortest-path", "/api/traces/flow-tree-dp", "/api/traces/flow-string-golang",
 		"/api/traces/lis", "/api/traces/row-gravity",
 		"/api/traces/interval-start-merge", "/api/traces/meeting-rooms", "/api/traces/weighted-intervals", "/api/traces/kadane",
@@ -159,6 +159,7 @@ func TestPatternCardsEmbedKnownTraces(t *testing.T) {
 		"algo.dp.bitmask":                  "/api/traces/bitmask-dp",
 		"algo.list.dummy-rewire":           "/api/traces/linked-list-rewire",
 		"algo.list.merge-sort":             "/api/traces/list-merge-sort",
+		"algo.list.reverse-k-group":        "/api/traces/list-k-group",
 		"algo.dp.path":                     "/api/traces/path-dp",
 		"algo.dp.path.minimum-health":      "/api/traces/reverse-path-dp",
 		"algo.binary-search.answer":        "/api/traces/binary-red-blue",

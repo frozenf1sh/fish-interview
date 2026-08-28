@@ -13,6 +13,8 @@ trace: flow-tree-bst
 
 [LeetCode 98 · 验证二叉搜索树 ↗](https://leetcode.cn/problems/validate-binary-search-tree/)。只比较节点和直接孩子不够，因为祖先也会限制当前节点范围。
 
+动画固定一棵 BST 候选树，在节点旁显示当前 `(low, high)` 开区间；递归向左或向右时只收紧对应端点。
+
 ## 范围递归
 
 `low, high` 是当前节点允许落入的开区间。向左收紧上界为 root 值，向右收紧下界为 root 值。

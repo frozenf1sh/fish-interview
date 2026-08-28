@@ -13,6 +13,8 @@ trace: flow-list-merge
 
 [LeetCode 21 · 合并两个有序链表 ↗](https://leetcode.cn/problems/merge-two-sorted-lists/)。
 
+动画固定左右两条有序输入链和下方结果链；每一步只比较两个头、选择一个节点、再把它动态接到 `tail` 后。
+
 ```go
 dummy := &ListNode{}
 tail := dummy

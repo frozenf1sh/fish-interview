@@ -151,6 +151,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.linkedListRewireTrace(w, r)
 	case r.URL.Path == "/api/traces/list-merge-sort":
 		s.listMergeSortTrace(w, r)
+	case r.URL.Path == "/api/traces/list-k-group":
+		s.listKGroupTrace(w, r)
 	case r.URL.Path == "/api/traces/path-dp":
 		s.pathTrace(w, r)
 	case r.URL.Path == "/api/traces/reverse-path-dp":
@@ -257,6 +259,11 @@ func (s *Server) linkedListRewireTrace(w http.ResponseWriter, _ *http.Request) {
 func (s *Server) listMergeSortTrace(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	_ = json.NewEncoder(w).Encode(trace.ListMergeSortTrace())
+}
+
+func (s *Server) listKGroupTrace(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	_ = json.NewEncoder(w).Encode(trace.LinkedListKGroupTrace())
 }
 
 func (s *Server) pathTrace(w http.ResponseWriter, _ *http.Request) {
@@ -495,6 +502,8 @@ func traceURL(name string) string {
 		return "/api/traces/linked-list-rewire"
 	case "list-merge-sort":
 		return "/api/traces/list-merge-sort"
+	case "list-k-group":
+		return "/api/traces/list-k-group"
 	case "path-dp":
 		return "/api/traces/path-dp"
 	case "reverse-path-dp":

@@ -13,6 +13,8 @@ trace: list-merge-sort
 
 [LeetCode 148 · 排序链表 ↗](https://leetcode.cn/problems/sort-list/)。把 `4→2→1→3` 排成 `1→2→3→4`。
 
+动画始终保留原始链 `dummy→4→2→1→3`；断开当前左右子链后，在下方临时链逐个合并，完成后再动态覆盖回原链。
+
 ```go
 func sort(head *ListNode) *ListNode {
 	if head == nil || head.Next == nil { return head }

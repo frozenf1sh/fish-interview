@@ -13,6 +13,8 @@ trace: flow-tree-lca
 
 [LeetCode 236 · 二叉树的最近公共祖先 ↗](https://leetcode.cn/problems/lowest-common-ancestor-of-a-binary-tree/)。
 
+动画固定一棵二叉树和两个目标节点；递归下探、子树返回 p/q 信号、左右同时找到目标并回到 LCA 各自占一步。
+
 ## 返回值的含义
 
 函数返回当前子树中找到的 `p`、`q` 或它们的 LCA；空表示两者都不在这棵子树。

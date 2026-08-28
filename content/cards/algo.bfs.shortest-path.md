@@ -13,6 +13,8 @@ trace: flow-bfs-shortest-path
 
 [LeetCode 1091 · 二进制矩阵中的最短路径 ↗](https://leetcode.cn/problems/shortest-path-in-binary-matrix/)。每一步代价相同，问从起点到终点最少走几步。
 
+动画使用固定无权图，从起点按队列层序扩散；已访问节点保持绿色，当前队列和新发现的边分别高亮，不会只显示一个跳跃后的结果。
+
 ## 使用信号
 
 状态之间每次移动代价一致；目标是最少步数、最少操作数，或最早到达时间。若边权不同，改用 Dijkstra 或 0-1 BFS。

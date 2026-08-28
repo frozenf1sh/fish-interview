@@ -423,6 +423,7 @@ function renderTraceBoard(board, kind, state) {
   if (kind === "cycle-list-state") return renderCycleListState(board, state);
   if (kind === "linked-list-merge") return renderLinkedListMerge(board, state);
   if (kind === "linked-list-merge-sort") return renderLinkedListMergeSort(board, state);
+  if (kind === "linked-list-k-group") return renderLinkedListKGroup(board, state);
   if (kind === "sequence-tails") return renderSequenceTails(board, state);
   if (kind === "row-gravity") return renderRowGravity(board, state);
   if (kind === "bitmask-state") return renderBitmaskState(board, state);
@@ -489,8 +490,31 @@ function renderGreedyRange(board, state) {
       bar.style.left = `${scale(segment.start)}%`;
       bar.style.width = `${Math.max(1.5, scale(segment.end) - scale(segment.start))}%`;
       if (stacked) bar.style.top = `${3 + index * 30}px`;
-      bar.textContent = segment.label;
+      const longLabel = (segment.label || "").length > 8;
+      const compact = segment.kind === "range"
+        ? ({current: "候", ready: "留", dependency: "读", rejected: "×"}[segment.state] || "")
+        : track.label === "状态"
+          ? segment.label.includes("超") ? "超限"
+            : segment.label.includes("命中") ? "命中"
+              : segment.label.includes("合法") ? "合法"
+                : segment.label.includes("目标") ? "目标" : ""
+          : longLabel && segment.label.includes("超") ? "超限"
+            : longLabel && segment.label.includes("命中") ? "命中"
+              : segment.label;
+      bar.textContent = compact;
+      bar.setAttribute("aria-label", segment.label);
       line.append(bar);
+      if ((segment.kind || "range") === "range") {
+        const start = document.createElement("small");
+        start.className = "greedy-range-endpoint greedy-range-endpoint--start";
+        start.style.left = `${scale(segment.start)}%`;
+        start.textContent = String(segment.start);
+        const end = document.createElement("small");
+        end.className = "greedy-range-endpoint greedy-range-endpoint--end";
+        end.style.left = `${scale(segment.end)}%`;
+        end.textContent = String(segment.end);
+        line.append(start, end);
+      }
     });
     state.markers.filter((marker) => marker.track === track.label).forEach((marker) => {
       const pin = document.createElement("span");
@@ -680,31 +704,120 @@ function renderLinkedListMerge(board, state) {
 }
 
 function renderLinkedListMergeSort(board, state) {
+  const previousPositions = new Map();
+  board.querySelectorAll("[data-merge-id]").forEach((node) => {
+    if (node.classList.contains("merge-sort-result") || !previousPositions.has(node.dataset.mergeId)) previousPositions.set(node.dataset.mergeId, node.getBoundingClientRect());
+  });
   board.className = "trace-board trace-board--linked-merge";
   const heading = document.createElement("p");
   heading.className = "trace-board-label";
   heading.textContent = `${state.caption} · ${state.phase || ""}`;
-  const renderLane = (label, entries, current = false) => {
+  const active = new Set(state.active || []);
+  const isFinal = state.phase === "排序完成";
+  const renderLane = (label, entries, current = false, original = false) => {
     const row = document.createElement("div"); row.className = "merge-list-row";
     const title = document.createElement("small"); title.textContent = label; row.append(title);
     const items = document.createElement("div"); items.className = "merge-list-items";
-    const visible = label === "结果" ? [{label: "dummy", state: "ready"}, ...(entries || [])] : (entries || []);
+    const visible = label === "临时链" ? [{label: "dummy", state: "ready"}, ...(entries || [])] : (entries || []);
     visible.forEach((entry, index) => {
       const token = document.createElement("span");
-      token.className = `example-token is-${entry.state || "ready"}${current && index === 0 ? " is-current" : ""}`;
+      const moving = original && !isFinal && active.has(entry.label) && (state.left?.length || state.right?.length) && entries.length > 0;
+      const side = original && state.left?.some(value => value.label === entry.label) ? " is-left" : original && state.right?.some(value => value.label === entry.label) ? " is-right" : "";
+      token.className = `example-token merge-sort-node is-${entry.state || "ready"}${current && index === 0 ? " is-current" : ""}${moving ? " is-moving" : ""}${side}`;
       token.textContent = entry.label;
+      if (original) token.dataset.mergeId = entry.label;
+      if (!original && label === "临时链" && entry.label !== "dummy") {
+        token.dataset.mergeId = entry.label;
+        token.classList.add("merge-sort-result");
+      }
       items.append(token);
       if (index < visible.length - 1) items.append(Object.assign(document.createElement("span"), {className: "linked-arrow", textContent: "→"}));
     });
     row.append(items); return row;
   };
-  const source = renderLane("当前子链", state.source || [], true);
+  const source = renderLane("原始链", state.original || [], true, true);
   const halves = document.createElement("div"); halves.className = "merge-list-inputs";
-  halves.append(renderLane("左半", state.left || []), renderLane("右半", state.right || []));
-  const result = renderLane("结果", state.result || []);
+  halves.append(renderLane("左子链", state.left || []), renderLane("右子链", state.right || []));
+  const result = isFinal ? renderLane("临时链", []) : renderLane("临时链", state.result || []);
   const stack = document.createElement("div"); stack.className = "merge-list-note";
-  stack.textContent = state.stack?.length ? `递归栈：${state.stack.join("  →  ")}` : "递归栈已清空，返回最终结果";
+  stack.textContent = state.stack?.length ? `递归栈：${state.stack.join("  →  ")}` : isFinal ? "临时链已经覆盖回原始链，返回 dummy.Next" : "递归栈已清空";
   board.replaceChildren(heading, source, halves, result, stack);
+  board.querySelectorAll("[data-merge-id]").forEach((node) => {
+    if (!node.classList.contains("merge-sort-result") && !isFinal && active.has(node.dataset.mergeId)) return;
+    const before = previousPositions.get(node.dataset.mergeId);
+    if (!before) return;
+    const after = node.getBoundingClientRect();
+    const deltaX = before.left - after.left;
+    const deltaY = before.top - after.top;
+    if (deltaX === 0 && deltaY === 0) return;
+    node.style.transition = "none";
+    node.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+    void node.offsetWidth;
+    requestAnimationFrame(() => {
+      node.style.transition = "transform 420ms ease, background .25s, border-color .25s";
+      node.style.transform = "";
+    });
+  });
+}
+
+function renderLinkedListKGroup(board, state) {
+  const previousPositions = new Map([...board.querySelectorAll("[data-kgroup-id]")].map((node) => [node.dataset.kgroupId, node.getBoundingClientRect()]));
+  board.className = "trace-board trace-board--linked-k-group";
+  const heading = document.createElement("p");
+  heading.className = "trace-board-label";
+  heading.textContent = `${state.caption} · ${state.phase || ""}`;
+  const renderRow = (label, values, options = {}) => {
+    const row = document.createElement("div");
+    row.className = "k-group-row";
+    const rowLabel = document.createElement("small");
+    rowLabel.textContent = label;
+    const chain = document.createElement("div");
+    chain.className = "linked-chain";
+    (values || []).forEach((value, index) => {
+      const node = document.createElement("div");
+      const pointers = Object.entries(state.pointers || {}).filter(([, target]) => target === value).map(([name]) => name);
+      const active = (state.highlight || []).includes(value);
+      const inGroup = (state.group || []).includes(value);
+      node.className = `linked-node k-group-node${value === "D" ? " is-dummy" : ""}${options.detached ? " is-detached" : ""}${pointers.length ? " is-pointed" : ""}${active ? " is-active" : ""}${inGroup ? " is-group" : ""}${!active && !options.detached ? " is-stable" : ""}`;
+      node.dataset.kgroupId = value;
+      const valueLabel = document.createElement("strong");
+      valueLabel.textContent = value === "D" ? "dummy" : value;
+      node.append(valueLabel);
+      if (pointers.length) {
+        const pointer = document.createElement("small");
+        pointer.textContent = pointers.join(" · ");
+        node.append(pointer);
+      }
+      chain.append(node);
+      if (index < values.length - 1) {
+        const arrow = document.createElement("span");
+        arrow.className = "linked-arrow";
+        arrow.textContent = "→";
+        chain.append(arrow);
+      }
+    });
+    row.append(rowLabel, chain);
+    return row;
+  };
+  const note = document.createElement("p");
+  note.className = "k-group-note";
+  note.textContent = `k = 3 · ${Object.entries(state.pointers || {}).filter(([, value]) => value && value !== "-").map(([name, value]) => `${name}=${value}`).join(" · ")}`;
+  board.replaceChildren(heading, renderRow("主链", state.chain), renderRow("待处理组", state.detached, {detached: true}), renderRow("临时链", state.working), note);
+  board.querySelectorAll("[data-kgroup-id]").forEach((node) => {
+    const before = previousPositions.get(node.dataset.kgroupId);
+    if (!before) return;
+    const after = node.getBoundingClientRect();
+    const deltaX = before.left - after.left;
+    const deltaY = before.top - after.top;
+    if (deltaX === 0 && deltaY === 0) return;
+    node.style.transition = "none";
+    node.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+    void node.offsetWidth;
+    requestAnimationFrame(() => {
+      node.style.transition = "transform 420ms ease, background .25s, border-color .25s";
+      node.style.transform = "";
+    });
+  });
 }
 
 function renderSequenceTails(board, state) {
@@ -758,6 +871,7 @@ function renderRowGravity(board, state) {
 
 function renderIntervals(board, state) {
   board.className = "trace-board trace-board--intervals";
+  const statusLabel = {candidate: "看", selected: "留", rejected: "×", pending: ""};
   board.replaceChildren(...state.intervals.map((interval) => {
     const row = document.createElement("div");
     row.className = "interval-row";
@@ -769,8 +883,17 @@ function renderIntervals(board, state) {
     bar.className = `interval interval--${interval.status}`;
     bar.style.left = `${(interval.start / 9) * 100}%`;
     bar.style.width = `${((interval.end - interval.start) / 9) * 100}%`;
-    bar.textContent = `[${interval.start}, ${interval.end})`;
-    track.append(bar);
+    bar.textContent = statusLabel[interval.status] || "";
+    bar.setAttribute("aria-label", `[${interval.start}, ${interval.end}) ${interval.label}`);
+    const start = document.createElement("small");
+    start.className = "interval-endpoint interval-endpoint--start";
+    start.style.left = `${(interval.start / 9) * 100}%`;
+    start.textContent = String(interval.start);
+    const end = document.createElement("small");
+    end.className = "interval-endpoint interval-endpoint--end";
+    end.style.left = `${(interval.end / 9) * 100}%`;
+    end.textContent = String(interval.end);
+    track.append(bar, start, end);
     row.append(label, track);
     return row;
   }));
@@ -884,7 +1007,9 @@ function renderBitmaskState(board, state) {
   board.className = "trace-board trace-board--bitmask";
   const heading = document.createElement("p");
   heading.className = "trace-board-label";
-  heading.textContent = "mask 的每一位对应一个城市；高亮位已经访问";
+  const visited = state.names.filter((_, index) => (state.mask & (1 << index)) !== 0).join("、") || "空";
+  const last = state.last >= 0 ? state.names[state.last] : "—";
+  heading.textContent = `mask = ${state.mask.toString(2).padStart(state.names.length, "0")}（已访问 ${visited}） · last = ${last}`;
   const cities = document.createElement("div");
   cities.className = "bitmask-cities";
   state.names.forEach((name, index) => {
@@ -907,7 +1032,7 @@ function renderBitmaskState(board, state) {
   }
   const result = document.createElement("p");
   result.className = "bitmask-result";
-  result.textContent = `当前累计代价：${state.cost}`;
+  result.textContent = `当前状态：集合 + 最后位置 · 累计代价 ${state.cost}`;
   board.replaceChildren(heading, cities, result);
 }
 

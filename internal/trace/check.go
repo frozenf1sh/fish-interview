@@ -52,6 +52,7 @@ func validateRendererState(kind string, state any) error {
 		"cycle-list-state":       {"nodes", "links"},
 		"linked-list-merge":      {"left", "right", "result"},
 		"linked-list-merge-sort": {"source", "left", "right", "result", "stack"},
+		"linked-list-k-group":    {"chain", "detached", "working", "group"},
 		"window-range":           {"tracks", "markers"},
 		"flow-steps":             {"steps"},
 	}
@@ -101,6 +102,7 @@ func AllTraces() map[string]Trace {
 		"bitmask-dp":             BitmaskTrace(),
 		"linked-list-rewire":     LinkedListRewireTrace(),
 		"list-merge-sort":        ListMergeSortTrace(),
+		"list-k-group":           LinkedListKGroupTrace(),
 		"path-dp":                PathTrace(),
 		"reverse-path-dp":        ReversePathTrace(),
 		"binary-red-blue":        BinaryRedBluePartition(),

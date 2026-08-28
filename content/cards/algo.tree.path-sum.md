@@ -13,6 +13,8 @@ trace: flow-tree-path-sum
 
 [LeetCode 112 · 路径总和 ↗](https://leetcode.cn/problems/path-sum/)。是否存在一条根到叶路径，其节点和等于 target。
 
+动画固定带数值的二叉树和 target=22；进入节点时路径与剩余和更新，走到叶子时单独判断并回退到下一个分支。
+
 ```go
 func hasPathSum(node *TreeNode, remain int) bool {
 	if node == nil { return false }

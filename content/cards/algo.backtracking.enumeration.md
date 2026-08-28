@@ -9,6 +9,10 @@ links: [algo.backtracking.choose-skip, algo.math.permutation, algo.math.combinat
 trace: flow-backtracking-enumeration
 ---
 
+## 例题
+
+[LeetCode 46 · 全排列 ↗](https://leetcode.cn/problems/permutations/)。动画固定 `nums=[1,2,3]`，每一步从未使用候选中选择一个，回退后再尝试同层下一个候选。
+
 ## 排列、组合、子集的分界
 
 - **排列**：位置有顺序，同一元素每条路径只能用一次，使用 `used[i]`。
@@ -17,7 +21,7 @@ trace: flow-backtracking-enumeration
 
 ## 排列模板
 
-[LeetCode 46 · 全排列 ↗](https://leetcode.cn/problems/permutations/)。
+动画保留当前路径和 used 状态；每次选一个候选、进入下一层、撤销选择都单独展示。
 
 ```go
 used := make([]bool, len(nums))

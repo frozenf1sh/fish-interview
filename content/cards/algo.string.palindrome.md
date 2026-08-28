@@ -13,6 +13,8 @@ trace: palindrome-interval-dp
 
 [LeetCode 5 · 最长回文子串 ↗](https://leetcode.cn/problems/longest-palindromic-substring/)。
 
+动画以具体字符串 `babad` 为例，保留字符下标和 DP 表；区间按长度从短到长出现，先读取内部区间，再写当前 `[l,r]`。
+
 ```go
 dp := make([][]bool, n)
 for i := range dp {

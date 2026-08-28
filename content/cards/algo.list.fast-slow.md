@@ -13,6 +13,8 @@ trace: flow-list-fast-slow
 
 [LeetCode 141 · 环形链表 ↗](https://leetcode.cn/problems/linked-list-cycle/)。有环时 fast 最终会追上 slow；无环时 fast 会到 nil。
 
+动画使用带环的具体链表，把 `slow`、`fast` 作为文字指针标签显示；每一步同时移动两者，链表结构保持在原位。
+
 ```go
 slow, fast := head, head
 for fast != nil && fast.Next != nil {

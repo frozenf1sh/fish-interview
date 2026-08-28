@@ -543,21 +543,54 @@ func redesignedPalindromeTrace() Trace {
 }
 
 func redesignedKMPTrace() Trace {
-	code := []string{"pi := buildPrefix(pattern)", "for _, ch := range text {", "    for j > 0 && ch != pattern[j] { j = pi[j-1] }", "    if ch == pattern[j] { j++ }", "    if j == len(pattern) { report match }", "}"}
-	textInput := []string{"a", "b", "a", "b", "c"}
-	pattern := []string{"a", "b", "c"}
-	frames := []Frame{
-		deepExampleFrame(0, "例题 text=ababc、pattern=abc。先构造模式的前缀函数 pi=[0,0,0]，主串指针只向右。", "KMP：预处理模式", map[string]string{"text": "ababc", "pattern": "abc", "pi": "[0,0,0]"}, tokenRow("text", textInput, nil), tokenRow("pattern", pattern, nil), lane("pi", item("0", "ready"), item("0", "ready"), item("0", "ready"))),
-		deepExampleFrame(3, "读 text[0]=a，与 pattern[0]=a 相等；j 从 0 写成 1。", "匹配 a", map[string]string{"textIndex": "0", "j": "1"}, tokenRow("text", textInput, map[int]string{0: "current"}), tokenRow("pattern", pattern, map[int]string{0: "dependency"}), lane("j", item("0→1", "current"))),
-		deepExampleFrame(3, "读 text[1]=b，与 pattern[1]=b 相等；j=2。", "匹配 b", map[string]string{"textIndex": "1", "j": "2"}, tokenRow("text", textInput, map[int]string{1: "current"}), tokenRow("pattern", pattern, map[int]string{1: "dependency"}), lane("j", item("1→2", "current"))),
-		deepExampleFrame(2, "读 text[2]=a，但 pattern[2]=c；失配时不回退文本，只读取 pi[j-1]=pi[1]=0。", "发现失配", map[string]string{"textIndex": "2", "textChar": "a", "patternChar": "c", "j": "2"}, tokenRow("text", textInput, map[int]string{2: "current"}), tokenRow("pattern", pattern, map[int]string{2: "rejected"}), lane("pi", item("pi[1]=0", "dependency"))),
-		deepExampleFrame(2, "执行 j=pi[1]=0；文本下标仍停在 2，模式指针回退而不是重读主串前缀。", "回退模式指针", map[string]string{"textIndex": "2", "j": "0"}, tokenRow("text", textInput, map[int]string{2: "current"}), tokenRow("pattern", pattern, map[int]string{0: "current"}), lane("j", item("2→0", "current"))),
-		deepExampleFrame(3, "在同一个 text[2]=a 上重新比较 pattern[0]=a，匹配后 j=1。", "复用主串字符", map[string]string{"textIndex": "2", "j": "1"}, tokenRow("text", textInput, map[int]string{2: "current"}), tokenRow("pattern", pattern, map[int]string{0: "dependency"}), lane("j", item("0→1", "current"))),
-		deepExampleFrame(3, "读 text[3]=b，匹配 pattern[1]，j=2；主串从未向左移动。", "继续匹配", map[string]string{"textIndex": "3", "j": "2"}, tokenRow("text", textInput, map[int]string{3: "current"}), tokenRow("pattern", pattern, map[int]string{1: "dependency"}), lane("j", item("1→2", "current"))),
-		deepExampleFrame(3, "读 text[4]=c，匹配 pattern[2]，j=3 达到模式长度。", "完成一次匹配", map[string]string{"textIndex": "4", "j": "3"}, tokenRow("text", textInput, map[int]string{4: "current"}), tokenRow("pattern", pattern, map[int]string{2: "dependency"}), lane("j", item("2→3", "current"))),
-		deepExampleFrame(4, "报告匹配起点 2；KMP 的核心收益就是失配时复用 pi，而不是把 text[2] 之前的字符重新比较。", "KMP：找到匹配", map[string]string{"matchStart": "2", "answer": "true"}, tokenRow("text", textInput, map[int]string{2: "ready", 3: "ready", 4: "current"}), lane("答案", item("text[2:5]=abc", "current"))),
+	code := []string{
+		"pi := make([]int, len(pattern))",
+		"for i, j := 1, 0; i < len(pattern); i++ {",
+		"    for j > 0 && pattern[i] != pattern[j] { j = pi[j-1] }",
+		"    if pattern[i] == pattern[j] { j++ }",
+		"    pi[i] = j",
+		"}",
+		"for i, j := range text {",
+		"    for j > 0 && text[i] != pattern[j] { j = pi[j-1] }",
+		"    if text[i] == pattern[j] { j++ }",
+		"    if j == len(pattern) { report i-j+1 }",
+		"}",
 	}
-	return concreteTrace("example-state", "字符串：KMP 模式匹配", code, frames...)
+	pattern := []string{"a", "b", "a", "b", "a", "c", "a"}
+	pi := []string{"0", "0", "1", "2", "3", "0", "1"}
+	patternRow := func(states map[int]string) exampleLane { return tokenRow("pattern", pattern, states) }
+	piRow := func(computed int, states map[int]string) exampleLane {
+		values := make([]string, len(pi))
+		for index := range values {
+			values[index] = "_"
+			if index < computed {
+				values[index] = pi[index]
+			}
+		}
+		return tokenRow("pi", values, states)
+	}
+	textInput := []string{"z", "z", "a", "b", "a", "b", "a", "c", "a"}
+	frames := []Frame{
+		deepExampleFrame(0, "例题 pattern=ababaca、text=zzababaca。先创建与 pattern 等长的 pi 数组，所有位置还未计算。", "KMP：建立 pi 数组", map[string]string{"pattern": "ababaca", "pi": "[_,_,_,_,_,_,_]"}, patternRow(nil), piRow(0, nil)),
+		deepExampleFrame(2, "i=1：比较 pattern[1]=b 与 pattern[0]=a，失配且 j=0，不能继续回退。", "pi[1] 比较失配", map[string]string{"i": "1", "j": "0", "compare": "b != a"}, patternRow(map[int]string{1: "rejected", 0: "dependency"}), piRow(0, map[int]string{1: "current"})),
+		deepExampleFrame(4, "写 pi[1]=0；数组保留已经计算的前缀 [0,0]。", "写入 pi[1]", map[string]string{"i": "1", "pi[1]": "0", "pi": "[0,0,_,_,_,_,_]"}, patternRow(map[int]string{1: "current"}), piRow(2, map[int]string{0: "ready", 1: "current"})),
+		deepExampleFrame(3, "i=2：pattern[2]=a 与 pattern[0]=a 相同，j 从 0 推进为 1。", "pi[2] 匹配推进", map[string]string{"i": "2", "j": "1", "compare": "a == a"}, patternRow(map[int]string{2: "current", 0: "dependency"}), piRow(2, map[int]string{1: "ready", 2: "current"})),
+		deepExampleFrame(4, "写 pi[2]=1；长度为 2 的前缀 ab 已经可以作为后缀复用。", "写入 pi[2]", map[string]string{"i": "2", "pi[2]": "1", "pi": "[0,0,1,_,_,_,_]"}, patternRow(map[int]string{2: "current"}), piRow(3, map[int]string{0: "ready", 1: "ready", 2: "current"})),
+		deepExampleFrame(3, "i=3：pattern[3]=b 与 pattern[j=1]=b 相同，j 推进为 2。", "pi[3] 匹配推进", map[string]string{"i": "3", "j": "2", "compare": "b == b"}, patternRow(map[int]string{3: "current", 1: "dependency"}), piRow(3, map[int]string{2: "dependency", 3: "current"})),
+		deepExampleFrame(4, "写 pi[3]=2；当前前后缀都是 ab。", "写入 pi[3]", map[string]string{"i": "3", "pi[3]": "2", "pi": "[0,0,1,2,_,_,_]"}, patternRow(map[int]string{3: "current"}), piRow(4, map[int]string{0: "ready", 1: "ready", 2: "ready", 3: "current"})),
+		deepExampleFrame(3, "i=4：pattern[4]=a 与 pattern[j=2]=a 相同，j 推进为 3。", "pi[4] 匹配推进", map[string]string{"i": "4", "j": "3", "compare": "a == a"}, patternRow(map[int]string{4: "current", 2: "dependency"}), piRow(4, map[int]string{3: "dependency", 4: "current"})),
+		deepExampleFrame(4, "写 pi[4]=3；abab 的最长相等前后缀长度为 3。", "写入 pi[4]", map[string]string{"i": "4", "pi[4]": "3", "pi": "[0,0,1,2,3,_,_]"}, patternRow(map[int]string{4: "current"}), piRow(5, map[int]string{0: "ready", 1: "ready", 2: "ready", 3: "ready", 4: "current"})),
+		deepExampleFrame(2, "i=5：pattern[5]=c 与 pattern[j=3]=b 失配；先读取 pi[j-1]=pi[2]=1，把 j 从 3 回退到 1。", "pi[5] 第一次回退", map[string]string{"i": "5", "j": "3→1", "fallback": "pi[2]=1"}, patternRow(map[int]string{5: "rejected", 3: "dependency"}), piRow(5, map[int]string{2: "dependency", 5: "current"})),
+		deepExampleFrame(2, "回退后再次比较 c 与 pattern[1]=b，仍失配；j=1 再读取 pi[0]=0。", "pi[5] 第二次回退", map[string]string{"i": "5", "j": "1→0", "fallback": "pi[0]=0"}, patternRow(map[int]string{5: "rejected", 1: "dependency"}), piRow(5, map[int]string{0: "dependency", 5: "current"})),
+		deepExampleFrame(4, "j=0 后无法再回退，写 pi[5]=0；失配只改变模式前缀长度。", "写入 pi[5]", map[string]string{"i": "5", "pi[5]": "0", "pi": "[0,0,1,2,3,0,_]"}, patternRow(map[int]string{5: "current"}), piRow(6, map[int]string{0: "ready", 1: "ready", 2: "ready", 3: "ready", 4: "ready", 5: "current"})),
+		deepExampleFrame(3, "i=6：pattern[6]=a 与 pattern[0]=a 匹配，j 推进为 1。", "pi[6] 匹配推进", map[string]string{"i": "6", "j": "1", "compare": "a == a"}, patternRow(map[int]string{6: "current", 0: "dependency"}), piRow(6, map[int]string{5: "dependency", 6: "current"})),
+		deepExampleFrame(4, "pi 计算完成，数组为 [0,0,1,2,3,0,1]；下面复用它扫描主串。", "KMP：pi 完成", map[string]string{"pi": "[0,0,1,2,3,0,1]"}, patternRow(map[int]string{0: "ready", 1: "ready", 2: "ready", 3: "ready", 4: "ready", 5: "ready", 6: "ready"}), piRow(7, map[int]string{0: "ready", 1: "ready", 2: "ready", 3: "ready", 4: "ready", 5: "ready", 6: "current"})),
+		deepExampleFrame(7, "扫描 text=zzababaca：前两个 z 都与 pattern[0] 失配，j 保持 0；主串指针继续向右。", "扫描主串前缀", map[string]string{"textIndex": "0→1", "j": "0", "pi": "[0,0,1,2,3,0,1]"}, tokenRow("text", textInput, map[int]string{0: "rejected", 1: "rejected"}), patternRow(map[int]string{0: "dependency"}), piRow(7, nil)),
+		deepExampleFrame(9, "读 text[2..6]=ababa，依次匹配 pattern[0..4]，j 从 0 推进到 5；pi 数组保持在画面上作为已知结构。", "主串匹配到前缀", map[string]string{"textIndex": "2→6", "j": "5", "pi": "[0,0,1,2,3,0,1]"}, tokenRow("text", textInput, map[int]string{2: "ready", 3: "ready", 4: "ready", 5: "ready", 6: "current"}), patternRow(map[int]string{0: "ready", 1: "ready", 2: "ready", 3: "ready", 4: "dependency"}), piRow(7, map[int]string{2: "dependency", 3: "dependency", 4: "dependency"})),
+		deepExampleFrame(8, "text[7]=c 与 pattern[5]=c 匹配，j=6；继续读取 text[8]。", "继续主串匹配", map[string]string{"textIndex": "7", "j": "6"}, tokenRow("text", textInput, map[int]string{7: "current"}), patternRow(map[int]string{5: "dependency"}), piRow(7, map[int]string{4: "dependency"})),
+		deepExampleFrame(9, "text[8]=a 与 pattern[6]=a 匹配，j=7 达到模式长度；报告匹配起点 2。", "报告匹配", map[string]string{"textIndex": "8", "j": "7", "matchStart": "2", "answer": "true"}, tokenRow("text", textInput, map[int]string{2: "ready", 3: "ready", 4: "ready", 5: "ready", 6: "ready", 7: "ready", 8: "current"}), patternRow(map[int]string{6: "current"}), piRow(7, map[int]string{6: "dependency"})),
+	}
+	return concreteTrace("example-state", "字符串：KMP 与 pi 前缀函数", code, frames...)
 }
 
 func redesignedLCSSpaceTrace() Trace {
@@ -598,24 +631,32 @@ func redesignedSpaceOptimizationTrace() Trace {
 }
 
 func bitmaskDeepFrame(line int, narration string, mask, last, previousLast, cost, candidate int, candidates, states []string) Frame {
-	return Frame{ActiveLine: line, Narration: narration, Variables: map[string]string{"mask": binaryMask(mask, 4), "last": "city " + itoa(last), "candidate": itoa(candidate), "cost": itoa(cost)}, State: bitmaskState{Names: []string{"0", "1", "2", "3"}, Mask: mask, Last: last, PreviousLast: previousLast, Cost: cost, Candidate: candidate, Candidates: append([]string(nil), candidates...), States: append([]string(nil), states...)}}
+	lastName, candidateName := "—", "—"
+	if last >= 0 {
+		lastName = string(rune('A' + last))
+	}
+	if candidate >= 0 {
+		candidateName = string(rune('A' + candidate))
+	}
+	return Frame{ActiveLine: line, Narration: narration, Variables: map[string]string{"mask": binaryMask(mask, 4), "last": lastName, "candidate": candidateName, "cost": itoa(cost)}, State: bitmaskState{Names: []string{"A", "B", "C", "D"}, Mask: mask, Last: last, PreviousLast: previousLast, Cost: cost, Candidate: candidate, Candidates: append([]string(nil), candidates...), States: append([]string(nil), states...)}}
 }
 
 func redesignedBitmaskTrace() Trace {
 	code := []string{"dp[1<<0][0] = 0", "for mask := 1; mask < 1<<n; mask++ {", "    for last := 0; last < n; last++ {", "        if dp[mask][last] == inf { continue }", "        for next := 0; next < n; next++ {", "            if mask&(1<<next) != 0 { continue }", "            nextMask := mask | (1 << next)", "            candidate := dp[mask][last] + cost[last][next]", "            dp[nextMask][next] = min(dp[nextMask][next], candidate)", "        }", "    }", "}"}
 	frames := []Frame{
-		bitmaskDeepFrame(0, "例题用 4 个城市展示 dp[mask][last]；mask 只表达集合，last 还要表达当前停在哪里。", 1, 0, -1, 0, -1, nil, []string{"dp[0001][0]=0"}),
-		bitmaskDeepFrame(1, "枚举到 mask=0001、last=0；状态可达，准备检查 next。", 1, 0, -1, 0, -1, []string{"next=1", "next=2", "next=3"}, []string{"可达状态：0001/0"}),
-		bitmaskDeepFrame(4, "检查 next=1：mask 的第 1 位为 0，可以访问；候选 nextMask=0011。", 1, 0, 0, 0, 1, []string{"0→1 cost=2"}, []string{"dp[0001][0]=0"}),
-		bitmaskDeepFrame(7, "计算 candidate=dp[0001][0]+cost[0][1]=0+2=2，写入 dp[0011][1]。", 3, 1, 0, 2, 1, []string{"dp[0011][1]=2"}, []string{"0001/0 → 0011/1 = 2"}),
-		bitmaskDeepFrame(4, "返回同一个旧状态检查 next=2：它也未访问，候选是 mask=0101、last=2。", 1, 0, 0, 0, 2, []string{"0→2 cost=9"}, []string{"0011/1=2", "0101/2=9"}),
-		bitmaskDeepFrame(7, "写入 dp[0101][2]=9；这里集合相同但 last 不同的状态不能合并。", 5, 2, 0, 9, 2, []string{"dp[0101][2]=9"}, []string{"保留 last=2"}),
-		bitmaskDeepFrame(4, "从 0011/1 扩展时，next=0 的位已为 1，红色跳过；next=2 可以进入。", 3, 1, 0, 2, 0, []string{"next=0 已访问", "next=2 未访问", "next=3 未访问"}, []string{"0011/1=2"}),
-		bitmaskDeepFrame(7, "选择 3，写 dp[1011][3]=6；新状态同时记下集合 1011 和最后城市 3。", 11, 3, 1, 6, 3, []string{"dp[1011][3]=6"}, []string{"0011/1 → 1011/3 = 6"}),
-		bitmaskDeepFrame(4, "从 1011/3 扫描 next：0、1 已在 mask 中，只有 2 是未访问候选。", 11, 3, 1, 6, 2, []string{"next=0 rejected", "next=1 rejected", "next=2 accepted"}, []string{"1011/3=6"}),
-		bitmaskDeepFrame(7, "计算 1011/3 接 2 的候选代价 6+12=18，写入全集合 1111/2。", 15, 2, 3, 18, 2, []string{"dp[1111][2]=18"}, []string{"1011/3 → 1111/2 = 18"}),
-		bitmaskDeepFrame(2, "另一路也能到全集合，但会产生不同的 last 状态；最终答案要在 dp[1111][last] 中取最小值。", 15, 2, 3, 18, -1, []string{"last=0", "last=1", "last=2", "last=3"}, []string{"全集合已完成"}),
-		bitmaskDeepFrame(9, "动画示例的完整集合状态为 mask=1111、last=2、cost=18；集合与最后位置共同构成 DP 状态。", 15, 2, 3, 18, -1, nil, []string{"答案候选：dp[1111][2]=18"}),
+		bitmaskDeepFrame(0, "例题把 4 个城市 A、B、C、D 的访问顺序压进 DP；从 A 出发访问所有城市，边代价用 A→B=2、B→C=3、C→D=1 展示。mask 记录集合，last 记录当前位置。", 1, 0, -1, 0, -1, []string{"A→B=2", "A→C=9", "A→D=8"}, []string{"dp[0001][A]=0"}),
+		bitmaskDeepFrame(1, "当前状态是 mask=0001、last=A；A 已访问，B、C、D 的位为 0，所以三条边都可以作为下一步。", 1, 0, -1, 0, -1, []string{"B 未访问", "C 未访问", "D 未访问"}, []string{"当前：0001/A=0"}),
+		bitmaskDeepFrame(4, "检查 next=B：mask 的 B 位为 0，读取 A→B=2，得到新集合 0011。", 1, 0, 0, 0, 1, []string{"A→B +2", "新 mask=0011"}, []string{"读：0001/A=0"}),
+		bitmaskDeepFrame(7, "候选代价是旧值 0 加边代价 2；把 dp[0011][B] 写成 2。", 3, 1, 0, 2, 1, []string{"0 + 2 = 2", "写 0011/B"}, []string{"0001/A → 0011/B = 2"}),
+		bitmaskDeepFrame(4, "回到同一个 0001/A，再检查 next=C；这次得到不同的最后位置 C，不能和 last=B 的状态合并。", 1, 0, 0, 0, 2, []string{"A→C +9", "新 mask=0101"}, []string{"已有：0011/B=2", "候选：0101/C=9"}),
+		bitmaskDeepFrame(7, "写入 dp[0101][C]=9；集合相似时，last 不同仍代表不同的下一条边。", 5, 2, 0, 9, 2, []string{"0 + 9 = 9", "写 0101/C"}, []string{"0011/B=2", "0101/C=9"}),
+		bitmaskDeepFrame(1, "取出较短的 0011/B=2；现在集合是 A、B，last=B，下一步只能从 B 的出边继续。", 3, 1, 0, 2, -1, []string{"C 未访问", "D 未访问", "A 已访问"}, []string{"当前：0011/B=2"}),
+		bitmaskDeepFrame(4, "检查 next=C：C 位仍为 0，读取 B→C=3；新集合变成 0111。", 3, 1, 0, 2, 2, []string{"B→C +3", "新 mask=0111"}, []string{"读：0011/B=2"}),
+		bitmaskDeepFrame(7, "写入 dp[0111][C]=2+3=5；这一步同时扩展集合，并更新最后位置为 C。", 7, 2, 1, 5, 2, []string{"2 + 3 = 5", "写 0111/C"}, []string{"0011/B → 0111/C = 5"}),
+		bitmaskDeepFrame(4, "从 0111/C 扫描 next：A、B 已访问，D 未访问；只有 D 能让 mask 变成 1111。", 7, 2, 1, 5, 3, []string{"A 已访问", "B 已访问", "C 已访问", "D 未访问"}, []string{"当前：0111/C=5"}),
+		bitmaskDeepFrame(7, "读取 C→D=1，候选为 5+1=6；写入全集合状态 dp[1111][D]。", 15, 3, 2, 6, 3, []string{"5 + 1 = 6", "写 1111/D"}, []string{"0111/C → 1111/D = 6"}),
+		bitmaskDeepFrame(2, "mask=1111 表示四个城市都访问过；此时仍按 last 分开保存，最后在 dp[1111][last] 中取最小值。", 15, 3, 2, 6, -1, []string{"last=A", "last=B", "last=C", "last=D"}, []string{"全集合：等待比较"}),
+		bitmaskDeepFrame(9, "示例路径 A→B→C→D 的代价是 6；动画到这里展示了状态压缩的两个维度：访问集合 + 最后位置。", 15, 3, 2, 6, -1, nil, []string{"答案候选：dp[1111][D]=6"}),
 	}
 	return concreteTrace("bitmask-state", "状态压缩 DP：集合与最后位置", code, frames...)
 }

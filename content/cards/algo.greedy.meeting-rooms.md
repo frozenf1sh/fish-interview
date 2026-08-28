@@ -13,6 +13,8 @@ trace: meeting-rooms
 
 [LeetCode 253 · 会议室 II ↗](https://leetcode.cn/problems/meeting-rooms-ii/)。`[[0,30],[5,10],[15,20]]` 至少需要 `2` 个会议室。
 
+动画把会议画在同一条时间轴上，同时保留 starts、ends 两条排序轨道；扫描开始时间时，只移动对应指针和房间数。
+
 ## 变量的含义
 
 把会议拆成 `starts` 与 `ends`。扫描每个开始时间 `start` 时，`ends[end]` 永远是尚未释放会议中最早的结束时间：

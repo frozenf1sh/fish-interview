@@ -9,6 +9,10 @@ links: [algo.greedy.interval-scheduling]
 trace: flow-greedy-interval-endpoints
 ---
 
+## 例题
+
+动画用 `[[1,6],[2,8],[7,12],[10,16]]` 展示最少箭数：同一条时间轴保留所有区间，当前公共交集只收紧右端或在断开时开启新组。
+
 ## 两类题先分清目标
 
 - **选最多不重叠区间**：[LeetCode 435](https://leetcode.cn/problems/non-overlapping-intervals/)，按结束时间升序，能接上就选。

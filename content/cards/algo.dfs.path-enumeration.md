@@ -13,6 +13,8 @@ trace: flow-dfs-path
 
 [LeetCode 797 · 所有可能的路径 ↗](https://leetcode.cn/problems/all-paths-from-source-to-target/)。图是 DAG，枚举 0 到 n-1 的所有路径。
 
+动画使用固定 DAG，从 0 沿一条边一步步进入；当前 path、递归栈和回退后的兄弟分支同时保留，能看到路径如何被枚举与撤销。
+
 ```go
 path := []int{0}
 var dfs func(int)

@@ -13,6 +13,8 @@ trace: flow-bfs-topological
 
 [LeetCode 207 · 课程表 ↗](https://leetcode.cn/problems/course-schedule/)。先修关系能否完成全部课程，本质是判断有向图是否有环。
 
+动画固定课程依赖图和每个节点的入度；每次取入度为 0 的节点、删除它的出边、更新邻居入度各占一步。
+
 ## 模板
 
 ```go

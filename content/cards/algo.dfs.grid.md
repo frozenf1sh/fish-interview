@@ -13,6 +13,8 @@ trace: flow-dfs-grid
 
 [LeetCode 200 · 岛屿数量 ↗](https://leetcode.cn/problems/number-of-islands/)。每次遇到未访问陆地，就用 DFS 淹没整个岛，答案加一。
 
+动画固定网格，把递归调用栈画在网格旁；进入陆地、检查相邻方向、标记和返回分别可见，整块连通区域会逐格被淹没。
+
 ```go
 var dfs func(int, int)
 dfs = func(r, c int) {

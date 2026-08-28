@@ -41,6 +41,21 @@ func TestLinkedListRewireTrace(t *testing.T) {
 	}
 }
 
+func TestLinkedListKGroupTrace(t *testing.T) {
+	value := LinkedListKGroupTrace()
+	if value.Kind != "linked-list-k-group" || len(value.Frames) < 20 {
+		t.Fatalf("unexpected k-group trace: %#v", value)
+	}
+	detached, ok := value.Frames[5].State.(kGroupListState)
+	if !ok || strings.Join(detached.Chain, ",") != "D,4,5" || strings.Join(detached.Detached, ",") != "1,2,3" {
+		t.Fatalf("trace must expose the detached group: %#v", value.Frames[5].State)
+	}
+	last, ok := value.Frames[len(value.Frames)-1].State.(kGroupListState)
+	if !ok || strings.Join(last.Chain, ",") != "D,3,2,1,4,5" {
+		t.Fatalf("unexpected k-group final chain: %#v", value.Frames[len(value.Frames)-1])
+	}
+}
+
 func TestFlowTraceHasReplayableSteps(t *testing.T) {
 	got, ok := FlowTrace("flow-bfs-shortest-path")
 	if !ok || got.Kind != "node-link-state" || len(got.Frames) < 5 {
@@ -114,7 +129,7 @@ func TestRedesignedFlowTracesKeepConcreteTransitions(t *testing.T) {
 		{"flow-string-window", "扩张纳入 b", "完成", 10},
 		{"flow-string-golang", "[]rune", "得到 Go中", 7},
 		{"flow-string-palindrome", "写入 true", "最长回文子串", 20},
-		{"flow-string-kmp", "j=pi[1]=0", "报告匹配", 9},
+		{"flow-string-kmp", "pi[2]=1", "报告匹配", 9},
 		{"flow-lcs-space", "读取覆盖前 dp[1]=0", "一维数组最终", 11},
 	}
 	for _, test := range tests {
@@ -247,7 +262,7 @@ func TestDPPatternTracesReachExpectedResults(t *testing.T) {
 	}
 	bitmask := BitmaskTrace()
 	last := bitmask.Frames[len(bitmask.Frames)-1]
-	if last.Variables["mask"] != "1111" || last.Variables["cost"] != "18" {
+	if last.Variables["mask"] != "1111" || last.Variables["last"] != "D" || last.Variables["cost"] != "6" {
 		t.Fatalf("unexpected bitmask trace: %#v", bitmask)
 	}
 	rolling := SpaceOptimizationTrace()
@@ -308,6 +323,7 @@ func TestRedesignedTracesExposeStateSpecificModels(t *testing.T) {
 		{"flow-list-fast-slow", "cycle-list-state", 9},
 		{"flow-list-merge", "linked-list-merge", 15},
 		{"list-merge-sort", "linked-list-merge-sort", 25},
+		{"list-k-group", "linked-list-k-group", 20},
 		{"sliding-window-exact", "window-range", 9},
 		{"sliding-window-at-most", "window-range", 10},
 		{"sliding-window-minimum", "window-range", 25},
