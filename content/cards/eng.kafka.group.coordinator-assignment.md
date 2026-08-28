@@ -20,3 +20,13 @@ Group Coordinator
 ```
 
 成员变化会生成新一轮分配。Consumer 只应处理当前拥有的分区，失去归属后继续提交旧分区位点可能失败，这也是交接逻辑必须被认真处理的原因。
+
+## 和 Producer 路由的区别
+
+| 问题 | Producer | Consumer Group |
+| --- | --- | --- |
+| 决定什么 | Record 写入哪个 Partition | 哪个 Consumer 读取哪个 Partition |
+| 依据什么 | Partitioner、Key、显式 Partition | 成员、订阅和 Assignment 策略 |
+| 变化后果 | Metadata 刷新和重试 | Rebalance、分区交接和位点恢复 |
+
+Group Coordinator 负责组状态和协调，不是一个把所有消息转发给 Consumer 的中心 Router。

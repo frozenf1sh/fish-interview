@@ -75,6 +75,8 @@ func TestKafkaCardsRenderDiagramAssets(t *testing.T) {
 		{"eng.kafka", "kafka-model.drawio.svg", "Kafka 数据模型"},
 		{"eng.kafka.producer.send", "kafka-producer-path.drawio.svg", "Kafka Producer"},
 		{"eng.kafka.consumer.offset-commit", "kafka-consumer-failure.drawio.svg", "Kafka Consumer"},
+		{"eng.kafka.group.pubsub-queue", "kafka-group-offset.drawio.svg", "Kafka 不复制消息"},
+		{"eng.kafka.replication.write-ack", "kafka-replication-ack.drawio.svg", "Kafka ACK"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.card, func(t *testing.T) {

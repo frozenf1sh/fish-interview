@@ -179,6 +179,10 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.static(w, r, "static/kafka-producer-path.drawio.svg", "image/svg+xml; charset=utf-8")
 	case r.URL.Path == "/static/kafka-consumer-failure.drawio.svg":
 		s.static(w, r, "static/kafka-consumer-failure.drawio.svg", "image/svg+xml; charset=utf-8")
+	case r.URL.Path == "/static/kafka-group-offset.drawio.svg":
+		s.static(w, r, "static/kafka-group-offset.drawio.svg", "image/svg+xml; charset=utf-8")
+	case r.URL.Path == "/static/kafka-replication-ack.drawio.svg":
+		s.static(w, r, "static/kafka-replication-ack.drawio.svg", "image/svg+xml; charset=utf-8")
 	default:
 		http.NotFound(w, r)
 	}

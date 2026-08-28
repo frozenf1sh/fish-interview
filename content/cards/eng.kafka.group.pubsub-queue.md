@@ -19,4 +19,6 @@ Topic orders / P0
 
 不同 Group 都可以从同一物理 Partition 读取，各自维护自己的 Offset，所以表现为发布订阅。同一 Group 内，多个 Consumer 瓜分 Partition，一个分区同一时刻只交给一个成员，所以表现为队列式负载均衡。
 
+![Kafka 不复制消息，只为不同 Consumer Group 保存独立书签](/static/kafka-group-offset.drawio.svg)
+
 关键不是复制消息，而是复制“读取视角”：消息只有一份日志，Group 各自拥有书签。

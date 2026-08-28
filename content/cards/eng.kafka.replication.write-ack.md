@@ -18,4 +18,8 @@ links: [eng.kafka.producer.sender, eng.kafka.producer.retry-idempotence, eng.kaf
 
 `acks=all` 关注的是当前 ISR，不是所有历史 Replica。`min.insync.replicas=2` 可以要求 ISR 至少有两个成员，否则宁愿拒绝高可靠写入，也不把只剩 Leader 的状态伪装成可靠成功。
 
+![Kafka ISR、Follower Fetch 与 ACK 确认边界](/static/kafka-replication-ack.drawio.svg)
+
 这只定义 Producer 侧写入确认；Consumer 是否处理完成，还要看 Offset Commit 和业务副作用。
+
+因此排查“Producer 返回成功但数据是否安全”时，要同时看 ACK 返回、ISR 状态、Leader 是否发生切换和后续 Consumer 可见性；不能把 `acks=1`、`acks=all` 简化成“落盘”和“不落盘”的二元开关。

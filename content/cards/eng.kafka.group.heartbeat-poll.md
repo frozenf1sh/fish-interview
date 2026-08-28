@@ -16,6 +16,8 @@ links: [eng.kafka.consumer.pull-poll, eng.kafka.rebalance, eng.kafka.consumer.of
 
 如果一次业务处理耗时十分钟，而 Consumer 长时间不再进入 poll，组可能认为它不能继续承担分区。调大参数只能改变判定窗口，不能解决单条处理过重、线程模型错误或外部依赖阻塞。
 
+常见的改进是把“持续 Poll”和“业务处理”解耦：Poll 线程按时维持消费循环，把有限批次交给受控的处理池；处理池仍需保证同一 Partition 的顺序和提交边界，不能为了避免 Rebalance 而无界并发。
+
 ## 排查顺序
 
 对齐 poll 间隔、单批处理耗时、心跳与会话事件，再看是否发生分配交接和提交失败。不要只看“Consumer 进程还在”就判断它仍拥有 Partition。

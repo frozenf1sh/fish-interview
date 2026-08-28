@@ -1,0 +1,20 @@
+<mxfile host="app.diagrams.net" modified="2026-08-28T00:00:00.000Z" agent="Fish Interview" version="31.1.8">
+  <diagram id="kafka-group-offset" name="Kafka Group 与 Offset">
+    <mxGraphModel adaptiveColors="auto" dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1100" pageHeight="850" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="topic" value="同一个 Topic / Partition Log" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e7f0ff;strokeColor=#6d91c7;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="310" y="40" width="480" height="80" as="geometry"/></mxCell>
+        <mxCell id="log" value="P0：A(0) · B(1) · C(2) · D(3) · E(4) · F(5)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f7faf7;strokeColor=#8ba58f;fontFamily=monospace;" vertex="1" parent="1"><mxGeometry x="190" y="190" width="720" height="70" as="geometry"/></mxCell>
+        <mxCell id="inventory" value="Group inventory&lt;br&gt;Consumer C1&lt;br&gt;committed offset = 3" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e2f3e8;strokeColor=#5c9a70;" vertex="1" parent="1"><mxGeometry x="70" y="360" width="260" height="100" as="geometry"/></mxCell>
+        <mxCell id="recommend" value="Group recommendation&lt;br&gt;Consumer C2&lt;br&gt;committed offset = 1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff0d7;strokeColor=#d99b3d;" vertex="1" parent="1"><mxGeometry x="420" y="360" width="260" height="100" as="geometry"/></mxCell>
+        <mxCell id="risk" value="Group risk&lt;br&gt;Consumer C3&lt;br&gt;committed offset = 5" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f1edff;strokeColor=#8e78c4;" vertex="1" parent="1"><mxGeometry x="770" y="360" width="260" height="100" as="geometry"/></mxCell>
+        <mxCell id="e1" value="读取同一份日志" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;strokeColor=#6d91c7;" edge="1" parent="1" source="topic" target="log"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e2" value="自己的书签" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;strokeColor=#5c9a70;" edge="1" parent="1" source="log" target="inventory"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e3" value="自己的书签" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;strokeColor=#d99b3d;" edge="1" parent="1" source="log" target="recommend"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e4" value="自己的书签" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;strokeColor=#8e78c4;" edge="1" parent="1" source="log" target="risk"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="note" value="消息没有按 Group 复制；Group 之间独立读取，Group 内部才竞争 Partition" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b8c9bb;fontColor=#31543a;" vertex="1" parent="1"><mxGeometry x="130" y="540" width="840" height="60" as="geometry"/></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
