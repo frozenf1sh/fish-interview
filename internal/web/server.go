@@ -2,6 +2,7 @@ package web
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"embed"
 	"encoding/json"
 	"fmt"
@@ -80,6 +81,7 @@ type treeViewNode struct {
 func New(catalog content.Catalog) (*Server, error) {
 	templates, err := template.New("pages.html").Funcs(template.FuncMap{
 		"tagClass": tagClass,
+		"assetURL": assetURL,
 		"nodeTitle": func(node content.TreeNode) string {
 			if node.Title != "" {
 				return node.Title
@@ -105,6 +107,16 @@ func New(catalog content.Catalog) (*Server, error) {
 		),
 	)
 	return &Server{catalog: catalog, templates: templates, markdown: markdown}, nil
+}
+
+// assetURL fingerprints embedded static assets so an older cached app.js cannot try to render a newer trace schema.
+func assetURL(name string) string {
+	data, err := assets.ReadFile("static/" + name)
+	if err != nil {
+		return "/static/" + name
+	}
+	digest := sha256.Sum256(data)
+	return fmt.Sprintf("/static/%s?v=%x", name, digest[:8])
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {

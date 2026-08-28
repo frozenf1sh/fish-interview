@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="本地优先的面试知识查询系统">
   <title>{{.Title}}</title>
-  <link rel="stylesheet" href="/static/app.css">
+  <link rel="stylesheet" href="{{assetURL "app.css"}}">
 </head>
 <body>
 <header class="topbar">
@@ -47,7 +47,7 @@
   </section>
 </main>
 {{template "tree-focus-scrim" .}}
-<script src="/static/app.js"></script>
+<script src="{{assetURL "app.js"}}"></script>
 </body>
 </html>
 {{end}}
@@ -98,7 +98,7 @@
   {{template "card-content" .}}
 </main>
 {{template "tree-focus-scrim" .}}
-<script src="/static/app.js"></script>
+<script src="{{assetURL "app.js"}}"></script>
 </body>
 </html>
 {{end}}
