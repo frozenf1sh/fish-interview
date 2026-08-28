@@ -1,12 +1,12 @@
 ---
 id: algo.string.palindrome
 kind: concept
-title: 字符串：回文中心扩展
-summary: 每个回文由一个中心向两侧对称扩展；奇数和偶数长度分别对应单点中心与双点中心。
-parents: [algo.patterns.string]
-tags: [string, palindrome, two-pointers]
-links: []
-trace: flow-string-palindrome
+title: 区间 DP：最长回文子串
+summary: 用 dp[l][r] 表示闭区间是否为回文，按区间长度从短到长填表，让内部区间先于外层区间完成。
+parents: [algo.dp.interval]
+tags: [dp, interval, palindrome, string]
+links: [algo.dp.interval]
+trace: palindrome-interval-dp
 ---
 
 ## 例题
@@ -14,18 +14,17 @@ trace: flow-string-palindrome
 [LeetCode 5 · 最长回文子串 ↗](https://leetcode.cn/problems/longest-palindromic-substring/)。
 
 ```go
-start, length := 0, 0
-expand := func(left, right int) {
-	for left >= 0 && right < len(s) && s[left] == s[right] {
-		if right-left+1 > length { start, length = left, right-left+1 }
-		left--; right++
+dp := make([][]bool, n)
+for i := range dp {
+	dp[i] = make([]bool, n)
+	dp[i][i] = true
+}
+for length := 2; length <= n; length++ {
+	for left := 0; left+length <= n; left++ {
+		right := left + length - 1
+		dp[left][right] = s[left] == s[right] && (length <= 2 || dp[left+1][right-1])
 	}
 }
-for center := range s {
-	expand(center, center)     // 奇数长度，例如 aba
-	expand(center, center+1)   // 偶数长度，例如 abba
-}
-return s[start : start+length]
 ```
 
-中心扩展为 `O(n²)` 时间、`O(1)` 额外空间，常适合笔试。需要统计回文、判断单次区间时可用同一中心思路；需要很多区间答案再考虑 DP 或 Manacher。
+外层按 `length` 递增，当前格只读取左下方的内部区间；时间复杂度 `O(n²)`，空间复杂度 `O(n²)`。这里的动画与区间 DP 一致：灰色是未使用的下三角，蓝色是依赖，橙色是当前写入格，绿色是已完成区间。

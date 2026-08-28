@@ -101,6 +101,16 @@ type mergeListState struct {
 	Chosen  string        `json:"chosen"`
 }
 
+type mergeSortListState struct {
+	Caption string        `json:"caption"`
+	Source  []exampleItem `json:"source"`
+	Left    []exampleItem `json:"left"`
+	Right   []exampleItem `json:"right"`
+	Result  []exampleItem `json:"result"`
+	Stack   []string      `json:"stack"`
+	Phase   string        `json:"phase"`
+}
+
 func item(label, state string) exampleItem { return exampleItem{Label: label, State: state} }
 
 func lane(label string, items ...exampleItem) exampleLane {
@@ -156,6 +166,23 @@ func mergeListFrame(line int, narration, caption string, variables map[string]st
 	}
 	copyVariables["example"] = caption
 	return Frame{ActiveLine: line, Narration: narration, Variables: copyVariables, State: mergeListState{Caption: caption, Left: append([]exampleItem{}, left...), Right: append([]exampleItem{}, right...), Result: append([]exampleItem{}, result...), Tail: tail, Chosen: chosen}}
+}
+
+func mergeSortListFrame(line int, narration, caption string, variables map[string]string, source, left, right, result []exampleItem, stack []string, phase string) Frame {
+	copyVariables := make(map[string]string, len(variables)+1)
+	for key, value := range variables {
+		copyVariables[key] = value
+	}
+	copyVariables["example"] = caption
+	return Frame{ActiveLine: line, Narration: narration, Variables: copyVariables, State: mergeSortListState{
+		Caption: caption,
+		Source:  append([]exampleItem{}, source...),
+		Left:    append([]exampleItem{}, left...),
+		Right:   append([]exampleItem{}, right...),
+		Result:  append([]exampleItem{}, result...),
+		Stack:   append([]string{}, stack...),
+		Phase:   phase,
+	}}
 }
 
 func cloneStringMap(values map[string]string) map[string]string {

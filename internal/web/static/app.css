@@ -204,6 +204,10 @@ h2 { font-size: 21px; letter-spacing: -.035em; margin: 0 0 17px; }
 .cycle-list-node.is-current text { fill: #9a540c; }
 .cycle-list-node.is-rejected circle { fill: #fde7e7; stroke: #d99999; }
 .cycle-list-node.is-rejected text { fill: #a13e3e; }
+.cycle-list-pointer { pointer-events: none; transition: transform 360ms ease; }
+.cycle-list-pointer text { font-family: Inter, ui-sans-serif, system-ui, sans-serif; font-size: 13px; font-weight: 850; }
+.cycle-list-pointer--slow text { fill: #2459a7; }
+.cycle-list-pointer--fast text { fill: #9a540c; }
 .trace-board--linked-merge { align-content: start; }
 .merge-list-row { align-items: center; display: grid; gap: 10px; grid-template-columns: 56px 1fr; }
 .merge-list-row > small { color: var(--muted); font-family: "SFMono-Regular", Consolas, monospace; font-weight: 800; text-align: right; }

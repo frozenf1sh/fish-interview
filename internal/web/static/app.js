@@ -417,11 +417,12 @@ function renderTraceBoard(board, kind, state) {
   if (kind === "rolling-dependency") return renderRollingDependency(board, state);
   if (kind === "flow-steps") return renderFlowSteps(board, state);
   if (kind === "example-state") return renderExampleState(board, state);
-  if (kind === "greedy-range") return renderGreedyRange(board, state);
+  if (kind === "greedy-range" || kind === "window-range") return renderGreedyRange(board, state);
   if (kind === "matrix-state") return renderMatrixState(board, state);
   if (kind === "node-link-state") return renderNodeLinkState(board, state);
   if (kind === "cycle-list-state") return renderCycleListState(board, state);
   if (kind === "linked-list-merge") return renderLinkedListMerge(board, state);
+  if (kind === "linked-list-merge-sort") return renderLinkedListMergeSort(board, state);
   if (kind === "sequence-tails") return renderSequenceTails(board, state);
   if (kind === "row-gravity") return renderRowGravity(board, state);
   if (kind === "bitmask-state") return renderBitmaskState(board, state);
@@ -624,8 +625,38 @@ function renderCycleListState(board, state) {
     const label = document.createElementNS(svg.namespaceURI, "text"); label.setAttribute("x", String(node.x)); label.setAttribute("y", String(node.y + 5)); label.setAttribute("text-anchor", "middle"); label.textContent = node.label;
     group.append(circle, label); svg.append(group);
   });
+  const previousPointers = board._cyclePointerPositions || new Map();
+  const pointerTargets = new Map();
+  Object.entries(state.pointers || {}).forEach(([key, value]) => {
+    const node = nodesByID.get(value);
+    if (!node) return;
+    const sameTarget = Object.entries(state.pointers || {}).filter(([, target]) => target === value).map(([name]) => name);
+    const offset = sameTarget.length > 1 ? (sameTarget.indexOf(key) === 0 ? -34 : 34) : -30;
+    const pointer = document.createElementNS(svg.namespaceURI, "g");
+    pointer.setAttribute("class", `cycle-list-pointer cycle-list-pointer--${key}`);
+    const text = document.createElementNS(svg.namespaceURI, "text");
+    const x = node.x + (key === "slow" ? -24 : 24);
+    const y = node.y + offset;
+    text.setAttribute("x", String(x));
+    text.setAttribute("y", String(y));
+    text.setAttribute("text-anchor", "middle");
+    text.textContent = key === "slow" ? "慢" : "快";
+    pointer.append(text);
+    const previous = previousPointers.get(key);
+    if (previous && (previous.x !== x || previous.y !== y)) {
+      pointer.style.transform = `translate(${previous.x - x}px, ${previous.y - y}px)`;
+      pointer.style.transition = "none";
+      requestAnimationFrame(() => {
+        pointer.style.transition = "transform 360ms ease";
+        pointer.style.transform = "translate(0, 0)";
+      });
+    }
+    pointerTargets.set(key, {x, y});
+    svg.append(pointer);
+  });
+  board._cyclePointerPositions = pointerTargets;
   const pointers = document.createElement("div"); pointers.className = "node-link-values";
-  Object.entries(state.pointers || {}).forEach(([key, value]) => { const chip = document.createElement("span"); chip.textContent = `${key} → ${value}`; pointers.append(chip); });
+  Object.entries(state.pointers || {}).forEach(([key, value]) => { const chip = document.createElement("span"); chip.textContent = `${key === "slow" ? "慢指针" : key === "fast" ? "快指针" : key} → ${value}`; pointers.append(chip); });
   if (state.callStack?.length) { const stack = document.createElement("div"); stack.className = "node-link-stack"; stack.textContent = `循环检查：${state.callStack.join(" → ")}`; pointers.append(stack); }
   board.replaceChildren(heading, svg, pointers);
 }
@@ -646,6 +677,34 @@ function renderLinkedListMerge(board, state) {
   inputs.append(renderLane("A", state.left || [], state.chosen?.startsWith("A:") ? state.chosen.slice(2) : ""), renderLane("B", state.right || [], state.chosen?.startsWith("B:") ? state.chosen.slice(2) : ""));
   const note = document.createElement("p"); note.className = "merge-list-note"; note.textContent = state.chosen ? `本轮接入 ${state.chosen}，tail=${state.tail || "dummy"}` : "dummy 固定结果头，tail 指向结果尾";
   board.replaceChildren(heading, result, inputs, note);
+}
+
+function renderLinkedListMergeSort(board, state) {
+  board.className = "trace-board trace-board--linked-merge";
+  const heading = document.createElement("p");
+  heading.className = "trace-board-label";
+  heading.textContent = `${state.caption} · ${state.phase || ""}`;
+  const renderLane = (label, entries, current = false) => {
+    const row = document.createElement("div"); row.className = "merge-list-row";
+    const title = document.createElement("small"); title.textContent = label; row.append(title);
+    const items = document.createElement("div"); items.className = "merge-list-items";
+    const visible = label === "结果" ? [{label: "dummy", state: "ready"}, ...(entries || [])] : (entries || []);
+    visible.forEach((entry, index) => {
+      const token = document.createElement("span");
+      token.className = `example-token is-${entry.state || "ready"}${current && index === 0 ? " is-current" : ""}`;
+      token.textContent = entry.label;
+      items.append(token);
+      if (index < visible.length - 1) items.append(Object.assign(document.createElement("span"), {className: "linked-arrow", textContent: "→"}));
+    });
+    row.append(items); return row;
+  };
+  const source = renderLane("当前子链", state.source || [], true);
+  const halves = document.createElement("div"); halves.className = "merge-list-inputs";
+  halves.append(renderLane("左半", state.left || []), renderLane("右半", state.right || []));
+  const result = renderLane("结果", state.result || []);
+  const stack = document.createElement("div"); stack.className = "merge-list-note";
+  stack.textContent = state.stack?.length ? `递归栈：${state.stack.join("  →  ")}` : "递归栈已清空，返回最终结果";
+  board.replaceChildren(heading, source, halves, result, stack);
 }
 
 function renderSequenceTails(board, state) {

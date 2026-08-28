@@ -116,6 +116,10 @@ roots:
               - id: algo.dp.interval
                 card: algo.dp.interval
                 title: 区间 DP
+                children:
+                  - id: algo.string.palindrome
+                    card: algo.string.palindrome
+                    title: 区间 DP：最长回文子串
               - id: algo.patterns.dp.state
                 title: 状态 DP
                 children:
@@ -177,6 +181,9 @@ roots:
               - id: algo.list.merge
                 card: algo.list.merge
                 title: 合并有序链表
+              - id: algo.list.merge-sort
+                card: algo.list.merge-sort
+                title: 链表归并排序
           - id: algo.patterns.tree
             title: 树题
             children:
@@ -198,15 +205,21 @@ roots:
               - id: algo.string.golang
                 card: algo.string.golang
                 title: Go 字符串处理
-              - id: algo.string.window
-                card: algo.string.window
-                title: 滑动窗口与计数
-              - id: algo.string.palindrome
-                card: algo.string.palindrome
-                title: 回文中心扩展
               - id: algo.string.kmp
                 card: algo.string.kmp
                 title: KMP 前缀函数
+          - id: algo.patterns.sliding-window
+            title: 滑动窗口
+            children:
+              - id: algo.sliding-window.exact
+                card: algo.sliding-window.exact
+                title: 恰好满足
+              - id: algo.sliding-window.at-most
+                card: algo.sliding-window.at-most
+                title: 满足的最多数
+              - id: algo.sliding-window.minimum
+                card: algo.sliding-window.minimum
+                title: 满足条件的最少数
           - id: algo.patterns.simulation
             title: 模拟
             children:

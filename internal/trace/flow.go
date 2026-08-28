@@ -150,10 +150,10 @@ var flowSpecs = map[string]flowSpec{
 		Narration:  []string{"下标、长度、切片都按 byte；题目若含 Unicode 先明确语义。", "ASCII 的 byte 更直接；按字符处理时转为 []rune。", "连续拼接避免用 + 反复创建中间字符串。", "每次写入一段，最后一次性得到结果。"},
 	},
 	"flow-string-palindrome": {
-		Title:      "中心扩展：每个中心向两侧验证",
-		Pseudocode: []string{"for center := range s {", "    expand(center, center)", "    expand(center, center+1)", "}", "update longest while characters match"},
-		Steps:      []string{"枚举中心", "处理奇数回文", "处理偶数回文", "匹配时向两边扩张"},
-		Narration:  []string{"每个回文都可归属到一个中心。", "单点中心覆盖 aba。", "双点中心覆盖 abba。", "首次失配即当前中心无法再扩张。"},
+		Title:      "区间 DP：按长度判断最长回文子串",
+		Pseudocode: []string{"initialize dp[i][i] = true", "for length := 2; length <= n; length++", "    right := left + length - 1", "    dp[left][right] = matching ends && inner interval"},
+		Steps:      []string{"初始化单字符区间", "按长度枚举", "读取内部区间", "写入当前区间并更新答案"},
+		Narration:  []string{"长度 1 的区间天然是回文。", "外层长度递增保证内部区间已经完成。", "当前状态只读取两端字符和更短的内部区间。", "写入 true 的区间才可能刷新最长答案。"},
 	},
 	"flow-string-kmp": {
 		Title:      "KMP：失配时跳到最长可复用前缀",

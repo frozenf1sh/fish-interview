@@ -149,6 +149,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.bitmaskTrace(w, r)
 	case r.URL.Path == "/api/traces/linked-list-rewire":
 		s.linkedListRewireTrace(w, r)
+	case r.URL.Path == "/api/traces/list-merge-sort":
+		s.listMergeSortTrace(w, r)
 	case r.URL.Path == "/api/traces/path-dp":
 		s.pathTrace(w, r)
 	case r.URL.Path == "/api/traces/reverse-path-dp":
@@ -167,6 +169,14 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.weightedIntervalsTrace(w, r)
 	case r.URL.Path == "/api/traces/kadane":
 		s.kadaneTrace(w, r)
+	case r.URL.Path == "/api/traces/sliding-window-exact":
+		s.slidingWindowExactTrace(w, r)
+	case r.URL.Path == "/api/traces/sliding-window-at-most":
+		s.slidingWindowAtMostTrace(w, r)
+	case r.URL.Path == "/api/traces/sliding-window-minimum":
+		s.slidingWindowMinimumTrace(w, r)
+	case r.URL.Path == "/api/traces/palindrome-interval-dp":
+		s.palindromeIntervalDPTrace(w, r)
 	case strings.HasPrefix(r.URL.Path, "/api/traces/flow-"):
 		s.flowTrace(w, r)
 	case r.URL.Path == "/static/app.css":
@@ -244,6 +254,11 @@ func (s *Server) linkedListRewireTrace(w http.ResponseWriter, _ *http.Request) {
 	_ = json.NewEncoder(w).Encode(trace.LinkedListRewireTrace())
 }
 
+func (s *Server) listMergeSortTrace(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	_ = json.NewEncoder(w).Encode(trace.ListMergeSortTrace())
+}
+
 func (s *Server) pathTrace(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	_ = json.NewEncoder(w).Encode(trace.PathTrace())
@@ -287,6 +302,26 @@ func (s *Server) weightedIntervalsTrace(w http.ResponseWriter, _ *http.Request) 
 func (s *Server) kadaneTrace(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	_ = json.NewEncoder(w).Encode(trace.KadaneTrace())
+}
+
+func (s *Server) slidingWindowExactTrace(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	_ = json.NewEncoder(w).Encode(trace.SlidingWindowExactTrace())
+}
+
+func (s *Server) slidingWindowAtMostTrace(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	_ = json.NewEncoder(w).Encode(trace.SlidingWindowAtMostTrace())
+}
+
+func (s *Server) slidingWindowMinimumTrace(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	_ = json.NewEncoder(w).Encode(trace.SlidingWindowMinimumTrace())
+}
+
+func (s *Server) palindromeIntervalDPTrace(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	_ = json.NewEncoder(w).Encode(trace.PalindromeIntervalDPTrace())
 }
 
 func (s *Server) flowTrace(w http.ResponseWriter, r *http.Request) {
@@ -458,6 +493,8 @@ func traceURL(name string) string {
 		return "/api/traces/bitmask-dp"
 	case "linked-list-rewire":
 		return "/api/traces/linked-list-rewire"
+	case "list-merge-sort":
+		return "/api/traces/list-merge-sort"
 	case "path-dp":
 		return "/api/traces/path-dp"
 	case "reverse-path-dp":
@@ -476,6 +513,14 @@ func traceURL(name string) string {
 		return "/api/traces/weighted-intervals"
 	case "kadane":
 		return "/api/traces/kadane"
+	case "sliding-window-exact":
+		return "/api/traces/sliding-window-exact"
+	case "sliding-window-at-most":
+		return "/api/traces/sliding-window-at-most"
+	case "sliding-window-minimum":
+		return "/api/traces/sliding-window-minimum"
+	case "palindrome-interval-dp":
+		return "/api/traces/palindrome-interval-dp"
 	}
 	if strings.HasPrefix(name, "flow-") {
 		return "/api/traces/" + name

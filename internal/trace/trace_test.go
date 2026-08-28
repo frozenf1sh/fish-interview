@@ -105,15 +105,15 @@ func TestRedesignedFlowTracesKeepConcreteTransitions(t *testing.T) {
 		{"flow-dfs-path", "[A,B,D]", "所有邻居", 10},
 		{"flow-backtracking-choose-skip", "选择 2", "现场没有", 12},
 		{"flow-backtracking-enumeration", "写 used[0]", "所有分支结束", 14},
-		{"flow-list-fast-slow", "从 1 走到 2", "slow==fast", 10},
+		{"flow-list-fast-slow", "同时移动", "slow==fast", 9},
 		{"flow-list-merge", "选择 A 的 1", "完整有序链", 15},
 		{"flow-tree-bst", "必须满足根传下来的下界", "返回 false", 6},
 		{"flow-tree-lca", "命中 q", "最近公共祖先", 6},
 		{"flow-tree-path-sum", "remain=11", "父调用短路", 7},
 		{"flow-tree-dp", "take(3)", "最终答案", 14},
-		{"flow-string-window", "count[a] 从 1 变为 2", "完成", 12},
+		{"flow-string-window", "扩张纳入 b", "完成", 10},
 		{"flow-string-golang", "[]rune", "得到 Go中", 7},
-		{"flow-string-palindrome", "得到 bab", "完成", 9},
+		{"flow-string-palindrome", "写入 true", "最长回文子串", 20},
 		{"flow-string-kmp", "j=pi[1]=0", "报告匹配", 9},
 		{"flow-lcs-space", "读取覆盖前 dp[1]=0", "一维数组最终", 11},
 	}
@@ -305,8 +305,13 @@ func TestRedesignedTracesExposeStateSpecificModels(t *testing.T) {
 		min  int
 	}{
 		{"flow-dfs-tree", "node-link-state", 15},
-		{"flow-list-fast-slow", "cycle-list-state", 10},
+		{"flow-list-fast-slow", "cycle-list-state", 9},
 		{"flow-list-merge", "linked-list-merge", 15},
+		{"list-merge-sort", "linked-list-merge-sort", 25},
+		{"sliding-window-exact", "window-range", 9},
+		{"sliding-window-at-most", "window-range", 10},
+		{"sliding-window-minimum", "window-range", 25},
+		{"palindrome-interval-dp", "dp-grid", 20},
 		{"flow-bfs-shortest-path", "node-link-state", 10},
 		{"flow-tree-dp", "node-link-state", 14},
 		{"flow-string-kmp", "example-state", 9},
@@ -327,4 +332,48 @@ func TestRedesignedTracesExposeStateSpecificModels(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestNewAnimationTracesExposeStableIntermediateAndFinalStates(t *testing.T) {
+	merge := ListMergeSortTrace()
+	first, ok := merge.Frames[0].State.(mergeSortListState)
+	if !ok || len(first.Source) != 4 || len(merge.Frames) < 25 {
+		t.Fatalf("merge sort should expose the full source and many small steps: %#v", merge)
+	}
+	last, ok := merge.Frames[len(merge.Frames)-1].State.(mergeSortListState)
+	if !ok || strings.Join(exampleLabels(last.Result), "→") != "1→2→3→4" {
+		t.Fatalf("merge sort final result = %#v", last)
+	}
+
+	window := SlidingWindowMinimumTrace()
+	initial, ok := window.Frames[0].State.(greedyRangeState)
+	if !ok || len(initial.Tracks) != 3 || len(initial.Markers) != 2 {
+		t.Fatalf("window should start with a fixed interval layout: %#v", initial)
+	}
+	if window.Kind != "window-range" || len(window.Frames) < 25 {
+		t.Fatalf("window trace should retain expansion and shrink frames: %#v", window)
+	}
+
+	palindrome := PalindromeIntervalDPTrace()
+	palindromeState, ok := palindrome.Frames[len(palindrome.Frames)-1].State.(gridState)
+	if !ok || !gridCellValue(palindromeState.Cells, 0, 2) {
+		t.Fatalf("palindrome interval dp should finish with dp[0][2]=true: %#v", palindromeState)
+	}
+}
+
+func exampleLabels(items []exampleItem) []string {
+	labels := make([]string, len(items))
+	for index, value := range items {
+		labels[index] = value.Label
+	}
+	return labels
+}
+
+func gridCellValue(cells []gridCell, row, column int) bool {
+	for _, cell := range cells {
+		if cell.Row == row && cell.Column == column {
+			return cell.Value == 1 && (cell.State == "ready" || cell.State == "current")
+		}
+	}
+	return false
 }

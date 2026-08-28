@@ -111,10 +111,11 @@ func TestPatternTraceEndpoints(t *testing.T) {
 	server := newDemoServer(t)
 	for _, path := range []string{
 		"/api/traces/linear-dp", "/api/traces/space-rolling", "/api/traces/lcs-dp", "/api/traces/interval-dp",
-		"/api/traces/stock-dp", "/api/traces/bitmask-dp", "/api/traces/linked-list-rewire", "/api/traces/path-dp", "/api/traces/reverse-path-dp", "/api/traces/binary-red-blue",
+		"/api/traces/stock-dp", "/api/traces/bitmask-dp", "/api/traces/linked-list-rewire", "/api/traces/list-merge-sort", "/api/traces/path-dp", "/api/traces/reverse-path-dp", "/api/traces/binary-red-blue",
 		"/api/traces/flow-bfs-shortest-path", "/api/traces/flow-tree-dp", "/api/traces/flow-string-golang",
 		"/api/traces/lis", "/api/traces/row-gravity",
 		"/api/traces/interval-start-merge", "/api/traces/meeting-rooms", "/api/traces/weighted-intervals", "/api/traces/kadane",
+		"/api/traces/sliding-window-exact", "/api/traces/sliding-window-at-most", "/api/traces/sliding-window-minimum", "/api/traces/palindrome-interval-dp",
 	} {
 		req := httptest.NewRequest(http.MethodGet, path, nil)
 		res := httptest.NewRecorder()
@@ -157,6 +158,7 @@ func TestPatternCardsEmbedKnownTraces(t *testing.T) {
 		"algo.dp.stock":                    "/api/traces/stock-dp",
 		"algo.dp.bitmask":                  "/api/traces/bitmask-dp",
 		"algo.list.dummy-rewire":           "/api/traces/linked-list-rewire",
+		"algo.list.merge-sort":             "/api/traces/list-merge-sort",
 		"algo.dp.path":                     "/api/traces/path-dp",
 		"algo.dp.path.minimum-health":      "/api/traces/reverse-path-dp",
 		"algo.binary-search.answer":        "/api/traces/binary-red-blue",
@@ -169,6 +171,10 @@ func TestPatternCardsEmbedKnownTraces(t *testing.T) {
 		"algo.greedy.meeting-rooms":        "/api/traces/meeting-rooms",
 		"algo.greedy.weighted-intervals":   "/api/traces/weighted-intervals",
 		"algo.greedy.kadane":               "/api/traces/kadane",
+		"algo.sliding-window.exact":        "/api/traces/sliding-window-exact",
+		"algo.sliding-window.at-most":      "/api/traces/sliding-window-at-most",
+		"algo.sliding-window.minimum":      "/api/traces/sliding-window-minimum",
+		"algo.string.palindrome":           "/api/traces/palindrome-interval-dp",
 	}
 	for id, traceURL := range traces {
 		t.Run(id, func(t *testing.T) {
