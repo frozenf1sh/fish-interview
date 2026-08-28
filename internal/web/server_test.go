@@ -173,8 +173,18 @@ func TestCardIncludesGestureTreeControls(t *testing.T) {
 	res := httptest.NewRecorder()
 	server.ServeHTTP(res, req)
 	body := res.Body.String()
-	if res.Code != http.StatusOK || !strings.Contains(body, "双指缩放") || !strings.Contains(body, "data-tree-focus") || strings.Contains(body, "data-tree-zoom-in") {
+	if res.Code != http.StatusOK || !strings.Contains(body, "data-tree-focus") || strings.Contains(body, "data-tree-zoom-in") || strings.Contains(body, "拖拽浏览") {
 		t.Fatalf("card should include tree controls: %d", res.Code)
+	}
+}
+
+func TestCardOmitsGenericSummaryHeading(t *testing.T) {
+	server := newDemoServer(t)
+	req := httptest.NewRequest(http.MethodGet, "/cards/algo.dp.lcs?tree=algorithms", nil)
+	res := httptest.NewRecorder()
+	server.ServeHTTP(res, req)
+	if res.Code != http.StatusOK || strings.Contains(res.Body.String(), "一句话结论") {
+		t.Fatalf("card should omit generic summary heading: %d", res.Code)
 	}
 }
 

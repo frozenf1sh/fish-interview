@@ -25,7 +25,6 @@
     {{range .TreeOptions}}<button type="button" role="tab" data-tree-switch data-tree-id="{{.ID}}" aria-selected="{{if eq $.TreeID .ID}}true{{else}}false{{end}}">{{.Title}}</button>{{end}}
   </nav>
   <div class="tree-tools" aria-label="知识树视图控制">
-    <span>拖拽浏览 · 双指缩放</span>
     <button type="button" class="tree-focus-button" data-tree-focus aria-pressed="false">展开知识树</button>
   </div>
   <div class="tree-canvas-wrap">
@@ -109,7 +108,6 @@
     <a class="back" href="/">← 返回知识地图</a>
     <div class="card-top"><span class="{{tagClass .Card.Kind}}">{{.Card.Kind}}</span>{{range .Card.Tags}}<span class="plain-tag">{{.}}</span>{{end}}</div>
     <h1>{{.Card.Title}}</h1>
-    <p class="article-kicker">一句话结论</p>
     <p class="article-summary">{{.Card.Summary}}</p>
     {{if .TraceURL}}{{template "trace-player" .TraceURL}}{{end}}
     <div class="markdown">{{.Body}}</div>
