@@ -25,6 +25,12 @@
     {{range .TreeOptions}}<button type="button" role="tab" data-tree-switch data-tree-id="{{.ID}}" aria-selected="{{if eq $.TreeID .ID}}true{{else}}false{{end}}">{{.Title}}</button>{{end}}
   </nav>
   <div class="tree-tools" aria-label="知识树视图控制">
+    <button type="button" class="tree-reset-button" data-tree-reset title="恢复缩放并定位到当前知识树根节点">回到树根</button>
+    <div class="tree-zoom-controls" aria-label="知识树缩放控制">
+      <button type="button" data-tree-zoom-out aria-label="缩小知识树">−</button>
+      <output data-tree-zoom-value>100%</output>
+      <button type="button" data-tree-zoom-in aria-label="放大知识树">＋</button>
+    </div>
     <button type="button" class="tree-focus-button" data-tree-focus aria-pressed="false">展开知识树</button>
   </div>
   <div class="tree-canvas-wrap">

@@ -206,13 +206,13 @@ func TestCardPartialEmbedsAlgorithmTraceWithoutLayout(t *testing.T) {
 	}
 }
 
-func TestCardIncludesGestureTreeControls(t *testing.T) {
+func TestCardIncludesTreeControls(t *testing.T) {
 	server := newDemoServer(t)
 	req := httptest.NewRequest(http.MethodGet, "/cards/algo.dp.linear?tree=algorithms", nil)
 	res := httptest.NewRecorder()
 	server.ServeHTTP(res, req)
 	body := res.Body.String()
-	if res.Code != http.StatusOK || !strings.Contains(body, "data-tree-focus") || strings.Contains(body, "data-tree-zoom-in") || strings.Contains(body, "拖拽浏览") {
+	if res.Code != http.StatusOK || !strings.Contains(body, "data-tree-focus") || !strings.Contains(body, "data-tree-reset") || !strings.Contains(body, "data-tree-zoom-in") || !strings.Contains(body, "data-tree-zoom-out") || strings.Contains(body, "拖拽浏览") {
 		t.Fatalf("card should include tree controls: %d", res.Code)
 	}
 }

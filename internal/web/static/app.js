@@ -16,6 +16,9 @@ if (treePayload && treeCanvas) {
   let currentTreeID = treeCanvas.dataset.treeId;
   const canvasWrap = treeCanvas.closest(".tree-canvas-wrap");
   let treeZoom = 1;
+  let treeRootPosition = null;
+  const treeZoomMin = 0.1;
+  const treeZoomMax = 3;
 
   const expanded = () => {
     if (!expandedByTree.has(currentTreeID)) expandedByTree.set(currentTreeID, new Set([currentTreeID]));
@@ -32,7 +35,7 @@ if (treePayload && treeCanvas) {
     }
     return false;
   };
-  const drawTree = () => {
+  const drawTree = (animate = false) => {
     const root = rootByID.get(currentTreeID) || treeRoots[0];
     currentTreeID = root.id;
     expandPathToActive(root, treeCanvas.dataset.activeId);
@@ -57,6 +60,8 @@ if (treePayload && treeCanvas) {
     layout(root, 0);
     const width = Math.max(330, leafIndex * 142 + 18);
     const height = Math.max(165, (maxDepth + 1) * 106 + 18);
+    const rootPosition = positions.get(root.id);
+    treeRootPosition = { x: rootPosition.x, y: rootPosition.y, width, height };
     const scrollLeft = canvasWrap.scrollLeft;
     const scrollTop = canvasWrap.scrollTop;
     treeCanvas.setAttribute("viewBox", `0 0 ${width} ${height}`);
@@ -67,6 +72,7 @@ if (treePayload && treeCanvas) {
     treeCanvas.replaceChildren();
 
     const svg = (tag) => document.createElementNS("http://www.w3.org/2000/svg", tag);
+    let edgeIndex = 0;
     const drawEdges = (node) => {
       const from = positions.get(node.id);
       for (const child of from.children) {
@@ -74,16 +80,20 @@ if (treePayload && treeCanvas) {
         const line = svg("path");
         const middle = (from.y + to.y) / 2;
         line.setAttribute("d", `M ${from.x} ${from.y + 23} V ${middle} H ${to.x} V ${to.y - 23}`);
-        line.setAttribute("class", "tree-edge");
+        line.setAttribute("pathLength", "1");
+        line.setAttribute("class", `tree-edge${animate ? " tree-edge--entering" : ""}`);
+        if (animate) line.style.setProperty("--tree-delay", `${Math.min(edgeIndex++ * 24, 240)}ms`);
         treeCanvas.append(line);
         drawEdges(child);
       }
     };
     drawEdges(root);
-    [...positions.values()].forEach(({ node, x, y, children }) => {
+    [...positions.values()].forEach(({ node, x, y, children }, index) => {
       const group = svg("g");
       const active = node.card && node.card === treeCanvas.dataset.activeId;
-      group.setAttribute("class", `tree-node${node.card ? " tree-node--card" : " tree-node--group"}${active ? " is-active" : ""}`);
+      const rootClass = node.id === root.id ? " tree-node--root" : "";
+      group.setAttribute("class", `tree-node${node.card ? " tree-node--card" : " tree-node--group"}${rootClass}${active ? " is-active" : ""}${animate ? " tree-node--entering" : ""}`);
+      if (animate) group.style.setProperty("--tree-delay", `${Math.min(index * 20, 280)}ms`);
       group.setAttribute("transform", `translate(${x - 54} ${y - 22})`);
       group.setAttribute("tabindex", node.card || node.children?.length ? "0" : "-1");
       group.setAttribute("aria-label", node.card ? `打开：${node.title}` : node.title);
@@ -142,10 +152,10 @@ if (treePayload && treeCanvas) {
   const toggleNode = (id) => {
     if (expanded().has(id)) expanded().delete(id);
     else expanded().add(id);
-    drawTree();
+    drawTree(true);
   };
   const setTreeZoom = (nextZoom) => {
-    const next = Math.max(0.8, Math.min(2, nextZoom));
+    const next = Math.max(treeZoomMin, Math.min(treeZoomMax, nextZoom));
     if (next === treeZoom) return;
     const oldZoom = treeZoom;
     const centerX = (canvasWrap.scrollLeft + canvasWrap.clientWidth / 2) / oldZoom;
@@ -154,6 +164,8 @@ if (treePayload && treeCanvas) {
     drawTree();
     canvasWrap.scrollLeft = centerX * treeZoom - canvasWrap.clientWidth / 2;
     canvasWrap.scrollTop = centerY * treeZoom - canvasWrap.clientHeight / 2;
+    const zoomValue = document.querySelector("[data-tree-zoom-value]");
+    if (zoomValue) zoomValue.textContent = `${Math.round(treeZoom * 100)}%`;
   };
   let drag = null;
   const activePointers = new Map();
@@ -249,6 +261,21 @@ if (treePayload && treeCanvas) {
       drawTree();
     });
   });
+  const resetTreeView = () => {
+    treeZoom = 1;
+    const zoomValue = document.querySelector("[data-tree-zoom-value]");
+    if (zoomValue) zoomValue.textContent = "100%";
+    drawTree();
+    if (!treeRootPosition) return;
+    canvasWrap.scrollLeft = Math.max(0, treeRootPosition.x * treeZoom - canvasWrap.clientWidth / 2);
+    canvasWrap.scrollTop = Math.max(0, treeRootPosition.y * treeZoom - canvasWrap.clientHeight / 2);
+    treeCanvas.classList.remove("is-root-target");
+    window.requestAnimationFrame(() => treeCanvas.classList.add("is-root-target"));
+    window.setTimeout(() => treeCanvas.classList.remove("is-root-target"), 700);
+  };
+  document.querySelector("[data-tree-reset]")?.addEventListener("click", resetTreeView);
+  document.querySelector("[data-tree-zoom-out]")?.addEventListener("click", () => setTreeZoom(treeZoom * 0.8));
+  document.querySelector("[data-tree-zoom-in]")?.addEventListener("click", () => setTreeZoom(treeZoom * 1.25));
   const focusTree = (active) => {
     document.body.classList.toggle("tree-focus", active);
     const button = document.querySelector("[data-tree-focus]");
