@@ -102,15 +102,21 @@ type mergeListState struct {
 }
 
 type mergeSortListState struct {
-	Caption  string        `json:"caption"`
-	Original []exampleItem `json:"original"`
-	Source   []exampleItem `json:"source"`
-	Left     []exampleItem `json:"left"`
-	Right    []exampleItem `json:"right"`
-	Result   []exampleItem `json:"result"`
-	Active   []string      `json:"active"`
-	Stack    []string      `json:"stack"`
-	Phase    string        `json:"phase"`
+	Caption       string        `json:"caption"`
+	Original      []exampleItem `json:"original"`
+	OriginalLinks []bool        `json:"originalLinks"`
+	Source        []exampleItem `json:"source"`
+	Left          []exampleItem `json:"left"`
+	LeftLinks     []bool        `json:"leftLinks"`
+	LeftLabel     string        `json:"leftLabel"`
+	Right         []exampleItem `json:"right"`
+	RightLinks    []bool        `json:"rightLinks"`
+	RightLabel    string        `json:"rightLabel"`
+	Result        []exampleItem `json:"result"`
+	Active        []string      `json:"active"`
+	Stack         []string      `json:"stack"`
+	Phase         string        `json:"phase"`
+	Overlay       bool          `json:"overlay,omitempty"`
 }
 
 type kGroupListState struct {
@@ -182,22 +188,81 @@ func mergeListFrame(line int, narration, caption string, variables map[string]st
 }
 
 func mergeSortListFrame(line int, narration, caption string, variables map[string]string, source, left, right, result []exampleItem, stack []string, phase string) Frame {
+	return mergeSortListFrameWithTopology(line, narration, caption, variables, source, left, right, result, stack, phase, mergeSortTopology{})
+}
+
+type mergeSortTopology struct {
+	original      []exampleItem
+	originalLinks []bool
+	leftLinks     []bool
+	rightLinks    []bool
+	leftLabel     string
+	rightLabel    string
+	overlay       bool
+}
+
+func mergeSortListFrameWithTopology(line int, narration, caption string, variables map[string]string, source, left, right, result []exampleItem, stack []string, phase string, topology mergeSortTopology) Frame {
 	copyVariables := make(map[string]string, len(variables)+1)
 	for key, value := range variables {
 		copyVariables[key] = value
 	}
 	copyVariables["example"] = caption
+	original := mergeSortItems([]string{"4", "2", "1", "3"}, nil)
+	if topology.original != nil {
+		original = append([]exampleItem{}, topology.original...)
+	}
+	originalLinks := mergeSortLinks(len(original))
+	if topology.originalLinks != nil {
+		originalLinks = append([]bool{}, topology.originalLinks...)
+	} else if phase != "准备拆分" && phase != "排序完成" {
+		// The top-level 2→1 edge remains cut while its two halves are being processed.
+		// A recursive cut is represented by the child-lane links below, not by inventing
+		// a label on the original node.
+		originalLinks = []bool{true, false, true}
+	}
+	leftLinks := mergeSortLinks(len(left))
+	if topology.leftLinks != nil {
+		leftLinks = append([]bool{}, topology.leftLinks...)
+	}
+	rightLinks := mergeSortLinks(len(right))
+	if topology.rightLinks != nil {
+		rightLinks = append([]bool{}, topology.rightLinks...)
+	}
+	leftLabel, rightLabel := topology.leftLabel, topology.rightLabel
+	if leftLabel == "" {
+		leftLabel = "左子链"
+	}
+	if rightLabel == "" {
+		rightLabel = "右子链"
+	}
 	return Frame{ActiveLine: line, Narration: narration, Variables: copyVariables, State: mergeSortListState{
-		Caption:  caption,
-		Original: mergeSortItems([]string{"4", "2", "1", "3"}, nil),
-		Source:   append([]exampleItem{}, source...),
-		Left:     append([]exampleItem{}, left...),
-		Right:    append([]exampleItem{}, right...),
-		Result:   append([]exampleItem{}, result...),
-		Active:   mergeSortActive(source, left, right),
-		Stack:    append([]string{}, stack...),
-		Phase:    phase,
+		Caption:       caption,
+		Original:      original,
+		OriginalLinks: originalLinks,
+		Source:        append([]exampleItem{}, source...),
+		Left:          append([]exampleItem{}, left...),
+		LeftLinks:     leftLinks,
+		LeftLabel:     leftLabel,
+		Right:         append([]exampleItem{}, right...),
+		RightLinks:    rightLinks,
+		RightLabel:    rightLabel,
+		Result:        append([]exampleItem{}, result...),
+		Active:        mergeSortActive(source, left, right),
+		Stack:         append([]string{}, stack...),
+		Phase:         phase,
+		Overlay:       topology.overlay,
 	}}
+}
+
+func mergeSortLinks(length int) []bool {
+	if length < 2 {
+		return []bool{}
+	}
+	links := make([]bool, length-1)
+	for index := range links {
+		links[index] = true
+	}
+	return links
 }
 
 func mergeSortActive(source, left, right []exampleItem) []string {

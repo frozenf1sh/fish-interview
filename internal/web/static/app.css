@@ -232,10 +232,8 @@ h2 { font-size: 21px; letter-spacing: -.035em; margin: 0 0 17px; }
 .cycle-list-pointer--fast text { fill: #9a540c; }
 .trace-board--linked-merge { align-content: start; }
 .merge-sort-node { position: relative; transition: transform 420ms ease, background .25s, border-color .25s, opacity .25s; }
-.merge-sort-node.is-moving { border-style: dashed; opacity: .38; }
-.merge-sort-node.is-left { box-shadow: 0 0 0 3px #dce9ff; }
-.merge-sort-node.is-right { box-shadow: 0 0 0 3px #fff0d8; }
-.merge-sort-node.is-moving::after { color: var(--muted); content: "断开"; font-family: Inter, ui-sans-serif, system-ui, sans-serif; font-size: 9px; left: 50%; position: absolute; top: -16px; transform: translateX(-50%); white-space: nowrap; }
+.merge-sort-node.merge-sort-source { opacity: .16; }
+.merge-sort-node.merge-sort-target { box-shadow: 0 0 0 3px #fff4e2; }
 .greedy-range-line { min-height: 42px; }
 .greedy-range-endpoint { color: var(--muted); font-family: "SFMono-Regular", Consolas, monospace; font-size: 9px; position: absolute; top: -15px; transform: translateX(-50%); white-space: nowrap; }
 .greedy-range-endpoint--start { transform: translateX(-10%); }

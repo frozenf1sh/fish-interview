@@ -19,35 +19,55 @@ func ListMergeSortTrace() Trace {
 	items := func(values ...string) []exampleItem { return mergeSortItems(values, nil) }
 	current := func(values ...string) []exampleItem { return mergeSortItems(values, map[int]string{0: "current"}) }
 	ready := func(values ...string) []exampleItem { return mergeSortItems(values, nil) }
+	focusedOriginal := func(values ...string) []exampleItem {
+		states := make(map[int]string, len(values))
+		for _, value := range values {
+			for index, original := range []string{"4", "2", "1", "3"} {
+				if original == value {
+					states[index] = "current"
+				}
+			}
+		}
+		return mergeSortItems([]string{"4", "2", "1", "3"}, states)
+	}
+	detail := func(line int, narration string, variables map[string]string, source, left, right, result []exampleItem, stack []string, phase string, topology mergeSortTopology) Frame {
+		return mergeSortListFrameWithTopology(line, narration, caption, variables, source, left, right, result, stack, phase, topology)
+	}
 	frames := []Frame{
-		mergeSortListFrame(0, "例题 4→2→1→3。先保留整条链，fast/slow 找中点，把问题拆成两个更短的子链。", caption, map[string]string{"head": "4", "mid": "1", "stack": "sort(4,2,1,3)"}, items("4", "2", "1", "3"), nil, nil, nil, []string{"[4,2,1,3]"}, "准备拆分"),
-		mergeSortListFrame(1, "slow 停在 2、fast 已走到尾部；断开 2→1，左半是 4→2，右半是 1→3。", caption, map[string]string{"slow": "2", "fast": "nil", "mid": "1"}, items("4", "2", "1", "3"), items("4", "2"), items("1", "3"), nil, []string{"[4,2]", "[1,3]"}, "完成第一次拆分"),
-		mergeSortListFrame(0, "递归进入左半 4→2；它仍有两个节点，需要继续找中点。", caption, map[string]string{"head": "4", "mid": "2", "stack": "sort(4,2)"}, items("4", "2"), nil, nil, nil, []string{"[4,2]", "[1,3]"}, "递归左半"),
-		mergeSortListFrame(1, "左半的中点是 2，断开 4→2；得到单节点链 4 与单节点链 2。", caption, map[string]string{"mid": "2"}, items("4", "2"), items("4"), items("2"), nil, []string{"[4]", "[2]", "[1,3]"}, "拆分为单节点"),
-		mergeSortListFrame(0, "4 没有后继，满足递归终点；单节点链天然有序，返回它。", caption, map[string]string{"return": "4"}, items("4"), nil, nil, ready("4"), []string{"[2]", "[1,3]"}, "左节点返回"),
-		mergeSortListFrame(0, "2 也满足递归终点；现在开始合并左半的两个有序单节点链。", caption, map[string]string{"return": "2"}, items("2"), nil, nil, ready("2"), []string{"merge([4],[2])", "[1,3]"}, "右节点返回"),
-		mergeSortListFrame(4, "比较左链头 4 与右链头 2；蓝色表示本轮只读取这两个候选。", caption, map[string]string{"left": "4", "right": "2", "tail": "dummy"}, items("4", "2"), current("4"), current("2"), nil, []string{"merge([4],[2])", "[1,3]"}, "比较两个头"),
-		mergeSortListFrame(5, "2 更小，选择右链节点 2；先记录选择，尚未写入结果。", caption, map[string]string{"chosen": "2", "tail": "dummy"}, items("4", "2"), current("4"), current("2"), nil, []string{"merge([4],[2])", "[1,3]"}, "选择 2"),
-		mergeSortListFrame(6, "执行 tail.Next=2，结果第一次出现节点；dummy 仍固定在结果头。", caption, map[string]string{"tail.Next": "2", "tail": "2"}, items("4"), current("4"), nil, ready("2"), []string{"merge([4],[2])", "[1,3]"}, "写入 2"),
-		mergeSortListFrame(7, "右链已空，跳出比较循环；剩余的 4 可以整体接到 2 后面。", caption, map[string]string{"remaining": "4", "tail": "2"}, items("4"), current("4"), nil, ready("2"), []string{"merge([4],[2])", "[1,3]"}, "发现剩余链"),
-		mergeSortListFrame(8, "执行 tail.Next=4，左半合并为 2→4，并返回给上层。", caption, map[string]string{"tail.Next": "4", "return": "2→4"}, items("2", "4"), nil, nil, ready("2", "4"), []string{"[1,3]"}, "左半有序"),
-		mergeSortListFrame(0, "递归进入右半 1→3；同样先拆成两个单节点。", caption, map[string]string{"head": "1", "mid": "3", "stack": "sort(1,3)"}, items("1", "3"), items("1"), items("3"), nil, []string{"[1,3]"}, "递归右半"),
-		mergeSortListFrame(0, "1 与 3 都是单节点有序链，递归返回后进入这组的合并。", caption, map[string]string{"left": "1", "right": "3"}, items("1", "3"), ready("1"), ready("3"), nil, []string{"merge([1],[3])"}, "准备合并右半"),
-		mergeSortListFrame(4, "读取两个当前头 1 和 3；它们都保留在输入轨道，结果轨道还为空。", caption, map[string]string{"left": "1", "right": "3", "tail": "dummy"}, items("1", "3"), current("1"), current("3"), nil, []string{"merge([1],[3])"}, "比较两个头"),
+		mergeSortListFrame(0, "例题 4→2→1→3。先固定展示整条原链，fast/slow 只负责定位切口。", caption, map[string]string{"head": "4", "mid": "1", "stack": "sort(4,2,1,3)"}, items("4", "2", "1", "3"), nil, nil, nil, []string{"[4,2,1,3]"}, "准备拆分"),
+		detail(1, "slow 停在 2；这一步只做一件事：去掉原链上的 2→1 箭头。节点还留在原链，拓扑先发生变化。", map[string]string{"slow": "2", "fast": "nil", "cut": "2→1"}, items("4", "2", "1", "3"), nil, nil, nil, []string{"[4,2]", "[1,3]"}, "移除中点箭头", mergeSortTopology{original: focusedOriginal("4", "2"), originalLinks: []bool{true, false, true}}),
+		detail(1, "箭头已经消失；现在把 4、2 和 1、3 从原链的位置移动到下方两条子链。", map[string]string{"left": "4→2", "right": "1→3"}, items("4", "2", "1", "3"), items("4", "2"), items("1", "3"), nil, []string{"[4,2]", "[1,3]"}, "节点移动到左右子链", mergeSortTopology{originalLinks: []bool{true, false, true}}),
+		detail(1, "第一次拆分完成：原链仍作为总体参照，左、右子链已经成为递归要处理的输入。", map[string]string{"left": "4→2", "right": "1→3"}, items("4", "2", "1", "3"), items("4", "2"), items("1", "3"), nil, []string{"[4,2]", "[1,3]"}, "第一次拆分完成", mergeSortTopology{originalLinks: []bool{true, false, true}}),
+		detail(0, "递归进入左子链 4→2；先隐藏上一层左右子链，只保留原链和递归栈作为参照。", map[string]string{"head": "4", "mid": "2", "stack": "sort(4,2)"}, items("4", "2", "1", "3"), nil, nil, nil, []string{"[4,2]", "[1,3]"}, "进入左子链", mergeSortTopology{originalLinks: []bool{true, false, true}}),
+		detail(1, "高亮原链上的 4、2，去掉它们之间的 4→2 箭头；这是真正的子链断开。", map[string]string{"cut": "4→2", "mid": "2"}, items("4", "2", "1", "3"), nil, nil, nil, []string{"[4]", "[2]", "[1,3]"}, "断开左子链箭头", mergeSortTopology{original: focusedOriginal("4", "2"), originalLinks: []bool{false, false, true}}),
+		detail(1, "隐藏上一层子链后，4 和 2 分别移动到两个单节点子链；右半 1→3 暂存在递归栈里。", map[string]string{"left": "4", "right": "2"}, items("4", "2", "1", "3"), items("4"), items("2"), nil, []string{"[4]", "[2]", "[1,3]"}, "移动为单节点链", mergeSortTopology{originalLinks: []bool{false, false, true}, leftLabel: "左单链", rightLabel: "右单链"}),
+		mergeSortListFrame(0, "4 与 2 都是单节点有序链，递归返回后准备合并。", caption, map[string]string{"left": "4", "right": "2"}, items("4", "2"), ready("4"), ready("2"), nil, []string{"merge([4],[2])", "[1,3]"}, "准备合并 4 与 2"),
+		mergeSortListFrame(4, "读取左链头 4 和右链头 2；两条输入链保持在原位，结果从 dummy 开始。", caption, map[string]string{"left": "4", "right": "2", "tail": "dummy"}, items("4", "2"), current("4"), current("2"), nil, []string{"merge([4],[2])", "[1,3]"}, "比较 4 与 2"),
+		mergeSortListFrame(5, "2 更小，先记录选择；节点尚未从输入链移动。", caption, map[string]string{"chosen": "2", "tail": "dummy"}, items("4", "2"), current("4"), current("2"), nil, []string{"merge([4],[2])", "[1,3]"}, "选择 2"),
+		mergeSortListFrame(6, "把 2 从右链动态接到 dummy 后面；临时结果链第一次出现节点。", caption, map[string]string{"tail.Next": "2", "tail": "2"}, items("4"), current("4"), nil, ready("2"), []string{"merge([4],[2])", "[1,3]"}, "2 移到 dummy 后"),
+		mergeSortListFrame(7, "右链为空，剩余 4 不再比较；下一步把它接到结果尾。", caption, map[string]string{"remaining": "4", "tail": "2"}, items("4"), current("4"), nil, ready("2"), []string{"merge([4],[2])", "[1,3]"}, "发现剩余 4"),
+		mergeSortListFrame(8, "把 4 接到 2 后面，得到有序临时链 2→4，返回上一层。", caption, map[string]string{"tail.Next": "4", "return": "2→4"}, items("2", "4"), nil, nil, ready("2", "4"), []string{"[1,3]"}, "左半合并完成"),
+		detail(0, "递归处理右半 1→3；先隐藏旧的左右子链，再定位 1→3 的切口。", map[string]string{"head": "1", "mid": "3", "stack": "sort(1,3)"}, items("4", "2", "1", "3"), nil, nil, nil, []string{"[2,4]", "[1,3]"}, "进入右子链", mergeSortTopology{originalLinks: []bool{true, false, true}}),
+		detail(1, "高亮原链上的 1、3，去掉 1→3 箭头；右子链也必须先改变 Next 拓扑。", map[string]string{"cut": "1→3", "mid": "3"}, items("4", "2", "1", "3"), nil, nil, nil, []string{"[1]", "[3]", "[2,4]"}, "断开右子链箭头", mergeSortTopology{original: focusedOriginal("1", "3"), originalLinks: []bool{true, false, false}}),
+		detail(1, "1 和 3 分别移动到单节点子链；到这里四个叶子节点都已经独立。", map[string]string{"left": "1", "right": "3"}, items("4", "2", "1", "3"), items("1"), items("3"), nil, []string{"[1]", "[3]", "[2,4]"}, "移动为单节点链", mergeSortTopology{originalLinks: []bool{true, false, false}, leftLabel: "左单链", rightLabel: "右单链"}),
+		mergeSortListFrame(4, "读取 1 和 3；两条单节点链都在输入区，dummy 仍固定在结果头。", caption, map[string]string{"left": "1", "right": "3", "tail": "dummy"}, items("1", "3"), current("1"), current("3"), nil, []string{"merge([1],[3])"}, "比较 1 与 3"),
 		mergeSortListFrame(5, "1 更小，选择左链节点 1。", caption, map[string]string{"chosen": "1"}, items("1", "3"), current("1"), current("3"), nil, []string{"merge([1],[3])"}, "选择 1"),
-		mergeSortListFrame(6, "写入 dummy.Next=1，tail 前进到 1；右链的 3 仍等待比较。", caption, map[string]string{"tail.Next": "1", "tail": "1"}, items("3"), nil, current("3"), ready("1"), []string{"merge([1],[3])"}, "写入 1"),
-		mergeSortListFrame(7, "左链耗尽，剩余链只有 3；不再比较，直接接到结果尾。", caption, map[string]string{"remaining": "3", "tail": "1"}, nil, nil, current("3"), ready("1"), []string{"merge([1],[3])"}, "发现剩余链"),
-		mergeSortListFrame(8, "右半合并为 1→3，返回上层；现在两侧输入已经各自有序。", caption, map[string]string{"return": "1→3"}, items("2", "4", "1", "3"), ready("2", "4"), ready("1", "3"), ready("1", "3"), []string{"merge([2,4],[1,3])"}, "右半有序"),
-		mergeSortListFrame(4, "顶层合并先读取左头 2、右头 1；结果从 dummy 开始，两个输入区间保持固定。", caption, map[string]string{"left": "2", "right": "1", "tail": "dummy"}, items("2", "4", "1", "3"), current("2"), current("1"), nil, []string{"merge([2,4],[1,3])"}, "顶层比较 2 与 1"),
-		mergeSortListFrame(5, "1 更小，选择右链头 1；选择动作单独占一帧。", caption, map[string]string{"chosen": "1"}, items("2", "4", "1", "3"), current("2"), current("1"), nil, []string{"merge([2,4],[1,3])"}, "顶层选择 1"),
-		mergeSortListFrame(6, "把 1 写到 dummy.Next，tail 前进到 1；右链当前头变成 3。", caption, map[string]string{"tail.Next": "1", "tail": "1", "right": "3"}, items("2", "4", "3"), current("2", "4"), current("3"), ready("1"), []string{"merge([2,4],[1,3])"}, "顶层写入 1"),
-		mergeSortListFrame(4, "读取 2 与 3；蓝色依赖只指向这两个当前头，已经写入的 1 保持绿色。", caption, map[string]string{"left": "2", "right": "3", "tail": "1"}, items("2", "4", "3"), current("2", "4"), current("3"), ready("1"), []string{"merge([2,4],[1,3])"}, "顶层比较 2 与 3"),
-		mergeSortListFrame(5, "2 更小，选择左链头 2。", caption, map[string]string{"chosen": "2"}, items("2", "4", "3"), current("2", "4"), current("3"), ready("1"), []string{"merge([2,4],[1,3])"}, "顶层选择 2"),
-		mergeSortListFrame(6, "写入 2，结果变为 1→2；左链当前头前进到 4。", caption, map[string]string{"tail.Next": "2", "tail": "2", "left": "4"}, items("4", "3"), current("4"), current("3"), ready("1", "2"), []string{"merge([2,4],[1,3])"}, "顶层写入 2"),
-		mergeSortListFrame(4, "读取 4 与 3；两条剩余链仍然是有序的。", caption, map[string]string{"left": "4", "right": "3", "tail": "2"}, items("4", "3"), current("4"), current("3"), ready("1", "2"), []string{"merge([2,4],[1,3])"}, "顶层比较 4 与 3"),
-		mergeSortListFrame(5, "3 更小，选择右链头 3。", caption, map[string]string{"chosen": "3"}, items("4"), current("4"), current("3"), ready("1", "2"), []string{"merge([2,4],[1,3])"}, "顶层选择 3"),
-		mergeSortListFrame(6, "写入 3，结果变为 1→2→3；右链耗尽，左链只剩 4。", caption, map[string]string{"tail.Next": "3", "tail": "3", "remaining": "4"}, items("4"), current("4"), nil, ready("1", "2", "3"), []string{"merge([2,4],[1,3])"}, "顶层写入 3"),
-		mergeSortListFrame(8, "直接接上剩余链 4；完整链表已经有序，返回 dummy.Next。", caption, map[string]string{"tail.Next": "4", "answer": "1→2→3→4"}, ready("1", "2", "3", "4"), nil, nil, ready("1", "2", "3", "4"), nil, "排序完成"),
+		mergeSortListFrame(6, "把 1 动态接到 dummy 后；右链的 3 仍保留在输入区。", caption, map[string]string{"tail.Next": "1", "tail": "1"}, items("3"), nil, current("3"), ready("1"), []string{"merge([1],[3])"}, "1 移到 dummy 后"),
+		mergeSortListFrame(7, "左链耗尽，剩余节点只有 3；直接接到结果尾。", caption, map[string]string{"remaining": "3", "tail": "1"}, nil, nil, current("3"), ready("1"), []string{"merge([1],[3])"}, "发现剩余 3"),
+		mergeSortListFrame(8, "得到有序右半 1→3；现在两侧输入分别是 2→4 和 1→3。", caption, map[string]string{"return": "1→3"}, items("2", "4", "1", "3"), ready("2", "4"), ready("1", "3"), ready("1", "3"), []string{"merge([2,4],[1,3])"}, "右半合并完成"),
+		mergeSortListFrame(4, "顶层合并读取 2 和 1；原链的 2→1 箭头仍然是断开的，输入区保持固定。", caption, map[string]string{"left": "2", "right": "1", "tail": "dummy"}, items("4", "2", "1", "3"), current("2"), current("1"), nil, []string{"merge([2,4],[1,3])"}, "比较 2 与 1"),
+		mergeSortListFrame(5, "1 更小，单独记录选择；还没有写入临时链。", caption, map[string]string{"chosen": "1"}, items("4", "2", "1", "3"), current("2"), current("1"), nil, []string{"merge([2,4],[1,3])"}, "选择 1"),
+		mergeSortListFrame(6, "把 1 从右链动态移动到 dummy 后，临时链变成 dummy→1。", caption, map[string]string{"tail.Next": "1", "tail": "1", "right": "3"}, items("4", "2", "3"), current("2", "4"), current("3"), ready("1"), []string{"merge([2,4],[1,3])"}, "1 移到 dummy 后"),
+		mergeSortListFrame(4, "读取 2 和 3；临时链里的 1 保持绿色，不随输入区来回切换。", caption, map[string]string{"left": "2", "right": "3", "tail": "1"}, items("4", "2", "3"), current("2", "4"), current("3"), ready("1"), []string{"merge([2,4],[1,3])"}, "比较 2 与 3"),
+		mergeSortListFrame(5, "2 更小，选择左链头 2。", caption, map[string]string{"chosen": "2"}, items("4", "2", "3"), current("2", "4"), current("3"), ready("1"), []string{"merge([2,4],[1,3])"}, "选择 2"),
+		mergeSortListFrame(6, "把 2 动态移动到临时链 1 后，得到 dummy→1→2。", caption, map[string]string{"tail.Next": "2", "tail": "2", "left": "4"}, items("4", "3"), current("4"), current("3"), ready("1", "2"), []string{"merge([2,4],[1,3])"}, "2 移到结果尾"),
+		mergeSortListFrame(4, "读取 4 和 3；只高亮这两个当前头，已合并的 1、2 不再被重画。", caption, map[string]string{"left": "4", "right": "3", "tail": "2"}, items("4", "3"), current("4"), current("3"), ready("1", "2"), []string{"merge([2,4],[1,3])"}, "比较 4 与 3"),
+		mergeSortListFrame(5, "3 更小，选择右链头 3。", caption, map[string]string{"chosen": "3"}, items("4"), current("4"), current("3"), ready("1", "2"), []string{"merge([2,4],[1,3])"}, "选择 3"),
+		mergeSortListFrame(6, "把 3 接到临时链尾，结果变成 dummy→1→2→3；左链只剩 4。", caption, map[string]string{"tail.Next": "3", "tail": "3", "remaining": "4"}, items("4"), current("4"), nil, ready("1", "2", "3"), []string{"merge([2,4],[1,3])"}, "3 移到结果尾"),
+		mergeSortListFrame(7, "比较循环结束，剩余链是 4；最后一次接入也单独展示。", caption, map[string]string{"remaining": "4", "tail": "3"}, items("4"), current("4"), nil, ready("1", "2", "3"), []string{"merge([2,4],[1,3])"}, "发现剩余 4"),
+		mergeSortListFrame(8, "把 4 接到结果尾，临时链完整变为 dummy→1→2→3→4。", caption, map[string]string{"tail.Next": "4", "answer": "1→2→3→4"}, ready("1", "2", "3", "4"), nil, nil, ready("1", "2", "3", "4"), []string{"merge([2,4],[1,3])"}, "临时链完成"),
+		detail(8, "下一步不是瞬间替换：把临时链中的 1、2、3、4 作为同一批节点，动态移动到原链排序后的四个位置。", map[string]string{"overlay": "dummy.Next→原链", "answer": "1→2→3→4"}, ready("1", "2", "3", "4"), nil, nil, ready("1", "2", "3", "4"), nil, "临时链覆盖原链", mergeSortTopology{original: mergeSortItems([]string{"1", "2", "3", "4"}, nil), originalLinks: []bool{true, true, true}, overlay: true}),
+		detail(8, "覆盖完成；临时链退场，原链现在就是排序后的 1→2→3→4，返回 dummy.Next。", map[string]string{"answer": "1→2→3→4"}, ready("1", "2", "3", "4"), nil, nil, ready("1", "2", "3", "4"), nil, "排序完成", mergeSortTopology{original: mergeSortItems([]string{"1", "2", "3", "4"}, nil), originalLinks: []bool{true, true, true}}),
 	}
 	return concreteTrace("linked-list-merge-sort", "链表：归并排序（细粒度拆分与合并）", code, frames...)
 }

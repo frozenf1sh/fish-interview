@@ -519,7 +519,7 @@ function renderGreedyRange(board, state) {
       if (stacked) bar.style.top = `${3 + index * 30}px`;
       const longLabel = (segment.label || "").length > 8;
       const compact = segment.kind === "range"
-        ? ({current: "候", ready: "留", dependency: "读", rejected: "×"}[segment.state] || "")
+        ? ""
         : track.label === "状态"
           ? segment.label.includes("超") ? "超限"
             : segment.label.includes("命中") ? "命中"
@@ -733,44 +733,57 @@ function renderLinkedListMerge(board, state) {
 function renderLinkedListMergeSort(board, state) {
   const previousPositions = new Map();
   board.querySelectorAll("[data-merge-id]").forEach((node) => {
-    if (node.classList.contains("merge-sort-result") || !previousPositions.has(node.dataset.mergeId)) previousPositions.set(node.dataset.mergeId, node.getBoundingClientRect());
+    const id = node.dataset.mergeId;
+    const role = node.dataset.mergeRole;
+    // A lane node is the useful source when a node is moving again. The original
+    // chain is only the source when no lower-lane copy existed in the previous frame.
+    if (role !== "original" || !previousPositions.has(id)) previousPositions.set(id, node.getBoundingClientRect());
   });
   board.className = "trace-board trace-board--linked-merge";
   const heading = document.createElement("p");
   heading.className = "trace-board-label";
   heading.textContent = `${state.caption} · ${state.phase || ""}`;
-  const active = new Set(state.active || []);
   const isFinal = state.phase === "排序完成";
-  const renderLane = (label, entries, current = false, original = false) => {
+  const originalLabels = new Set((state.original || []).map((entry) => entry.label));
+  const laneLabels = new Set([...(state.left || []), ...(state.right || []), ...(state.result || [])].map((entry) => entry.label));
+  const splitMovement = state.phase === "节点移动到左右子链" || state.phase === "移动为单节点链";
+  const movingPhase = splitMovement || (state.phase || "").includes("移到") || (state.phase || "").includes("覆盖");
+  const renderLane = (label, entries, current = false, role = "lane", links = []) => {
     const row = document.createElement("div"); row.className = "merge-list-row";
     const title = document.createElement("small"); title.textContent = label; row.append(title);
     const items = document.createElement("div"); items.className = "merge-list-items";
-    const visible = label === "临时链" ? [{label: "dummy", state: "ready"}, ...(entries || [])] : (entries || []);
+    const visible = role === "temporary" ? [{label: "dummy", state: "ready"}, ...(entries || [])] : (entries || []);
     visible.forEach((entry, index) => {
       const token = document.createElement("span");
-      const moving = original && !isFinal && active.has(entry.label) && (state.left?.length || state.right?.length) && entries.length > 0;
-      const side = original && state.left?.some(value => value.label === entry.label) ? " is-left" : original && state.right?.some(value => value.label === entry.label) ? " is-right" : "";
-      token.className = `example-token merge-sort-node is-${entry.state || "ready"}${current && index === 0 ? " is-current" : ""}${moving ? " is-moving" : ""}${side}`;
+      const isDummy = role === "temporary" && entry.label === "dummy";
+      const fadesAsSource = (role === "original" && splitMovement && laneLabels.has(entry.label)) || (role === "temporary" && state.overlay && originalLabels.has(entry.label));
+      const movingTarget = movingPhase && !isDummy && (role !== "original" || state.overlay);
+      token.className = `example-token merge-sort-node is-${entry.state || "ready"}${current && index === 0 ? " is-current" : ""}${fadesAsSource ? " merge-sort-source" : ""}${movingTarget ? " merge-sort-target" : ""}`;
       token.textContent = entry.label;
-      if (original) token.dataset.mergeId = entry.label;
-      if (!original && label === "临时链" && entry.label !== "dummy") {
+      if (!isDummy) {
         token.dataset.mergeId = entry.label;
-        token.classList.add("merge-sort-result");
+        token.dataset.mergeRole = role;
       }
       items.append(token);
-      if (index < visible.length - 1) items.append(Object.assign(document.createElement("span"), {className: "linked-arrow", textContent: "→"}));
+      if (index < visible.length - 1) {
+        const linkIndex = role === "temporary" ? index - 1 : index;
+        const visibleLink = role === "temporary" || links[linkIndex] !== false;
+        if (visibleLink) items.append(Object.assign(document.createElement("span"), {className: "linked-arrow", textContent: "→"}));
+      }
     });
     row.append(items); return row;
   };
-  const source = renderLane("原始链", state.original || [], true, true);
+  const source = renderLane("原始链", state.original || [], false, "original", state.originalLinks || []);
   const halves = document.createElement("div"); halves.className = "merge-list-inputs";
-  halves.append(renderLane("左子链", state.left || []), renderLane("右子链", state.right || []));
-  const result = isFinal ? renderLane("临时链", []) : renderLane("临时链", state.result || []);
+  if ((state.left || []).length || (state.right || []).length) {
+    halves.append(renderLane(state.leftLabel || "左子链", state.left || [], false, "left", state.leftLinks || []), renderLane(state.rightLabel || "右子链", state.right || [], false, "right", state.rightLinks || []));
+  }
+  const result = isFinal ? null : renderLane("临时链", state.result || [], false, "temporary", []);
   const stack = document.createElement("div"); stack.className = "merge-list-note";
   stack.textContent = state.stack?.length ? `递归栈：${state.stack.join("  →  ")}` : isFinal ? "临时链已经覆盖回原始链，返回 dummy.Next" : "递归栈已清空";
-  board.replaceChildren(heading, source, halves, result, stack);
+  board.replaceChildren(heading, source, halves, ...(result ? [result] : []), stack);
   board.querySelectorAll("[data-merge-id]").forEach((node) => {
-    if (!node.classList.contains("merge-sort-result") && !isFinal && active.has(node.dataset.mergeId)) return;
+    if (node.classList.contains("merge-sort-source") || isFinal) return;
     const before = previousPositions.get(node.dataset.mergeId);
     if (!before) return;
     const after = node.getBoundingClientRect();
@@ -898,7 +911,6 @@ function renderRowGravity(board, state) {
 
 function renderIntervals(board, state) {
   board.className = "trace-board trace-board--intervals";
-  const statusLabel = {candidate: "看", selected: "留", rejected: "×", pending: ""};
   board.replaceChildren(...state.intervals.map((interval) => {
     const row = document.createElement("div");
     row.className = "interval-row";
@@ -910,7 +922,7 @@ function renderIntervals(board, state) {
     bar.className = `interval interval--${interval.status}`;
     bar.style.left = `${(interval.start / 9) * 100}%`;
     bar.style.width = `${((interval.end - interval.start) / 9) * 100}%`;
-    bar.textContent = statusLabel[interval.status] || "";
+    bar.textContent = "";
     bar.setAttribute("aria-label", `[${interval.start}, ${interval.end}) ${interval.label}`);
     const start = document.createElement("small");
     start.className = "interval-endpoint interval-endpoint--start";

@@ -360,6 +360,27 @@ func TestNewAnimationTracesExposeStableIntermediateAndFinalStates(t *testing.T) 
 	if !ok || strings.Join(exampleLabels(last.Result), "→") != "1→2→3→4" {
 		t.Fatalf("merge sort final result = %#v", last)
 	}
+	var cut, moved, overlay mergeSortListState
+	for _, frame := range merge.Frames {
+		state, ok := frame.State.(mergeSortListState)
+		if !ok {
+			continue
+		}
+		switch state.Phase {
+		case "移除中点箭头":
+			cut = state
+		case "节点移动到左右子链":
+			moved = state
+		case "临时链覆盖原链":
+			overlay = state
+		}
+	}
+	if len(cut.OriginalLinks) != 3 || cut.OriginalLinks[1] || len(moved.Left) != 2 || len(moved.Right) != 2 {
+		t.Fatalf("merge sort should cut the original arrow before moving nodes: cut=%#v moved=%#v", cut, moved)
+	}
+	if !overlay.Overlay || strings.Join(exampleLabels(overlay.Original), "→") != "1→2→3→4" || strings.Join(exampleLabels(overlay.Result), "→") != "1→2→3→4" {
+		t.Fatalf("merge sort should animate the completed temporary chain over the original chain: %#v", overlay)
+	}
 
 	window := SlidingWindowMinimumTrace()
 	initial, ok := window.Frames[0].State.(greedyRangeState)

@@ -51,7 +51,7 @@ func validateRendererState(kind string, state any) error {
 		"node-link-state":        {"nodes", "links"},
 		"cycle-list-state":       {"nodes", "links"},
 		"linked-list-merge":      {"left", "right", "result"},
-		"linked-list-merge-sort": {"source", "left", "right", "result", "stack"},
+		"linked-list-merge-sort": {"original", "originalLinks", "source", "left", "leftLinks", "right", "rightLinks", "result", "stack"},
 		"linked-list-k-group":    {"chain", "detached", "working", "group"},
 		"window-range":           {"tracks", "markers"},
 		"flow-steps":             {"steps"},
