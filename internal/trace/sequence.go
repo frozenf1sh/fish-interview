@@ -8,10 +8,12 @@ type sequenceState struct {
 	Tails      []int    `json:"tails"`
 	TailStates []string `json:"tailStates"`
 	Action     string   `json:"action"`
+	Probe      int      `json:"probe,omitempty"`
+	ProbeState string   `json:"probeState,omitempty"`
 }
 
 // LISTrace shows how tails[length-1] keeps the smallest tail for each length.
-func LISTrace() Trace {
+func legacyLISTrace() Trace {
 	numbers := []int{10, 9, 2, 5, 3, 7, 101, 18}
 	result := Trace{
 		Kind:  "sequence-tails",
@@ -78,7 +80,7 @@ type gravityState struct {
 }
 
 // RowGravityTrace demonstrates rightward gravity inside obstacle-separated segments.
-func RowGravityTrace() Trace {
+func legacyRowGravityTrace() Trace {
 	result := Trace{
 		Kind:  "row-gravity",
 		Title: "带障碍的重力模拟：写指针从右向左",

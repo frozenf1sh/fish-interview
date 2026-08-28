@@ -64,7 +64,7 @@ func dpFrame(values []int, current, line int, narration string) Frame {
 }
 
 // SpaceOptimizationTrace shows the read, write, and roll order for a two-value DP window.
-func SpaceOptimizationTrace() Trace {
+func legacySpaceOptimizationTrace() Trace {
 	previousTwo, previousOne := 1, 1
 	result := Trace{
 		Kind:  "rolling-dependency",
@@ -112,7 +112,7 @@ func rollingFrame(index, previousTwo, previousOne, current int, hasCurrent bool,
 }
 
 // BinaryRedBluePartition traces the left-open, right-closed red-blue template.
-func BinaryRedBluePartition() Trace {
+func legacyBinaryRedBluePartition() Trace {
 	nums := []int{7, 2, 5, 10, 8}
 	const groups = 2
 	const firstAnswer, maximum = 10, 32
@@ -151,14 +151,16 @@ func BinaryRedBluePartition() Trace {
 }
 
 type redBlueState struct {
-	Numbers  []int `json:"numbers"`
-	Minimum  int   `json:"minimum"`
-	Maximum  int   `json:"maximum"`
-	Red      int   `json:"red"`
-	Mid      int   `json:"mid"`
-	Blue     int   `json:"blue"`
-	Groups   int   `json:"groups"`
-	Feasible bool  `json:"feasible"`
+	Numbers  []int    `json:"numbers"`
+	Minimum  int      `json:"minimum"`
+	Maximum  int      `json:"maximum"`
+	Red      int      `json:"red"`
+	Mid      int      `json:"mid"`
+	Blue     int      `json:"blue"`
+	Groups   int      `json:"groups"`
+	Feasible bool     `json:"feasible"`
+	Scanned  []string `json:"scanned,omitempty"`
+	Segments []string `json:"segments,omitempty"`
 }
 
 func redBlueFrame(numbers []int, minimum, maximum, red, mid, blue, groups int, feasible bool, line int, narration string) Frame {

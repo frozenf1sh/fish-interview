@@ -48,6 +48,8 @@ func validateRendererState(kind string, state any) error {
 		"example-state":      {"lanes"},
 		"matrix-state":       {"cells"},
 		"node-link-state":    {"nodes", "links"},
+		"cycle-list-state":   {"nodes", "links"},
+		"linked-list-merge":  {"left", "right", "result"},
 		"flow-steps":         {"steps"},
 	}
 	fields, ok := requiredSlices[kind]

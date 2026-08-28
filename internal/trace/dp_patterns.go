@@ -190,7 +190,7 @@ func stockGridFrame(prices, holds, cashes []int, current, line int, narration st
 }
 
 // BitmaskTrace demonstrates expanding a visit set while retaining the last city.
-func BitmaskTrace() Trace {
+func legacyBitmaskTrace() Trace {
 	steps := []bitmaskStep{
 		{Mask: 1, Last: 0, Cost: 0, Narration: "从城市 0 出发：mask=0001，只访问了城市 0。"},
 		{Mask: 3, Last: 1, Cost: 2, Narration: "访问城市 1：把第 1 位设为 1，状态变为 mask=0011，最后位置为 1。"},
@@ -243,6 +243,9 @@ type bitmaskState struct {
 	Last         int      `json:"last"`
 	PreviousLast int      `json:"previousLast"`
 	Cost         int      `json:"cost"`
+	Candidate    int      `json:"candidate,omitempty"`
+	Candidates   []string `json:"candidates,omitempty"`
+	States       []string `json:"states,omitempty"`
 }
 
 // PathTrace fills the minimum-path table from the top left to the bottom right.

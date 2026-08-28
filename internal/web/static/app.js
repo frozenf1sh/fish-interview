@@ -419,6 +419,8 @@ function renderTraceBoard(board, kind, state) {
   if (kind === "example-state") return renderExampleState(board, state);
   if (kind === "matrix-state") return renderMatrixState(board, state);
   if (kind === "node-link-state") return renderNodeLinkState(board, state);
+  if (kind === "cycle-list-state") return renderCycleListState(board, state);
+  if (kind === "linked-list-merge") return renderLinkedListMerge(board, state);
   if (kind === "sequence-tails") return renderSequenceTails(board, state);
   if (kind === "row-gravity") return renderRowGravity(board, state);
   if (kind === "bitmask-state") return renderBitmaskState(board, state);
@@ -481,8 +483,9 @@ function renderNodeLinkState(board, state) {
   heading.textContent = state.caption;
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
   svg.setAttribute("class", "node-link-canvas");
-  svg.setAttribute("viewBox", "0 0 360 190");
+  svg.setAttribute("viewBox", "0 0 360 210");
   const nodesByID = new Map(state.nodes.map((node) => [node.id, node]));
+  const activeLinks = new Set((state.activeLinks || []).map((link) => `${link.from}->${link.to}`));
   state.links.forEach((link) => {
     const from = nodesByID.get(link.from);
     const to = nodesByID.get(link.to);
@@ -490,7 +493,7 @@ function renderNodeLinkState(board, state) {
     const line = document.createElementNS(svg.namespaceURI, "line");
     line.setAttribute("x1", String(from.x)); line.setAttribute("y1", String(from.y));
     line.setAttribute("x2", String(to.x)); line.setAttribute("y2", String(to.y));
-    line.setAttribute("class", "node-link-edge");
+    line.setAttribute("class", `node-link-edge${activeLinks.has(`${link.from}->${link.to}`) ? " is-active" : ""}`);
     svg.append(line);
   });
   state.nodes.forEach((node) => {
@@ -503,7 +506,97 @@ function renderNodeLinkState(board, state) {
     text.textContent = node.label;
     group.append(circle, text); svg.append(group);
   });
-  board.replaceChildren(heading, svg);
+  const detail = document.createElement("div");
+  detail.className = "node-link-detail";
+  if (state.callStack?.length) {
+    const stack = document.createElement("div");
+    stack.className = "node-link-detail-row";
+    stack.append(Object.assign(document.createElement("small"), { textContent: "递归栈" }));
+    const stackItems = document.createElement("div");
+    stackItems.className = "node-link-chips";
+    state.callStack.forEach((entry, index) => {
+      const chip = document.createElement("span");
+      chip.className = `node-link-chip${index === state.callStack.length - 1 ? " is-current" : " is-dependency"}`;
+      chip.textContent = entry;
+      stackItems.append(chip);
+    });
+    stack.append(stackItems);
+    detail.append(stack);
+  }
+  if (state.path?.length) {
+    const path = document.createElement("div");
+    path.className = "node-link-detail-row";
+    path.append(Object.assign(document.createElement("small"), { textContent: "当前路径" }));
+    const pathValue = document.createElement("strong");
+    pathValue.textContent = state.path.join(" → ");
+    path.append(pathValue);
+    detail.append(path);
+  }
+  if (state.values && Object.keys(state.values).length) {
+    const values = document.createElement("div");
+    values.className = "node-link-values";
+    Object.entries(state.values).forEach(([key, value]) => {
+      const chip = document.createElement("span");
+      chip.textContent = `${key}: ${value}`;
+      values.append(chip);
+    });
+    detail.append(values);
+  }
+  board.replaceChildren(heading, document.createElement("div"));
+  const visual = board.lastChild;
+  visual.className = "node-link-visual";
+  visual.append(svg, detail);
+}
+
+function renderCycleListState(board, state) {
+  board.className = "trace-board trace-board--cycle-list";
+  const heading = document.createElement("p");
+  heading.className = "trace-board-label";
+  heading.textContent = state.caption;
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("class", "cycle-list-canvas");
+  svg.setAttribute("viewBox", "0 0 360 180");
+  const defs = document.createElementNS(svg.namespaceURI, "defs");
+  const marker = document.createElementNS(svg.namespaceURI, "marker");
+  marker.setAttribute("id", "cycle-arrow"); marker.setAttribute("markerWidth", "8"); marker.setAttribute("markerHeight", "8"); marker.setAttribute("refX", "7"); marker.setAttribute("refY", "4"); marker.setAttribute("orient", "auto");
+  const tip = document.createElementNS(svg.namespaceURI, "path");
+  tip.setAttribute("d", "M0,0 L8,4 L0,8 z"); tip.setAttribute("fill", "#6f8a77"); marker.append(tip); defs.append(marker); svg.append(defs);
+  const nodesByID = new Map(state.nodes.map((node) => [node.id, node]));
+  state.links.forEach((link) => {
+    const from = nodesByID.get(link.from), to = nodesByID.get(link.to);
+    if (!from || !to) return;
+    const edge = document.createElementNS(svg.namespaceURI, "line");
+    edge.setAttribute("x1", String(from.x)); edge.setAttribute("y1", String(from.y)); edge.setAttribute("x2", String(to.x)); edge.setAttribute("y2", String(to.y)); edge.setAttribute("class", "cycle-list-edge"); edge.setAttribute("marker-end", "url(#cycle-arrow)"); svg.append(edge);
+  });
+  state.nodes.forEach((node) => {
+    const group = document.createElementNS(svg.namespaceURI, "g");
+    group.setAttribute("class", `cycle-list-node is-${node.state || "ready"}`);
+    const circle = document.createElementNS(svg.namespaceURI, "circle"); circle.setAttribute("cx", String(node.x)); circle.setAttribute("cy", String(node.y)); circle.setAttribute("r", "23");
+    const label = document.createElementNS(svg.namespaceURI, "text"); label.setAttribute("x", String(node.x)); label.setAttribute("y", String(node.y + 5)); label.setAttribute("text-anchor", "middle"); label.textContent = node.label;
+    group.append(circle, label); svg.append(group);
+  });
+  const pointers = document.createElement("div"); pointers.className = "node-link-values";
+  Object.entries(state.pointers || {}).forEach(([key, value]) => { const chip = document.createElement("span"); chip.textContent = `${key} → ${value}`; pointers.append(chip); });
+  if (state.callStack?.length) { const stack = document.createElement("div"); stack.className = "node-link-stack"; stack.textContent = `循环检查：${state.callStack.join(" → ")}`; pointers.append(stack); }
+  board.replaceChildren(heading, svg, pointers);
+}
+
+function renderLinkedListMerge(board, state) {
+  board.className = "trace-board trace-board--linked-merge";
+  const heading = document.createElement("p"); heading.className = "trace-board-label"; heading.textContent = state.caption;
+  const renderLane = (label, entries, active) => {
+    const row = document.createElement("div"); row.className = "merge-list-row";
+    const title = document.createElement("small"); title.textContent = label; row.append(title);
+    const items = document.createElement("div"); items.className = "merge-list-items";
+    const visibleEntries = label === "结果" ? [{ label: "dummy", state: "ready" }, ...entries] : entries;
+    visibleEntries.forEach((entry, index) => { const item = document.createElement("span"); item.className = `example-token is-${entry.state || "ready"}${active === entry.label ? " is-current" : ""}`; item.textContent = entry.label; items.append(item); if (index < visibleEntries.length - 1) items.append(Object.assign(document.createElement("span"), { className: "linked-arrow", textContent: "→" })); });
+    row.append(items); return row;
+  };
+  const result = renderLane("结果", state.result || [], state.tail);
+  const inputs = document.createElement("div"); inputs.className = "merge-list-inputs";
+  inputs.append(renderLane("A", state.left || [], state.chosen?.startsWith("A:") ? state.chosen.slice(2) : ""), renderLane("B", state.right || [], state.chosen?.startsWith("B:") ? state.chosen.slice(2) : ""));
+  const note = document.createElement("p"); note.className = "merge-list-note"; note.textContent = state.chosen ? `本轮接入 ${state.chosen}，tail=${state.tail || "dummy"}` : "dummy 固定结果头，tail 指向结果尾";
+  board.replaceChildren(heading, result, inputs, note);
 }
 
 function renderSequenceTails(board, state) {
@@ -519,6 +612,12 @@ function renderSequenceTails(board, state) {
     item.textContent = String(number);
     numbers.append(item);
   });
+  if (Number.isInteger(state.probe) && state.probe >= 0) {
+    const probe = document.createElement("p");
+    probe.className = `sequence-probe is-${state.probeState || "dependency"}`;
+    probe.textContent = `二分检查 tails[${state.probe}]：${state.probeState === "rejected" ? "结尾小于当前值，向右找" : "第一个不小于当前值"}`;
+    numbers.append(probe);
+  }
   const tailsLabel = document.createElement("p");
   tailsLabel.className = "sequence-tails-label";
   tailsLabel.textContent = "tails";
@@ -687,6 +786,17 @@ function renderBitmaskState(board, state) {
     city.textContent = `城市 ${name}`;
     cities.append(city);
   });
+  if (state.candidates?.length) {
+    const candidates = document.createElement("div");
+    candidates.className = "bitmask-candidates";
+    state.candidates.forEach((candidate) => { const item = document.createElement("span"); item.textContent = candidate; candidates.append(item); });
+    cities.append(candidates);
+  }
+  if (state.states?.length) {
+    const states = document.createElement("div"); states.className = "bitmask-states";
+    state.states.forEach((entry) => { const item = document.createElement("span"); item.textContent = entry; states.append(item); });
+    cities.append(states);
+  }
   const result = document.createElement("p");
   result.className = "bitmask-result";
   result.textContent = `当前累计代价：${state.cost}`;
@@ -784,5 +894,8 @@ function renderRedBlue(board, state) {
   const result = document.createElement("p");
   result.className = `binary-result${state.feasible ? " is-feasible" : " is-infeasible"}`;
   result.textContent = state.mid < 0 ? "区间 (red, blue]：左开、右闭" : `mid=${state.mid}：${state.feasible ? "蓝色可行" : "红色不可行"}，需要 ${state.groups} 组`;
-  board.replaceChildren(numbers, range, result);
+  const scan = document.createElement("div"); scan.className = "binary-scan";
+  (state.scanned || []).forEach((entry) => { const item = document.createElement("span"); item.textContent = entry; scan.append(item); });
+  const segments = document.createElement("p"); segments.className = "binary-segments"; segments.textContent = state.segments?.length ? `分组扫描：${state.segments.join(" | ")}` : "";
+  board.replaceChildren(numbers, range, scan, segments, result);
 }

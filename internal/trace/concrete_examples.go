@@ -9,28 +9,28 @@ func concreteFlowTrace(name string) (Trace, bool) {
 }
 
 var concreteFlowFactories = map[string]func() Trace{
-	"flow-greedy-reachability":       greedyReachabilityTrace,
-	"flow-greedy-lexicographic":      greedyLexicographicTrace,
-	"flow-greedy-interval-endpoints": greedyEndpointsTrace,
-	"flow-bfs-shortest-path":         bfsShortestTrace,
-	"flow-bfs-multi-source":          bfsMultiSourceTrace,
-	"flow-bfs-topological":           bfsTopologicalTrace,
-	"flow-dfs-tree":                  dfsTreeTrace,
-	"flow-dfs-grid":                  dfsGridTrace,
-	"flow-dfs-path":                  dfsPathTrace,
-	"flow-backtracking-choose-skip":  chooseSkipTrace,
-	"flow-backtracking-enumeration":  enumerationTrace,
-	"flow-list-fast-slow":            fastSlowTrace,
-	"flow-list-merge":                mergeListsTrace,
-	"flow-tree-bst":                  bstTrace,
-	"flow-tree-lca":                  lcaTrace,
-	"flow-tree-path-sum":             treePathSumTrace,
-	"flow-tree-dp":                   treeDPTrace,
-	"flow-string-window":             stringWindowTrace,
-	"flow-string-golang":             stringGoTrace,
-	"flow-string-palindrome":         palindromeTrace,
-	"flow-string-kmp":                kmpTrace,
-	"flow-lcs-space":                 lcsSpaceTrace,
+	"flow-greedy-reachability":       redesignedReachabilityTrace,
+	"flow-greedy-lexicographic":      redesignedLexicographicTrace,
+	"flow-greedy-interval-endpoints": redesignedEndpointsTrace,
+	"flow-bfs-shortest-path":         redesignedBFSShortestTrace,
+	"flow-bfs-multi-source":          redesignedBFSMultiSourceTrace,
+	"flow-bfs-topological":           redesignedBFSTopologicalTrace,
+	"flow-dfs-tree":                  redesignedDFSTreeTrace,
+	"flow-dfs-grid":                  redesignedDFSGridTrace,
+	"flow-dfs-path":                  redesignedDFSPathTrace,
+	"flow-backtracking-choose-skip":  redesignedChooseSkipTrace,
+	"flow-backtracking-enumeration":  redesignedEnumerationTrace,
+	"flow-list-fast-slow":            redesignedFastSlowTrace,
+	"flow-list-merge":                redesignedMergeListsTrace,
+	"flow-tree-bst":                  redesignedBSTTrace,
+	"flow-tree-lca":                  redesignedLCATrace,
+	"flow-tree-path-sum":             redesignedTreePathSumTrace,
+	"flow-tree-dp":                   redesignedTreeDPTrace,
+	"flow-string-window":             redesignedStringWindowTrace,
+	"flow-string-golang":             redesignedStringGoTrace,
+	"flow-string-palindrome":         redesignedPalindromeTrace,
+	"flow-string-kmp":                redesignedKMPTrace,
+	"flow-lcs-space":                 redesignedLCSSpaceTrace,
 }
 
 func concreteTrace(kind, title string, pseudocode []string, frames ...Frame) Trace {
@@ -374,7 +374,7 @@ func lcsSpaceTrace() Trace {
 }
 
 // StartSortedIntervalsTrace shows why interval merging scans by increasing start time.
-func StartSortedIntervalsTrace() Trace {
+func legacyStartSortedIntervalsTrace() Trace {
 	code := []string{"sort.Slice(intervals, byStart)", "merged := [][]int{intervals[0]}", "for _, current := range intervals[1:] {", "    last := merged[len(merged)-1]", "    if current[0] <= last[1] { last[1] = max(last[1], current[1]) }", "    else { merged = append(merged, current) }", "}"}
 	frames := []Frame{
 		exampleFrame(0, "例题合并 [[1,3],[2,6],[8,10],[15,18]]。开始时间排序后，后来的区间不会再出现在当前区间左侧。", "区间合并：按开始时间", tokenRow("输入", []string{"[1,3]", "[2,6]", "[8,10]", "[15,18]"}, nil), lane("merged", item("[1,3]", "current"))),
@@ -387,7 +387,7 @@ func StartSortedIntervalsTrace() Trace {
 }
 
 // MeetingRoomsTrace replays the sorted-start/sorted-end two-pointer method.
-func MeetingRoomsTrace() Trace {
+func legacyMeetingRoomsTrace() Trace {
 	code := []string{"sort.Ints(starts); sort.Ints(ends)", "rooms, end := 0, 0", "for _, start := range starts {", "    if start < ends[end] { rooms++ } else { end++ }", "}", "return rooms"}
 	frames := []Frame{
 		exampleFrame(0, "例题会议 [[0,30],[5,10],[15,20]]。拆成开始数组 [0,5,15]、结束数组 [10,20,30]。", "会议室：两个排序指针", tokenRow("starts", []string{"0", "5", "15"}, nil), tokenRow("ends", []string{"10", "20", "30"}, nil), lane("rooms", item("0", "current"))),
@@ -399,7 +399,7 @@ func MeetingRoomsTrace() Trace {
 }
 
 // WeightedIntervalsTrace makes the incompatibility with unweighted greedy visible.
-func WeightedIntervalsTrace() Trace {
+func legacyWeightedIntervalsTrace() Trace {
 	code := []string{"sort intervals by end", "dp[0] = 0", "for i := 1; i <= n; i++ {", "    skip := dp[i-1]", "    take := weight[i] + dp[prev(i)]", "    dp[i] = max(skip, take)", "}"}
 	frames := []Frame{
 		exampleFrame(0, "例题区间 A=[1,3] 权重 5，B=[2,5] 权重 100，C=[4,6] 权重 5。按结束排序后不能只选结束最早的 A。", "带权区间调度：按结束时间 DP", tokenRow("区间", []string{"A:3/5", "B:5/100", "C:6/5"}, nil), tokenRow("dp", []string{"0", "?", "?", "?"}, map[int]string{0: "ready"})),
@@ -412,7 +412,7 @@ func WeightedIntervalsTrace() Trace {
 }
 
 // KadaneTrace replays the restart-or-extend decision for maximum subarray.
-func KadaneTrace() Trace {
+func legacyKadaneTrace() Trace {
 	code := []string{"current, best := nums[0], nums[0]", "for _, x := range nums[1:] {", "    current = max(x, current+x)", "    best = max(best, current)", "}", "return best"}
 	values := []string{"-2", "1", "-3", "4", "-1", "2", "1", "-5", "4"}
 	frames := []Frame{

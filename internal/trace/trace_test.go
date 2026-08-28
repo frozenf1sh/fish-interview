@@ -87,34 +87,35 @@ func TestFormerFlowCardsUseConcreteExampleStates(t *testing.T) {
 	}
 }
 
-func TestConcretePatternTracesKeepKeyExampleSteps(t *testing.T) {
+func TestRedesignedFlowTracesKeepConcreteTransitions(t *testing.T) {
 	tests := []struct {
 		name         string
 		intermediate string
 		final        string
+		minFrames    int
 	}{
-		{"flow-greedy-reachability", "计算 0+2=2", "返回 true"},
-		{"flow-greedy-lexicographic", "c>b", "结果 acdb"},
-		{"flow-greedy-interval-endpoints", "right=min(6,8)=6", "right=min(12,16)=12"},
-		{"flow-bfs-shortest-path", "写 dist[B]=1", "写 dist[D]=2"},
-		{"flow-bfs-multi-source", "写距离 1", "队列层数保证"},
-		{"flow-bfs-topological", "B 的入度 1→0", "A,B,C,D"},
-		{"flow-dfs-tree", "sum(6)=6", "sum(5)=6+2+5=13"},
-		{"flow-dfs-grid", "写成 0", "整座岛都已置为 0"},
-		{"flow-dfs-path", "path=[A,B,D]", "第二条路径 A,C,D"},
-		{"flow-backtracking-choose-skip", "写 path=[2]", "[1,2]"},
-		{"flow-backtracking-enumeration", "used[0]=true", "恢复 used"},
-		{"flow-list-fast-slow", "slow 从 1 走到 2", "返回 true"},
-		{"flow-list-merge", "tail.Next=1", "剩余 6"},
-		{"flow-tree-bst", "允许范围是 (5,+∞)", "错误一侧"},
-		{"flow-tree-lca", "直接返回 1", "最近公共祖先"},
-		{"flow-tree-path-sum", "remain 从 14 写成 11", "返回 true"},
-		{"flow-tree-dp", "take：选择 3", "答案取 max"},
-		{"flow-string-window", "频次 a 从 1 变为 2", "最大长度保持 3"},
-		{"flow-string-golang", "[]rune", "WriteString(Go)"},
-		{"flow-string-palindrome", "a 与 a", "奇数扩张得到 bab"},
-		{"flow-string-kmp", "j 回退到 0", "报告起点 2"},
-		{"flow-lcs-space", "读取覆盖前 dp[1]=0", "答案是 dp[2]=1"},
+		{"flow-greedy-reachability", "0+2=2", "返回 true", 8},
+		{"flow-greedy-lexicographic", "执行 pop", "最后的 c 再次跳过", 12},
+		{"flow-greedy-interval-endpoints", "第二组右端", "扫描结束", 8},
+		{"flow-bfs-shortest-path", "写 dist[B]=1", "队列为空", 10},
+		{"flow-bfs-multi-source", "写入距离 1", "所有格子的", 10},
+		{"flow-bfs-topological", "入度从 1 减到 0", "所有 4 个", 8},
+		{"flow-dfs-tree", "sum(6)", "根拿到", 15},
+		{"flow-dfs-grid", "写 (0,1)=0", "递归逐层返回", 12},
+		{"flow-dfs-path", "[A,B,D]", "所有邻居", 10},
+		{"flow-backtracking-choose-skip", "选择 2", "现场没有", 12},
+		{"flow-backtracking-enumeration", "写 used[0]", "所有分支结束", 14},
+		{"flow-list-fast-slow", "从 1 走到 2", "slow==fast", 10},
+		{"flow-list-merge", "选择 A 的 1", "完整有序链", 15},
+		{"flow-tree-bst", "必须满足根传下来的下界", "返回 false", 6},
+		{"flow-tree-lca", "命中 q", "最近公共祖先", 6},
+		{"flow-tree-path-sum", "remain=11", "父调用短路", 7},
+		{"flow-tree-dp", "take(3)", "最终答案", 14},
+		{"flow-string-window", "count[a] 从 1 变为 2", "完成", 12},
+		{"flow-string-golang", "[]rune", "得到 Go中", 7},
+		{"flow-string-palindrome", "得到 bab", "完成", 9},
+		{"flow-string-kmp", "j=pi[1]=0", "报告匹配", 9},
+		{"flow-lcs-space", "读取覆盖前 dp[1]=0", "一维数组最终", 11},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -129,6 +130,9 @@ func TestConcretePatternTracesKeepKeyExampleSteps(t *testing.T) {
 			if !intermediateFound {
 				t.Fatalf("missing intermediate step %q", test.intermediate)
 			}
+			if len(trace.Frames) < test.minFrames {
+				t.Fatalf("trace has %d frames, want at least %d", len(trace.Frames), test.minFrames)
+			}
 			if last := trace.Frames[len(trace.Frames)-1]; !strings.Contains(last.Narration, test.final) {
 				t.Fatalf("final frame %q misses %q", last.Narration, test.final)
 			}
@@ -136,16 +140,16 @@ func TestConcretePatternTracesKeepKeyExampleSteps(t *testing.T) {
 	}
 }
 
-func TestAdditionalGreedyTracesKeepTheirDecisionFrames(t *testing.T) {
+func TestRedesignedAdditionalTracesKeepDecisionFrames(t *testing.T) {
 	tests := []struct {
 		trace        Trace
 		intermediate string
 		final        string
 	}{
-		{StartSortedIntervalsTrace(), "开始 2<=蓝色 last.end=3", "最终得到 [[1,6],[8,10],[15,18]]"},
-		{MeetingRoomsTrace(), "5<10", "rooms 不增加"},
-		{WeightedIntervalsTrace(), "take=100", "最终 dp[3]=100"},
-		{KadaneTrace(), "直接从 1 重开", "best 写成 6"},
+		{StartSortedIntervalsTrace(), "2<=3", "追加后得到"},
+		{MeetingRoomsTrace(), "5<10", "复用释放"},
+		{WeightedIntervalsTrace(), "take=100", "写 dp[3]=100"},
+		{KadaneTrace(), "重开得到更优", "扫描结束"},
 	}
 	for _, test := range tests {
 		t.Run(test.trace.Title, func(t *testing.T) {
@@ -249,8 +253,39 @@ func TestDPTracesMarkDependencies(t *testing.T) {
 		}
 	}
 	bitmask := BitmaskTrace()
-	bitmaskState, ok := bitmask.Frames[1].State.(bitmaskState)
+	bitmaskState, ok := bitmask.Frames[3].State.(bitmaskState)
 	if !ok || bitmaskState.PreviousLast != 0 {
-		t.Fatalf("bitmask trace should retain the previous last city: %#v", bitmask.Frames[1].State)
+		t.Fatalf("bitmask trace should retain the previous last city: %#v", bitmask.Frames[3].State)
+	}
+}
+
+func TestRedesignedTracesExposeStateSpecificModels(t *testing.T) {
+	checks := []struct {
+		name string
+		kind string
+		min  int
+	}{
+		{"flow-dfs-tree", "node-link-state", 15},
+		{"flow-list-fast-slow", "cycle-list-state", 10},
+		{"flow-list-merge", "linked-list-merge", 15},
+		{"flow-bfs-shortest-path", "node-link-state", 10},
+		{"flow-tree-dp", "node-link-state", 14},
+		{"flow-string-kmp", "example-state", 9},
+		{"bitmask-dp", "bitmask-state", 12},
+		{"binary-red-blue", "binary-red-blue", 11},
+		{"lis", "sequence-tails", 18},
+	}
+	for _, check := range checks {
+		t.Run(check.name, func(t *testing.T) {
+			value, ok := AllTraces()[check.name]
+			if !ok || value.Kind != check.kind || len(value.Frames) < check.min {
+				t.Fatalf("trace=%#v", value)
+			}
+			for index, frame := range value.Frames {
+				if frame.Narration == "" || frame.Variables == nil || frame.State == nil {
+					t.Fatalf("frame %d is not observable: %#v", index, frame)
+				}
+			}
+		})
 	}
 }
