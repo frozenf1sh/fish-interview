@@ -1,0 +1,26 @@
+<mxfile host="app.diagrams.net" modified="2026-08-28T00:00:00.000Z" agent="Fish Interview" version="31.1.8">
+  <diagram id="kafka-producer-path" name="Kafka Producer 链路">
+    <mxGraphModel adaptiveColors="auto" dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1100" pageHeight="850" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="app" value="业务线程&lt;br&gt;send(topic, key, value)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff6e5;strokeColor=#d99b3d;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="50" y="90" width="180" height="70" as="geometry"/></mxCell>
+        <mxCell id="serialize" value="Serializer&lt;br&gt;对象 → bytes" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f1edff;strokeColor=#8e78c4;" vertex="1" parent="1"><mxGeometry x="290" y="90" width="180" height="70" as="geometry"/></mxCell>
+        <mxCell id="partitioner" value="Partitioner&lt;br&gt;Key → P2" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e7f0ff;strokeColor=#6d91c7;" vertex="1" parent="1"><mxGeometry x="530" y="90" width="180" height="70" as="geometry"/></mxCell>
+        <mxCell id="metadata" value="Metadata&lt;br&gt;P2 Leader = B3" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e7f0ff;strokeColor=#6d91c7;" vertex="1" parent="1"><mxGeometry x="770" y="90" width="180" height="70" as="geometry"/></mxCell>
+        <mxCell id="acc" value="RecordAccumulator&lt;br&gt;P2 Batch: m1 · m2 · m3" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e2f3e8;strokeColor=#5c9a70;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="170" y="270" width="260" height="80" as="geometry"/></mxCell>
+        <mxCell id="sender" value="Sender Thread&lt;br&gt;Batch → ProduceRequest" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e2f3e8;strokeColor=#5c9a70;" vertex="1" parent="1"><mxGeometry x="520" y="270" width="260" height="80" as="geometry"/></mxCell>
+        <mxCell id="leader" value="Broker 3&lt;br&gt;P2 Leader：append + offset" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff0d7;strokeColor=#d99b3d;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="350" y="460" width="300" height="80" as="geometry"/></mxCell>
+        <mxCell id="ack" value="ACK / Retry&lt;br&gt;Future 或 Callback 完成" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fde9e9;strokeColor=#c87979;" vertex="1" parent="1"><mxGeometry x="750" y="460" width="240" height="80" as="geometry"/></mxCell>
+        <mxCell id="a1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;strokeColor=#71857a;" edge="1" parent="1" source="app" target="serialize"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="a2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;strokeColor=#71857a;" edge="1" parent="1" source="serialize" target="partitioner"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="a3" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;strokeColor=#71857a;" edge="1" parent="1" source="partitioner" target="metadata"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="a4" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;strokeColor=#5c9a70;" edge="1" parent="1" source="partitioner" target="acc"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="a5" value="ready batch" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;strokeColor=#5c9a70;" edge="1" parent="1" source="acc" target="sender"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="a6" value="按 Metadata 找 Leader" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;strokeColor=#d99b3d;" edge="1" parent="1" source="sender" target="leader"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="a7" value="ProduceResponse" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;strokeColor=#c87979;" edge="1" parent="1" source="leader" target="ack"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="note" value="send() 通常只是准备 Record；真正网络发送由 Sender Thread 完成" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b8c9bb;fontColor=#31543a;" vertex="1" parent="1"><mxGeometry x="130" y="640" width="840" height="60" as="geometry"/></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

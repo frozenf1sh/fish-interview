@@ -225,11 +225,100 @@ roots:
         card: eng.kafka
         title: Kafka
         children:
-          - id: eng.kafka.topic
-            card: eng.kafka.topic
-          - id: eng.kafka.partition
-            card: eng.kafka.partition
-          - id: eng.kafka.consumer-group
-            card: eng.kafka.consumer-group
-          - id: eng.kafka.rebalance
-            card: eng.kafka.rebalance
+          - id: eng.kafka.model
+            title: 01 数据模型
+            children:
+              - id: eng.kafka.topic
+                card: eng.kafka.topic
+              - id: eng.kafka.partition
+                card: eng.kafka.partition
+              - id: eng.kafka.broker
+                card: eng.kafka.broker
+              - id: eng.kafka.record
+                card: eng.kafka.record
+              - id: eng.kafka.offset-retention
+                card: eng.kafka.offset-retention
+          - id: eng.kafka.routing
+            title: 02 写入路由
+            children:
+              - id: eng.kafka.key-partitioner
+                card: eng.kafka.key-partitioner
+              - id: eng.kafka.bootstrap-metadata
+                card: eng.kafka.bootstrap-metadata
+              - id: eng.kafka.leader-routing
+                card: eng.kafka.leader-routing
+          - id: eng.kafka.producer
+            title: 03 Producer 链路
+            children:
+              - id: eng.kafka.producer.send
+                card: eng.kafka.producer.send
+              - id: eng.kafka.producer.accumulator
+                card: eng.kafka.producer.accumulator
+              - id: eng.kafka.producer.sender
+                card: eng.kafka.producer.sender
+              - id: eng.kafka.producer.retry-idempotence
+                card: eng.kafka.producer.retry-idempotence
+              - id: eng.kafka.producer.lifecycle
+                card: eng.kafka.producer.lifecycle
+          - id: eng.kafka.replication
+            title: 04 复制与高可用
+            children:
+              - id: eng.kafka.replication.leader-follower
+                card: eng.kafka.replication.leader-follower
+              - id: eng.kafka.replication.isr-election
+                card: eng.kafka.replication.isr-election
+              - id: eng.kafka.replication.write-ack
+                card: eng.kafka.replication.write-ack
+          - id: eng.kafka.consumer
+            title: 05 Consumer 链路
+            children:
+              - id: eng.kafka.consumer.pull-poll
+                card: eng.kafka.consumer.pull-poll
+              - id: eng.kafka.consumer.offset-commit
+                card: eng.kafka.consumer.offset-commit
+              - id: eng.kafka.consumer.processing-idempotence
+                card: eng.kafka.consumer.processing-idempotence
+          - id: eng.kafka.group
+            title: 06 Consumer Group 协调
+            children:
+              - id: eng.kafka.consumer-group
+                card: eng.kafka.consumer-group
+              - id: eng.kafka.group.pubsub-queue
+                card: eng.kafka.group.pubsub-queue
+              - id: eng.kafka.group.coordinator-assignment
+                card: eng.kafka.group.coordinator-assignment
+              - id: eng.kafka.rebalance
+                card: eng.kafka.rebalance
+              - id: eng.kafka.group.heartbeat-poll
+                card: eng.kafka.group.heartbeat-poll
+          - id: eng.kafka.semantics
+            title: 07 消费语义与事件流
+            children:
+              - id: eng.kafka.ordering
+                card: eng.kafka.ordering
+              - id: eng.kafka.delivery-semantics
+                card: eng.kafka.delivery-semantics
+              - id: eng.kafka.transactions-eos
+                card: eng.kafka.transactions-eos
+              - id: eng.kafka.event-streaming
+                card: eng.kafka.event-streaming
+          - id: eng.kafka.performance
+            title: 08 性能模型
+            children:
+              - id: eng.kafka.performance.log-page-cache
+                card: eng.kafka.performance.log-page-cache
+              - id: eng.kafka.performance.batch-compression
+                card: eng.kafka.performance.batch-compression
+              - id: eng.kafka.performance.partition-parallelism
+                card: eng.kafka.performance.partition-parallelism
+          - id: eng.kafka.operations
+            title: 09 运维与扩展
+            children:
+              - id: eng.kafka.lag-scaling
+                card: eng.kafka.lag-scaling
+              - id: eng.kafka.partition-expansion
+                card: eng.kafka.partition-expansion
+              - id: eng.kafka.log-compaction
+                card: eng.kafka.log-compaction
+              - id: eng.kafka.failure-diagnosis
+                card: eng.kafka.failure-diagnosis

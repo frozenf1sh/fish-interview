@@ -1,45 +1,44 @@
 ---
 id: eng.kafka
 kind: engineering
-title: Kafka：从日志、分区到消费者组的协作模型
-summary: Kafka 用追加日志保存事件，以 Partition 建立顺序与并行边界，再通过 Consumer Group 协调消费归属和位点。
+title: Kafka：从追加日志到消息生命周期
+summary: Kafka 先用 Partition 保存可重放的追加日志，再用 Producer、Replica、Consumer Group 和 Offset 把写入、复制与消费连接起来。
 parents: [engineering]
 tags: [kafka, messaging, distributed-systems]
-links: [eng.kafka.topic, eng.kafka.partition, eng.kafka.consumer-group, eng.kafka.rebalance]
+links: [eng.kafka.topic, eng.kafka.partition, eng.kafka.broker, eng.kafka.key-partitioner, eng.kafka.bootstrap-metadata, eng.kafka.producer.send, eng.kafka.replication.write-ack, eng.kafka.consumer.pull-poll, eng.kafka.consumer-group, eng.kafka.delivery-semantics]
 ---
 
-> **核心结论**：Kafka 的顺序、并行度、offset 与副本选主，都以 **Partition** 为边界；不是以 Topic 或 Consumer 为边界。
+## 先记住一条主线
 
-## 一条消息的最短链路
+Kafka 可以先理解成一个**分布式、可持久化、可复制、按 Offset 读取的追加日志系统**。消息写入某个 Topic 的某个 Partition 后，不会因为一个 Consumer 读过就被拿走；Kafka 保存数据，Consumer Group 保存自己的读取位置。
 
-`Producer → Topic → Partition → Broker Log → Consumer Group → 业务处理 → offset 提交`
+```text
+Producer
+  → Partitioner 选择 Partition
+  → Leader Broker 追加 Log 并分配 Offset
+  → Follower Replica 复制
+  → Consumer Group 按自己的 Offset 拉取
+  → 处理后提交位点
+```
 
-Topic 是逻辑主题；每条记录最终落在一个有序的 [[eng.kafka.partition]]。Consumer Group 把分区分给组内成员：顺序只在单 Partition 内成立，并行度也受 Partition 数量限制。
+这条链上的边界必须分开：Topic 是逻辑命名空间，Partition 是顺序和并行的基本单位，Broker 是服务器节点，Replica 是副本，Consumer Group 是消费进度的隔离边界。
 
-## 必须区分的两个状态
+![Kafka 数据模型：Cluster、Broker、Topic、Partition 与 Replica](/static/kafka-model.drawio.svg)
 
-| 状态 | 它表达什么 | 不能表达什么 |
-| --- | --- | --- |
-| Log offset | 记录在某个 Partition 中的位置 | 全局消息 ID |
-| Consumer offset | 某个组下一次准备从何处读取 | 业务副作用已经可靠完成 |
+## 为什么不是“消息被取走”
 
-消费后何时提交位点，决定故障时的重复处理窗口；写数据库、RPC 等外部副作用仍需要幂等键、去重或事务边界设计。
+同一个 Partition 可以被多个 Consumer Group 分别读取。库存组、推荐组和风控组各自维护 `P0` 的 committed offset；它们竞争的是组内的 Partition，不是 Topic 中的物理消息。
 
-## 排查顺序
+因此 Kafka 同时具备两种使用语义：不同 Group 之间像发布订阅，同一 Group 内像竞争消费者。Replay 也不是把消息恢复出来，而是把某个 Group 的读取位置移回仍在 Retention 范围内的 Offset。
 
-1. 写入是否进入预期 Topic / Partition？
-2. Consumer Group 是否拿到了该分区？
-3. 拉取后是否实际完成业务处理？
-4. 位点提交与业务成功是否一致？
+## 面试时的边界回答
 
-> **不要只看 Lag。**它只能说明积压，不能单独说明是生产、分配、处理还是提交出了问题。
+- Kafka 只保证 Partition 内有序，不保证 Topic 全局有序。
+- 同一个稳定 Key 通常会被映射到同一个 Partition，但扩容可能改变映射，不能把默认分区逻辑称为经典一致性哈希。
+- Producer 的幂等性主要处理发送重试造成的重复写入，不等于跨 Kafka、数据库和外部副作用的 Exactly-Once。
+- `send()` 返回不等于 Broker 已确认；Producer 可能还在序列化、缓冲或等待 Sender Thread 发送。
+- `acks=all`、ISR 和 `min.insync.replicas`共同定义写入确认边界；“写成功”仍需结合 Consumer 提交和业务幂等来讨论。
 
-## 三条边界
+## 按什么顺序继续
 
-- 同一组内，一个 Partition 同一时刻只属于一个消费者。
-- 多加消费者不能提高单分区并行度；热点应先查 key 分布和分区策略。
-- 副本提升容错能力，不会把局部顺序变成全局顺序。
-
-## 继续拆分
-
-按最小对象继续：[[eng.kafka.topic]]、[[eng.kafka.partition]]、[[eng.kafka.consumer-group]] 与 [[eng.kafka.rebalance]]。
+先看 [[eng.kafka.topic]]、[[eng.kafka.partition]] 和 [[eng.kafka.broker]]，再沿 [[eng.kafka.key-partitioner]]、[[eng.kafka.bootstrap-metadata]] 进入 Producer 链路；之后连接 [[eng.kafka.replication.write-ack]]、[[eng.kafka.consumer.pull-poll]] 与 [[eng.kafka.consumer-group]]。

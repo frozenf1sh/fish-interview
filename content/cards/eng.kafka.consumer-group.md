@@ -1,29 +1,34 @@
 ---
 id: eng.kafka.consumer-group
 kind: engineering
-title: Kafka Consumer Group：分区归属与位点
-summary: 同一消费者组中，每个分区同一时刻只由一个消费者消费；消费进度通过已提交 offset 表达。
-parents: [eng.kafka]
+title: Kafka Consumer Group：消费进度与组内分工
+summary: 同一个 Consumer Group 共享一套分区归属和消费进度；一个 Partition 同一时刻只分给组内一个 Consumer。
+parents: [eng.kafka.group]
 tags: [kafka, consumer-group, offset]
-links: [eng.kafka.rebalance]
-exam_signals:
-  - company: mihoyo
-    year: 2027
-    role: backend
-    confidence: low
-    source: https://www.nowcoder.com/
+links: [eng.kafka.partition, eng.kafka.group.pubsub-queue, eng.kafka.group.coordinator-assignment, eng.kafka.consumer.offset-commit, eng.kafka.rebalance]
 ---
 
-## 核心机制
+## 两个维度
 
-Topic 被拆为多个 Partition。Consumer Group 的协调器维护成员关系和分区归属：同组一个 Partition 同一时刻只能交给一个消费者，而不同分区可以并行处理。组内消费者数超过分区数时，多出的消费者会处于空闲状态。
+Consumer Group 是一组协同消费的实例。对同一个 Group：
 
-消费者通过 poll 获取记录，业务处理完成后提交 offset。自动提交、同步提交和异步提交的取舍本质上是在吞吐、重复处理窗口和失败恢复确定性之间权衡。业务副作用不是 Kafka 自动事务的一部分：写数据库、发 RPC 等操作仍需幂等键、去重或外部事务设计。
+- 一个 Partition 同一时刻只由一个 Consumer 负责；多个 Partition 可以被多个 Consumer 并行处理。
+- Group 自己保存每个 Partition 的 committed offset；另一个 Group 有另一套独立位点。
 
-## 故障定位
+```text
+Topic orders
+P0 ── Group inventory 的 C1
+P0 ── Group recommendation 的 C3
+```
 
-先区分“没有消息”、“没有分到分区”、“拉取到但未处理”、“处理了但未提交”、“提交了但业务副作用失败”。Lag 只能说明积压，不足以单独说明根因；还要看分区分配、处理耗时和提交位点。
+这里没有给 Group 复制一份消息。两个 Group 都从同一个 Partition Log 拉取，只是书签不同。Group 内部是负载分摊，Group 之间是独立订阅。
 
-## 关联
+## 并行度上限
 
-成员变化或订阅变化会触发 [[eng.kafka.rebalance]]。
+一个 Group 的有效消费并行度最多受订阅 Partition 数限制。四个 Partition 配八个 Consumer 时，最多四个 Consumer 有分区，其余处于空闲状态。若只有少数 Partition 热，增加 Consumer 也不会自动解决热点。
+
+## 位点不是业务成功证明
+
+Consumer 的本地读取位置、已经提交到 Kafka 的位点、业务数据库写入成功，可能处在不同阶段。提交策略和业务副作用必须在 [[eng.kafka.consumer.offset-commit]] 与 [[eng.kafka.consumer.processing-idempotence]] 中一起设计。
+
+成员变化会进入 [[eng.kafka.rebalance]]；Group 与 Pub/Sub 的关系见 [[eng.kafka.group.pubsub-queue]]。

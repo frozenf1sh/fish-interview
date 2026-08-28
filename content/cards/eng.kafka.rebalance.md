@@ -1,25 +1,28 @@
 ---
 id: eng.kafka.rebalance
 kind: engineering
-title: Kafka Rebalance：重新分配分区的协调过程
-summary: 消费者组成员、订阅或分区变化后，协调器会暂停并重新分配分区；频繁 Rebalance 会放大消费抖动。
-parents: [eng.kafka]
-tags: [kafka, rebalance, availability]
-links: [eng.kafka.consumer-group]
+title: Kafka Rebalance：重新交接 Partition 归属
+summary: Consumer Group 成员、订阅或 Partition 发生变化时，协调器会重新计算分配；交接期间可能暂停消费并重放未提交处理。
+parents: [eng.kafka.group]
+tags: [kafka, rebalance, coordination]
+links: [eng.kafka.consumer-group, eng.kafka.group.coordinator-assignment, eng.kafka.group.heartbeat-poll, eng.kafka.consumer.offset-commit]
 ---
 
-## 核心概念
+## 什么时候发生
 
-Rebalance 的目标是让分区归属与当前组成员一致。成员加入/退出、订阅变化或分区变化时，协调器会触发新一轮分配。不同协议对暂停范围不同，但应用都应假定：分区在交接期间可能暂时不可消费，且未妥善提交的处理会被重新执行。
+Consumer 加入、退出、崩溃、订阅变化以及 Topic Partition 数变化，都可能触发 Rebalance。协调器需要确认新成员集合，再把 Partition 重新分配给组内成员。
+
+```text
+变更前：C1 → P0、P1；C2 → P2、P3
+加入 C3：重新分配 P0、P1、P2、P3
+```
+
+不同协议的暂停范围不同，但应用都应假定 Partition 可能暂时不可消费，且交接前没有妥善提交的处理可能被重新执行。
+
+## 为什么会频繁发生
+
+处理线程长时间阻塞、没有按预期继续 `poll`、网络抖动、滚动发布和实例反复重启，都会让组认为成员不再健康。`max.poll.interval`、心跳和会话超时应与实际处理模型匹配，而不是只靠调大超时掩盖阻塞。
 
 ## 排查顺序
 
-先看组成员变更和协调器日志，再比较处理耗时与 `max.poll.interval`、心跳和会话超时的关系，最后检查部署滚动、网络抖动与订阅变更。处理线程长时间阻塞却没有继续 poll，是频繁被踢出组的常见机制性原因。
-
-## 常见误区
-
-不要只提高超时时间掩盖问题；若单条消息处理长期阻塞，根因仍是消费链路的处理模型。
-
-## 关联
-
-[[eng.kafka.consumer-group]]。
+先看成员变更和协调器事件，再对照处理耗时、poll 间隔和提交失败，最后检查部署与网络。若重复消费只发生在分区交接窗口，应联查 [[eng.kafka.consumer.offset-commit]]。

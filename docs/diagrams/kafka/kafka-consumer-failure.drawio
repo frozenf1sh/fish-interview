@@ -1,0 +1,23 @@
+<mxfile host="app.diagrams.net" modified="2026-08-28T00:00:00.000Z" agent="Fish Interview" version="31.1.8">
+  <diagram id="kafka-consumer-failure" name="Kafka Consumer 故障语义">
+    <mxGraphModel adaptiveColors="auto" dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1100" pageHeight="850" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="log" value="Partition Log&lt;br&gt;… 10 · 11 · 12 …" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e7f0ff;strokeColor=#6d91c7;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="70" y="90" width="220" height="80" as="geometry"/></mxCell>
+        <mxCell id="poll" value="poll()&lt;br&gt;读取 10" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff6e5;strokeColor=#d99b3d;" vertex="1" parent="1"><mxGeometry x="390" y="90" width="220" height="80" as="geometry"/></mxCell>
+        <mxCell id="process" value="业务处理&lt;br&gt;数据库 / RPC" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e2f3e8;strokeColor=#5c9a70;" vertex="1" parent="1"><mxGeometry x="710" y="90" width="220" height="80" as="geometry"/></mxCell>
+        <mxCell id="commit" value="commit 11&lt;br&gt;Group 书签推进" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e2f3e8;strokeColor=#5c9a70;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="710" y="300" width="220" height="80" as="geometry"/></mxCell>
+        <mxCell id="crash" value="处理后崩溃&lt;br&gt;Offset 仍未提交" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fde9e9;strokeColor=#c87979;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="390" y="300" width="220" height="80" as="geometry"/></mxCell>
+        <mxCell id="replay" value="重启后再次 poll 10&lt;br&gt;需要业务幂等 / 去重" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fde9e9;strokeColor=#c87979;" vertex="1" parent="1"><mxGeometry x="70" y="300" width="220" height="80" as="geometry"/></mxCell>
+        <mxCell id="c1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;strokeColor=#71857a;" edge="1" parent="1" source="log" target="poll"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="c2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;strokeColor=#71857a;" edge="1" parent="1" source="poll" target="process"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="c3" value="成功" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;strokeColor=#5c9a70;" edge="1" parent="1" source="process" target="commit"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="c4" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;strokeColor=#c87979;" edge="1" parent="1" source="process" target="crash"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="c5" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;strokeColor=#c87979;" edge="1" parent="1" source="crash" target="replay"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="c6" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;strokeColor=#c87979;" edge="1" parent="1" source="replay" target="poll"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="note" value="Commit 表达恢复位置，不是外部业务副作用已成功的证明" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b8c9bb;fontColor=#31543a;" vertex="1" parent="1"><mxGeometry x="150" y="490" width="800" height="60" as="geometry"/></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

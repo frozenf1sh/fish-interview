@@ -1,0 +1,22 @@
+<mxfile host="app.diagrams.net" modified="2026-08-28T00:00:00.000Z" agent="Fish Interview" version="31.1.8">
+  <diagram id="kafka-model" name="Kafka 数据模型">
+    <mxGraphModel adaptiveColors="auto" dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1100" pageHeight="850" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="cluster" value="Kafka Cluster" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f0f5ef;strokeColor=#52745b;strokeWidth=2;fontStyle=1;fontSize=18;" vertex="1" parent="1"><mxGeometry x="40" y="30" width="1000" height="520" as="geometry"/></mxCell>
+        <mxCell id="broker1" value="Broker 1&lt;br&gt;&lt;font style=&quot;font-size:12px&quot;&gt;Kafka Server&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff6e5;strokeColor=#d99b3d;fontStyle=1;" vertex="1" parent="cluster"><mxGeometry x="40" y="80" width="250" height="120" as="geometry"/></mxCell>
+        <mxCell id="broker2" value="Broker 2&lt;br&gt;&lt;font style=&quot;font-size:12px&quot;&gt;Kafka Server&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff6e5;strokeColor=#d99b3d;fontStyle=1;" vertex="1" parent="cluster"><mxGeometry x="375" y="80" width="250" height="120" as="geometry"/></mxCell>
+        <mxCell id="broker3" value="Broker 3&lt;br&gt;&lt;font style=&quot;font-size:12px&quot;&gt;Kafka Server&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff6e5;strokeColor=#d99b3d;fontStyle=1;" vertex="1" parent="cluster"><mxGeometry x="710" y="80" width="250" height="120" as="geometry"/></mxCell>
+        <mxCell id="topic" value="Topic: orders&lt;br&gt;&lt;font style=&quot;font-size:12px&quot;&gt;逻辑事件流&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e7f0ff;strokeColor=#6d91c7;fontStyle=1;" vertex="1" parent="cluster"><mxGeometry x="335" y="250" width="330" height="90" as="geometry"/></mxCell>
+        <mxCell id="p0" value="P0&lt;br&gt;Leader: B1 · Follower: B2/B3" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e2f3e8;strokeColor=#5c9a70;" vertex="1" parent="cluster"><mxGeometry x="80" y="400" width="400" height="70" as="geometry"/></mxCell>
+        <mxCell id="p1" value="P1&lt;br&gt;Leader: B2 · Follower: B1/B3" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e2f3e8;strokeColor=#5c9a70;" vertex="1" parent="cluster"><mxGeometry x="520" y="400" width="400" height="70" as="geometry"/></mxCell>
+        <mxCell id="e1" value="逻辑包含" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;strokeColor=#6d91c7;" edge="1" parent="1" source="topic" target="p0"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e2" value="逻辑包含" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;strokeColor=#6d91c7;" edge="1" parent="1" source="topic" target="p1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e3" value="承载副本" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;strokeColor=#d99b3d;" edge="1" parent="1" source="broker1" target="p0"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e4" value="承载副本" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;strokeColor=#d99b3d;" edge="1" parent="1" source="broker2" target="p1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="note" value="Topic 是逻辑集合 · Partition 是顺序/并行边界 · Broker 是服务器节点 · Replica 是副本" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b8c9bb;fontColor=#31543a;" vertex="1" parent="1"><mxGeometry x="110" y="590" width="880" height="60" as="geometry"/></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

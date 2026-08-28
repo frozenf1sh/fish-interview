@@ -173,6 +173,12 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.static(w, r, "static/app.css", "text/css; charset=utf-8")
 	case r.URL.Path == "/static/app.js":
 		s.static(w, r, "static/app.js", "text/javascript; charset=utf-8")
+	case r.URL.Path == "/static/kafka-model.drawio.svg":
+		s.static(w, r, "static/kafka-model.drawio.svg", "image/svg+xml; charset=utf-8")
+	case r.URL.Path == "/static/kafka-producer-path.drawio.svg":
+		s.static(w, r, "static/kafka-producer-path.drawio.svg", "image/svg+xml; charset=utf-8")
+	case r.URL.Path == "/static/kafka-consumer-failure.drawio.svg":
+		s.static(w, r, "static/kafka-consumer-failure.drawio.svg", "image/svg+xml; charset=utf-8")
 	default:
 		http.NotFound(w, r)
 	}

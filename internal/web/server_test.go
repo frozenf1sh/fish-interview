@@ -65,6 +65,36 @@ func TestCardRendersInternalLink(t *testing.T) {
 	}
 }
 
+func TestKafkaCardsRenderDiagramAssets(t *testing.T) {
+	server := newDemoServer(t)
+	cases := []struct {
+		card   string
+		asset  string
+		marker string
+	}{
+		{"eng.kafka", "kafka-model.drawio.svg", "Kafka 数据模型"},
+		{"eng.kafka.producer.send", "kafka-producer-path.drawio.svg", "Kafka Producer"},
+		{"eng.kafka.consumer.offset-commit", "kafka-consumer-failure.drawio.svg", "Kafka Consumer"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.card, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, "/cards/"+tc.card, nil)
+			res := httptest.NewRecorder()
+			server.ServeHTTP(res, req)
+			if res.Code != http.StatusOK || !strings.Contains(res.Body.String(), "/static/"+tc.asset) || !strings.Contains(res.Body.String(), tc.marker) {
+				t.Fatalf("card %s did not render diagram asset: %d", tc.card, res.Code)
+			}
+
+			assetReq := httptest.NewRequest(http.MethodGet, "/static/"+tc.asset, nil)
+			assetRes := httptest.NewRecorder()
+			server.ServeHTTP(assetRes, assetReq)
+			if assetRes.Code != http.StatusOK || !strings.Contains(assetRes.Header().Get("Content-Type"), "image/svg+xml") || !strings.Contains(assetRes.Body.String(), "<svg") {
+				t.Fatalf("diagram asset %s unavailable: %d", tc.asset, assetRes.Code)
+			}
+		})
+	}
+}
+
 func TestTraceEndpointReturnsReplayableFrames(t *testing.T) {
 	server := newDemoServer(t)
 	req := httptest.NewRequest(http.MethodGet, "/api/traces/interval-scheduling", nil)

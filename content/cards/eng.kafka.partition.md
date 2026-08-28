@@ -1,28 +1,33 @@
 ---
 id: eng.kafka.partition
 kind: engineering
-title: Kafka Partition：顺序、Offset 与复制的最小边界
-summary: Partition 是追加日志、局部顺序、消费者归属和副本选主的共同边界。
-parents: [eng.kafka]
-tags: [kafka, partition, offset, replication]
-links: [eng.kafka, eng.kafka.consumer-group]
+title: Kafka Partition：顺序、并行与 Offset 的边界
+summary: Partition 是一条可追加的有序日志，也是 Kafka 扩展吞吐、分配消费者和维护副本的最小共同单位。
+parents: [eng.kafka.model]
+tags: [kafka, partition, offset, ordering]
+links: [eng.kafka.topic, eng.kafka.broker, eng.kafka.offset-retention, eng.kafka.consumer-group, eng.kafka.ordering]
 ---
 
 ## 核心机制
 
-一个 Partition 是仅追加的有序日志。Broker 为其维护 Leader 和副本；客户端通常与 Leader 交互。offset 按 Partition 递增，因此 `offset=42` 必须连同 Topic 和 Partition 一起解释。
+每个 Partition 都是一条独立的、持续追加的日志。Broker 为其中的 Record 分配递增 Offset；Offset 只在该 Partition 内有意义，因此完整定位必须写成 `Topic + Partition + Offset`。
 
-Producer 的确认级别、副本同步状态和最小同步副本数共同决定故障时可接受的持久性边界。Consumer 的并行度同样在这里受限：同组一个 Partition 一次只能交给一个消费者。
+Partition 同时承担三种边界：
 
-## 排查线索
+| 边界 | 含义 |
+| --- | --- |
+| 顺序 | Consumer 读取同一 Partition 时看到写入顺序 |
+| 并行 | 不同 Partition 可以由不同 Consumer 并行处理 |
+| 高可用 | 一个 Partition 的 Replica 分布在多个 Broker 上 |
 
-出现热点时，先比较各 Partition 的写入速率、消息大小、key 分布和 consumer lag。若只有少数分区积压，盲目增加消费者通常无效；需要定位键倾斜或改变分区策略。
+## 为什么没有 Topic 全局顺序
+
+如果 `orders` 有三个 Partition，`P0` 中的 `A → C` 和 `P1` 中的 `B → D` 各自有序，但 Kafka 不定义 `A、B、C、D` 的全局交错顺序。想让同一订单有序，应使用稳定的 `orderId` 作为 Key，让相关事件进入同一 Partition。
 
 ## 常见误区
 
-副本数提高的是可用性与容错，不会让单 Partition 的读取顺序变成可并行处理。要并行处理同一键，必须先定义业务是否允许重排。
+- 增加 Consumer 不能突破单个 Partition 的串行边界。
+- Replica 增加的是容错能力，不会让一个 Partition 自动变成多路并行。
+- 扩大 Partition 数可能改变 Key 映射，跨扩容时的严格顺序需要单独设计。
 
-## 变体与关联
-
-[[eng.kafka.consumer-group]] 直接以 Partition 为分配单位；Topic 只是这些分区的逻辑集合。
-
+Partition 的物理承载者是 [[eng.kafka.broker]]，消费归属由 [[eng.kafka.consumer-group]] 管理。
