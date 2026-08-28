@@ -15,6 +15,38 @@ type exampleState struct {
 	Lanes   []exampleLane `json:"lanes"`
 }
 
+// greedyRangeState keeps one stable coordinate system while the greedy
+// decision moves through the example. Segments are ranges on the same axis;
+// markers identify the current scan position or boundary without replacing
+// the whole visual with a new list of values.
+type greedyRangeState struct {
+	Caption string              `json:"caption"`
+	Min     int                 `json:"min"`
+	Max     int                 `json:"max"`
+	Tracks  []greedyRangeTrack  `json:"tracks"`
+	Markers []greedyRangeMarker `json:"markers"`
+}
+
+type greedyRangeTrack struct {
+	Label    string               `json:"label"`
+	Segments []greedyRangeSegment `json:"segments"`
+}
+
+type greedyRangeSegment struct {
+	Label string `json:"label"`
+	Start int    `json:"start"`
+	End   int    `json:"end"`
+	State string `json:"state"`
+	Kind  string `json:"kind"`
+}
+
+type greedyRangeMarker struct {
+	Track    string `json:"track"`
+	Label    string `json:"label"`
+	Position int    `json:"position"`
+	State    string `json:"state"`
+}
+
 type matrixCell struct {
 	Row    int    `json:"row"`
 	Column int    `json:"column"`

@@ -417,6 +417,7 @@ function renderTraceBoard(board, kind, state) {
   if (kind === "rolling-dependency") return renderRollingDependency(board, state);
   if (kind === "flow-steps") return renderFlowSteps(board, state);
   if (kind === "example-state") return renderExampleState(board, state);
+  if (kind === "greedy-range") return renderGreedyRange(board, state);
   if (kind === "matrix-state") return renderMatrixState(board, state);
   if (kind === "node-link-state") return renderNodeLinkState(board, state);
   if (kind === "cycle-list-state") return renderCycleListState(board, state);
@@ -453,6 +454,54 @@ function renderExampleState(board, state) {
     lanes.append(row);
   });
   board.replaceChildren(heading, lanes);
+}
+
+function renderGreedyRange(board, state) {
+  board.className = "trace-board trace-board--greedy-range";
+  const heading = document.createElement("p");
+  heading.className = "trace-board-label";
+  heading.textContent = state.caption;
+  const visual = document.createElement("div");
+  visual.className = "greedy-range-visual";
+  const scale = (value) => ((value - state.min) / Math.max(1, state.max - state.min)) * 100;
+  const axis = document.createElement("div");
+  axis.className = "greedy-range-axis";
+  [state.min, Math.round((state.min + state.max) / 2), state.max].forEach((value) => {
+    const tick = document.createElement("span");
+    tick.style.left = `${scale(value)}%`;
+    tick.textContent = String(value);
+    axis.append(tick);
+  });
+  visual.append(axis);
+  state.tracks.forEach((track) => {
+    const row = document.createElement("div");
+    row.className = "greedy-range-row";
+    const label = document.createElement("small");
+    label.textContent = track.label;
+    const line = document.createElement("div");
+    line.className = "greedy-range-line";
+    const stacked = track.segments.length > 1 && track.segments.every((segment) => (segment.kind || "range") === "range");
+    if (stacked) line.style.height = `${Math.max(34, track.segments.length * 30 + 4)}px`;
+    track.segments.forEach((segment, index) => {
+      const bar = document.createElement("span");
+      bar.className = `greedy-range-segment is-${segment.state || "ready"} is-${segment.kind || "range"}`;
+      bar.style.left = `${scale(segment.start)}%`;
+      bar.style.width = `${Math.max(1.5, scale(segment.end) - scale(segment.start))}%`;
+      if (stacked) bar.style.top = `${3 + index * 30}px`;
+      bar.textContent = segment.label;
+      line.append(bar);
+    });
+    state.markers.filter((marker) => marker.track === track.label).forEach((marker) => {
+      const pin = document.createElement("span");
+      pin.className = `greedy-range-marker is-${marker.state || "current"}`;
+      pin.style.left = `${scale(marker.position)}%`;
+      pin.textContent = marker.label;
+      line.append(pin);
+    });
+    row.append(label, line);
+    visual.append(row);
+  });
+  board.replaceChildren(heading, visual);
 }
 
 function renderMatrixState(board, state) {

@@ -27,6 +27,133 @@ func deepCells(rows []string, states map[string]string) []matrixCell {
 	return matrixFromRows(rows, states)
 }
 
+func greedyRangeFrame(line int, narration, caption string, min, max int, variables map[string]string, elements ...any) Frame {
+	tracks := make([]greedyRangeTrack, 0)
+	markers := make([]greedyRangeMarker, 0)
+	for _, element := range elements {
+		switch value := element.(type) {
+		case greedyRangeTrack:
+			tracks = append(tracks, value)
+		case greedyRangeMarker:
+			markers = append(markers, value)
+		}
+	}
+	values := cloneStringMap(variables)
+	if values == nil {
+		values = make(map[string]string)
+	}
+	values["example"] = caption
+	return Frame{ActiveLine: line, Narration: narration, Variables: values, State: greedyRangeState{Caption: caption, Min: min, Max: max, Tracks: tracks, Markers: markers}}
+}
+
+func makeGreedyRangeTrack(label string, segments ...greedyRangeSegment) greedyRangeTrack {
+	return greedyRangeTrack{Label: label, Segments: append([]greedyRangeSegment{}, segments...)}
+}
+
+func makeGreedyRangeSegment(start, end int, label, state, kind string) greedyRangeSegment {
+	return greedyRangeSegment{Start: start, End: end, Label: label, State: state, Kind: kind}
+}
+
+func makeGreedyRangeMarker(track, label string, position int, state string) greedyRangeMarker {
+	return greedyRangeMarker{Track: track, Label: label, Position: position, State: state}
+}
+
+func greedyRangeItems(values []string, states map[int]string) []greedyRangeSegment {
+	segments := make([]greedyRangeSegment, len(values))
+	for index, value := range values {
+		state := "ready"
+		if configured, ok := states[index]; ok {
+			state = configured
+		}
+		segments[index] = makeGreedyRangeSegment(index, index+1, value, state, "item")
+	}
+	return segments
+}
+
+func greedyRangeIntervals(values []Interval, states map[int]string) []greedyRangeSegment {
+	segments := make([]greedyRangeSegment, len(values))
+	for index, value := range values {
+		state := "ready"
+		if configured, ok := states[index]; ok {
+			state = configured
+		}
+		segments[index] = makeGreedyRangeSegment(value.Start, value.End, value.Label, state, "range")
+	}
+	return segments
+}
+
+func greedyStackItems(stack string, states map[int]string) []greedyRangeSegment {
+	values := make([]string, 0, len(stack))
+	for _, character := range stack {
+		values = append(values, string(character))
+	}
+	return greedyRangeItems(values, states)
+}
+
+func redesignedGreedyReachabilityTrace() Trace {
+	code := []string{"farthest := 0", "for i, jump := range nums {", "    if i > farthest { return false }", "    farthest = max(farthest, i+jump)", "}", "return true"}
+	values := []string{"2", "3", "1", "1", "4"}
+	positions := func(states map[int]string) greedyRangeTrack {
+		return makeGreedyRangeTrack("位置 / 跳数", greedyRangeItems(values, states)...)
+	}
+	frames := []Frame{
+		greedyRangeFrame(0, "例题 nums=[2,3,1,1,4]。横轴是下标；绿色带状区表示已经证明可达的范围。", "跳跃游戏：最远可达边界", 0, 5, map[string]string{"farthest": "0", "i": "-"}, positions(map[int]string{0: "current"}), makeGreedyRangeTrack("可达边界", makeGreedyRangeSegment(0, 1, "0", "current", "range")), makeGreedyRangeTrack("下一候选"), makeGreedyRangeMarker("位置 / 跳数", "起点", 0, "current")),
+		greedyRangeFrame(1, "读取下标 0 和 jump=2；0 没有越过当前可达边界。", "检查当前位置", 0, 5, map[string]string{"i": "0", "jump": "2", "farthest": "0"}, positions(map[int]string{0: "current"}), makeGreedyRangeTrack("可达边界", makeGreedyRangeSegment(0, 1, "0", "dependency", "range")), makeGreedyRangeTrack("下一候选"), makeGreedyRangeMarker("位置 / 跳数", "i=0", 0, "current")),
+		greedyRangeFrame(3, "候选终点是 0+2=2；橙色范围从当前位置铺到下标 2，写入新的边界。", "扩展到下标 2", 0, 5, map[string]string{"i": "0", "jump": "2", "candidate": "2", "farthest": "2"}, positions(map[int]string{0: "dependency"}), makeGreedyRangeTrack("可达边界", makeGreedyRangeSegment(0, 3, "0..2", "current", "range")), makeGreedyRangeTrack("下一候选", makeGreedyRangeSegment(0, 3, "0→2", "current", "range")), makeGreedyRangeMarker("位置 / 跳数", "i=0", 0, "current")),
+		greedyRangeFrame(1, "读取下标 1 和 jump=3；它落在绿色边界内，因此可以继续贡献范围。", "检查第二个位置", 0, 5, map[string]string{"i": "1", "jump": "3", "farthest": "2"}, positions(map[int]string{0: "ready", 1: "current"}), makeGreedyRangeTrack("可达边界", makeGreedyRangeSegment(0, 3, "0..2", "dependency", "range")), makeGreedyRangeTrack("下一候选", makeGreedyRangeSegment(1, 5, "1→4", "current", "range")), makeGreedyRangeMarker("位置 / 跳数", "i=1", 1, "current")),
+		greedyRangeFrame(3, "候选边界 1+3=4 越过旧边界 2；把绿色范围扩展到终点下标 4。", "覆盖终点", 0, 5, map[string]string{"i": "1", "candidate": "4", "farthest": "4"}, positions(map[int]string{0: "ready", 1: "dependency"}), makeGreedyRangeTrack("可达边界", makeGreedyRangeSegment(0, 5, "0..4", "current", "range")), makeGreedyRangeTrack("下一候选", makeGreedyRangeSegment(1, 5, "1→4", "current", "range")), makeGreedyRangeMarker("位置 / 跳数", "i=1", 1, "current")),
+		greedyRangeFrame(1, "下标 2 已被覆盖；它的候选只能到 3，不会缩短已经证明的最远边界。", "边界内继续扫描", 0, 5, map[string]string{"i": "2", "jump": "1", "candidate": "3", "farthest": "4"}, positions(map[int]string{0: "ready", 1: "ready", 2: "current"}), makeGreedyRangeTrack("可达边界", makeGreedyRangeSegment(0, 5, "0..4", "ready", "range")), makeGreedyRangeTrack("下一候选", makeGreedyRangeSegment(2, 4, "2→3", "dependency", "range")), makeGreedyRangeMarker("位置 / 跳数", "i=2", 2, "current")),
+		greedyRangeFrame(1, "下标 3 仍在绿色范围内；候选终点与边界相同，不产生新的覆盖。", "继续扫描", 0, 5, map[string]string{"i": "3", "jump": "1", "candidate": "4", "farthest": "4"}, positions(map[int]string{0: "ready", 1: "ready", 2: "ready", 3: "current"}), makeGreedyRangeTrack("可达边界", makeGreedyRangeSegment(0, 5, "0..4", "ready", "range")), makeGreedyRangeTrack("下一候选", makeGreedyRangeSegment(3, 5, "3→4", "dependency", "range")), makeGreedyRangeMarker("位置 / 跳数", "i=3", 3, "current")),
+		greedyRangeFrame(5, "绿色边界覆盖最后一个下标 4；扫描完成，返回 true。", "可达边界贪心：答案", 0, 5, map[string]string{"farthest": "4", "answer": "true"}, positions(map[int]string{0: "ready", 1: "ready", 2: "ready", 3: "ready", 4: "current"}), makeGreedyRangeTrack("可达边界", makeGreedyRangeSegment(0, 5, "0..4", "ready", "range")), makeGreedyRangeTrack("下一候选"), makeGreedyRangeMarker("位置 / 跳数", "终点", 4, "current")),
+	}
+	return concreteTrace("greedy-range", "可达边界贪心：跳跃游戏", code, frames...)
+}
+
+func redesignedGreedyLexicographicTrace() Trace {
+	code := []string{"last := lastIndex(s)", "for i, ch := range s {", "    if inStack[ch] { continue }", "    for top > ch && last[top] > i { pop() }", "    push(ch)", "}"}
+	input := []string{"c", "b", "a", "c", "d", "c", "b", "c"}
+	inputTrack := func(states map[int]string) greedyRangeTrack {
+		return makeGreedyRangeTrack("输入位置", greedyRangeItems(input, states)...)
+	}
+	stackTrack := func(stack string, states map[int]string) greedyRangeTrack {
+		return makeGreedyRangeTrack("单调栈", greedyStackItems(stack, states)...)
+	}
+	frames := []Frame{
+		greedyRangeFrame(0, "例题 s=cbacdcbc。横轴保留原字符串位置；栈在另一条固定轨道上增长和回退。", "去重字典序：准备", 0, 8, map[string]string{"stack": "[]", "last": "a→2 b→6 c→7 d→4"}, inputTrack(nil), stackTrack("", nil), makeGreedyRangeTrack("可补回")),
+		greedyRangeFrame(1, "i=0 读 c；栈为空，没有需要比较的栈顶。", "读取 c", 0, 8, map[string]string{"i": "0", "ch": "c", "stack": "[]"}, inputTrack(map[int]string{0: "current"}), stackTrack("", nil), makeGreedyRangeTrack("可补回"), makeGreedyRangeMarker("输入位置", "i=0", 0, "current")),
+		greedyRangeFrame(4, "c 没有更大的栈顶可弹出，先把它放入栈的第一个位置。", "压入 c", 0, 8, map[string]string{"i": "0", "ch": "c", "stack": "[c]"}, inputTrack(map[int]string{0: "dependency"}), stackTrack("c", map[int]string{0: "current"}), makeGreedyRangeTrack("可补回", makeGreedyRangeSegment(1, 8, "c 后面仍会出现", "dependency", "range")), makeGreedyRangeMarker("输入位置", "i=0", 0, "current")),
+		greedyRangeFrame(3, "读 b：栈顶 c>b，且 c 的后续范围仍在输入轴上，先执行 pop。", "执行 pop：c 可补回", 0, 8, map[string]string{"i": "1", "ch": "b", "top": "c", "stack": "[]"}, inputTrack(map[int]string{0: "dependency", 1: "current"}), stackTrack("c", map[int]string{0: "dependency"}), makeGreedyRangeTrack("可补回", makeGreedyRangeSegment(2, 8, "c 后面仍会出现", "dependency", "range")), makeGreedyRangeMarker("输入位置", "i=1", 1, "current")),
+		greedyRangeFrame(4, "把 b 放入栈；此时栈轨道只保留 b，c 暂时移出但仍可由后面的 c 补回。", "压入 b", 0, 8, map[string]string{"i": "1", "ch": "b", "stack": "[b]"}, inputTrack(map[int]string{0: "dependency", 1: "current"}), stackTrack("b", map[int]string{0: "current"}), makeGreedyRangeTrack("可补回", makeGreedyRangeSegment(2, 8, "c 可补回", "dependency", "range")), makeGreedyRangeMarker("输入位置", "i=1", 1, "current")),
+		greedyRangeFrame(3, "读 a：栈顶 b>a，且 b 的后续范围仍未结束，继续弹出 b。", "执行 pop：b 可补回", 0, 8, map[string]string{"i": "2", "ch": "a", "top": "b", "stack": "[]"}, inputTrack(map[int]string{1: "dependency", 2: "current"}), stackTrack("b", map[int]string{0: "dependency"}), makeGreedyRangeTrack("可补回", makeGreedyRangeSegment(3, 8, "b 后面仍会出现", "dependency", "range")), makeGreedyRangeMarker("输入位置", "i=2", 2, "current")),
+		greedyRangeFrame(4, "压入 a；从现在开始，a 固定在栈底，后面的字符不能覆盖它。", "压入 a", 0, 8, map[string]string{"i": "2", "ch": "a", "stack": "[a]"}, inputTrack(map[int]string{1: "rejected", 2: "current"}), stackTrack("a", map[int]string{0: "current"}), makeGreedyRangeTrack("可补回", makeGreedyRangeSegment(3, 8, "b / c 可补回", "dependency", "range")), makeGreedyRangeMarker("输入位置", "i=2", 2, "current")),
+		greedyRangeFrame(4, "i=3 读 c；栈顶 a<c，不触发弹栈，把 c 接到栈尾。", "压入 c", 0, 8, map[string]string{"i": "3", "ch": "c", "stack": "[a,c]"}, inputTrack(map[int]string{2: "dependency", 3: "current"}), stackTrack("ac", map[int]string{0: "ready", 1: "current"}), makeGreedyRangeTrack("可补回", makeGreedyRangeSegment(5, 8, "c 可补回", "dependency", "range")), makeGreedyRangeMarker("输入位置", "i=3", 3, "current")),
+		greedyRangeFrame(4, "i=4 读 d；d 大于栈顶 c，直接压入，栈轨道变成 a→c→d。", "压入 d", 0, 8, map[string]string{"i": "4", "ch": "d", "stack": "[a,c,d]"}, inputTrack(map[int]string{2: "dependency", 3: "ready", 4: "current"}), stackTrack("acd", map[int]string{0: "ready", 1: "ready", 2: "current"}), makeGreedyRangeTrack("可补回", makeGreedyRangeSegment(5, 8, "c 可补回", "dependency", "range")), makeGreedyRangeMarker("输入位置", "i=4", 4, "current")),
+		greedyRangeFrame(2, "i=5 再读 c；c 已经在栈中，重复字符直接跳过，主轨道和栈都保持不变。", "跳过重复 c", 0, 8, map[string]string{"i": "5", "ch": "c", "stack": "[a,c,d]"}, inputTrack(map[int]string{5: "rejected"}), stackTrack("acd", map[int]string{0: "ready", 1: "ready", 2: "ready"}), makeGreedyRangeTrack("可补回", makeGreedyRangeSegment(5, 8, "已在栈中", "rejected", "range")), makeGreedyRangeMarker("输入位置", "i=5", 5, "rejected")),
+		greedyRangeFrame(3, "i=6 读 b：d>b，但 d 的最后位置已经过去；红色表示不能弹出 d。", "拒绝弹出 d", 0, 8, map[string]string{"i": "6", "ch": "b", "top": "d", "stack": "[a,c,d]"}, inputTrack(map[int]string{6: "current"}), stackTrack("acd", map[int]string{0: "ready", 1: "ready", 2: "rejected"}), makeGreedyRangeTrack("可补回", makeGreedyRangeSegment(7, 8, "d 不可补回", "rejected", "range")), makeGreedyRangeMarker("输入位置", "i=6", 6, "current")),
+		greedyRangeFrame(4, "把 b 接到栈尾；最后的 c 再次跳过，栈保持 [a,c,d,b]。", "完成扫描", 0, 8, map[string]string{"i": "7", "stack": "[a,c,d,b]", "answer": "acdb"}, inputTrack(map[int]string{7: "rejected"}), stackTrack("acdb", map[int]string{0: "ready", 1: "ready", 2: "ready", 3: "current"}), makeGreedyRangeTrack("可补回", makeGreedyRangeSegment(7, 8, "c 已在栈中", "rejected", "range")), makeGreedyRangeMarker("输入位置", "i=7", 7, "rejected")),
+	}
+	return concreteTrace("greedy-range", "字典序贪心：删除重复字母", code, frames...)
+}
+
+func redesignedGreedyEndpointsTrace() Trace {
+	code := []string{"sort intervals by start", "right := first.end", "for _, in := range intervals[1:] {", "    if in.start > right { arrows++; right = in.end }", "    else { right = min(right, in.end) }", "}"}
+	intervals := []Interval{{Label: "A", Start: 1, End: 6}, {Label: "B", Start: 2, End: 8}, {Label: "C", Start: 7, End: 12}, {Label: "D", Start: 10, End: 16}}
+	all := func(states map[int]string) greedyRangeTrack {
+		return makeGreedyRangeTrack("气球区间", greedyRangeIntervals(intervals, states)...)
+	}
+	frames := []Frame{
+		greedyRangeFrame(0, "四段气球已按起点排序；先把 A 的右端 6 作为第一组共同交集。", "区间端点：最少箭数", 0, 16, map[string]string{"right": "6", "arrows": "1"}, all(map[int]string{0: "current"}), makeGreedyRangeTrack("当前交集", makeGreedyRangeSegment(1, 6, "[1,6]", "current", "range")), makeGreedyRangeTrack("箭"), makeGreedyRangeMarker("气球区间", "A", 1, "current"), makeGreedyRangeMarker("箭", "6", 6, "ready")),
+		greedyRangeFrame(2, "读取 B=[2,8]；它的起点 2 没越过 right=6，两个区间仍有共同位置。", "检查 B 的重叠", 0, 16, map[string]string{"start": "2", "end": "8", "right": "6", "arrows": "1"}, all(map[int]string{0: "ready", 1: "current"}), makeGreedyRangeTrack("当前交集", makeGreedyRangeSegment(1, 6, "right=6", "dependency", "range")), makeGreedyRangeTrack("箭"), makeGreedyRangeMarker("气球区间", "B", 2, "current"), makeGreedyRangeMarker("箭", "6", 6, "ready")),
+		greedyRangeFrame(4, "共同交集右端收紧为 min(6,8)=6；第一支箭继续放在 6。", "收紧第一组交集", 0, 16, map[string]string{"right": "6", "arrows": "1"}, all(map[int]string{0: "ready", 1: "ready"}), makeGreedyRangeTrack("当前交集", makeGreedyRangeSegment(2, 6, "[2,6]", "current", "range")), makeGreedyRangeTrack("箭"), makeGreedyRangeMarker("气球区间", "箭=6", 6, "current"), makeGreedyRangeMarker("箭", "6", 6, "current")),
+		greedyRangeFrame(2, "读取 C=[7,12]；7 越过 right=6，旧交集为空，必须新开一支箭。", "发现断开", 0, 16, map[string]string{"start": "7", "end": "12", "right": "6", "arrows": "1"}, all(map[int]string{0: "ready", 1: "ready", 2: "current"}), makeGreedyRangeTrack("当前交集", makeGreedyRangeSegment(1, 6, "旧交集", "rejected", "range")), makeGreedyRangeTrack("箭"), makeGreedyRangeMarker("气球区间", "C", 7, "rejected"), makeGreedyRangeMarker("箭", "6", 6, "ready")),
+		greedyRangeFrame(3, "新增第二支箭，新的共同交集从 C 的范围开始，右端先设为 12。", "开启第二组", 0, 16, map[string]string{"right": "12", "arrows": "2"}, all(map[int]string{0: "ready", 1: "ready", 2: "dependency"}), makeGreedyRangeTrack("当前交集", makeGreedyRangeSegment(7, 12, "[7,12]", "current", "range")), makeGreedyRangeTrack("箭"), makeGreedyRangeMarker("气球区间", "新组", 7, "current"), makeGreedyRangeMarker("箭", "6", 6, "ready"), makeGreedyRangeMarker("箭", "12", 12, "current")),
+		greedyRangeFrame(2, "读取 D=[10,16]；10 没越过第二组 right=12，仍可由同一支箭命中。", "检查 D 的重叠", 0, 16, map[string]string{"start": "10", "end": "16", "right": "12", "arrows": "2"}, all(map[int]string{0: "ready", 1: "ready", 2: "ready", 3: "current"}), makeGreedyRangeTrack("当前交集", makeGreedyRangeSegment(7, 12, "right=12", "dependency", "range")), makeGreedyRangeTrack("箭"), makeGreedyRangeMarker("气球区间", "D", 10, "current"), makeGreedyRangeMarker("箭", "6", 6, "ready"), makeGreedyRangeMarker("箭", "12", 12, "current")),
+		greedyRangeFrame(4, "第二组右端保持 min(12,16)=12；两支箭稳定在 6 和 12。", "稳定第二组", 0, 16, map[string]string{"right": "12", "arrows": "2"}, all(map[int]string{0: "ready", 1: "ready", 2: "ready", 3: "ready"}), makeGreedyRangeTrack("当前交集", makeGreedyRangeSegment(10, 12, "[10,12]", "current", "range")), makeGreedyRangeTrack("箭"), makeGreedyRangeMarker("气球区间", "箭=12", 12, "current"), makeGreedyRangeMarker("箭", "6", 6, "ready"), makeGreedyRangeMarker("箭", "12", 12, "current")),
+		greedyRangeFrame(5, "扫描结束，返回 arrows=2；横轴上的两条竖线就是最终选择。", "区间端点贪心：答案", 0, 16, map[string]string{"arrows": "2", "positions": "6,12"}, all(map[int]string{0: "ready", 1: "ready", 2: "ready", 3: "ready"}), makeGreedyRangeTrack("当前交集"), makeGreedyRangeTrack("箭"), makeGreedyRangeMarker("气球区间", "答案", 12, "current"), makeGreedyRangeMarker("箭", "6", 6, "ready"), makeGreedyRangeMarker("箭", "12", 12, "current")),
+	}
+	return concreteTrace("greedy-range", "区间端点贪心：最少箭数", code, frames...)
+}
+
 func redesignedReachabilityTrace() Trace {
 	code := []string{"farthest := 0", "for i, jump := range nums {", "    if i > farthest { return false }", "    farthest = max(farthest, i+jump)", "}", "return true"}
 	nums := []string{"2", "3", "1", "1", "4"}
@@ -572,64 +699,88 @@ func redesignedGravityTrace() Trace {
 
 func redesignedStartSortedIntervalsTrace() Trace {
 	code := []string{"sort.Slice(intervals, byStart)", "merged := [][]int{intervals[0]}", "for _, current := range intervals[1:] {", "    last := merged[len(merged)-1]", "    if current[0] <= last[1] { last[1] = max(last[1], current[1]) }", "    else { merged = append(merged, current) }", "}"}
-	frames := []Frame{
-		deepExampleFrame(0, "例题 [[1,3],[2,6],[8,10],[15,18]]。排序后未来区间只会从当前段右侧进入。", "区间合并：按开始时间", map[string]string{"merged": "[[1,3]]"}, tokenRow("输入", []string{"[1,3]", "[2,6]", "[8,10]", "[15,18]"}, map[int]string{0: "current"}), lane("merged", item("[1,3]", "current"))),
-		deepExampleFrame(2, "读取 current=[2,6]；比较 current.start=2 与 last.end=3，2<=3，存在重叠。", "检查第二段", map[string]string{"current": "[2,6]", "last": "[1,3]", "merged": "[[1,3]]"}, tokenRow("输入", []string{"[1,3]", "[2,6]", "[8,10]", "[15,18]"}, map[int]string{1: "current"}), lane("last", item("end=3", "dependency"))),
-		deepExampleFrame(4, "只扩展当前段右端：last.end=max(3,6)=6，merged 变为 [[1,6]]。", "合并重叠段", map[string]string{"last.end": "6", "merged": "[[1,6]]"}, lane("merged", item("[1,6]", "current"))),
-		deepExampleFrame(2, "读取 [8,10]；8>6，当前段已经固定，不能再被它覆盖。", "检查断开区间", map[string]string{"current": "[8,10]", "last.end": "6"}, tokenRow("输入", []string{"[1,3]", "[2,6]", "[8,10]", "[15,18]"}, map[int]string{2: "current"}), lane("判断", item("8>6", "rejected"))),
-		deepExampleFrame(5, "断开时复制 current 追加新段，而不是修改 last；merged=[[1,6],[8,10]]。", "追加新段", map[string]string{"merged": "[[1,6],[8,10]]"}, lane("merged", item("[1,6]", "ready"), item("[8,10]", "current"))),
-		deepExampleFrame(2, "读取 [15,18]，15>10，再次进入断开分支。", "检查最后区间", map[string]string{"current": "[15,18]", "last.end": "10"}, tokenRow("输入", []string{"[1,3]", "[2,6]", "[8,10]", "[15,18]"}, map[int]string{3: "current"})),
-		deepExampleFrame(5, "追加后得到三个互不重叠段；排序键决定了只需观察 merged 的最后一段。", "区间合并：完成", map[string]string{"merged": "[[1,6],[8,10],[15,18]]"}, lane("答案", item("[[1,6],[8,10],[15,18]]", "current"))),
+	intervals := []Interval{{Label: "A", Start: 1, End: 3}, {Label: "B", Start: 2, End: 6}, {Label: "C", Start: 8, End: 10}, {Label: "D", Start: 15, End: 18}}
+	input := func(states map[int]string) greedyRangeTrack {
+		return makeGreedyRangeTrack("输入区间", greedyRangeIntervals(intervals, states)...)
 	}
-	return concreteTrace("example-state", "区间：按开始时间合并", code, frames...)
+	merged := func(segments ...greedyRangeSegment) greedyRangeTrack {
+		return makeGreedyRangeTrack("合并结果", segments...)
+	}
+	frames := []Frame{
+		greedyRangeFrame(0, "例题 [[1,3],[2,6],[8,10],[15,18]]。排序后未来区间只会从当前段右侧进入。", "区间合并：按开始时间", 0, 18, map[string]string{"merged": "[[1,3]]"}, input(map[int]string{0: "current"}), merged(makeGreedyRangeSegment(1, 3, "[1,3]", "current", "range"))),
+		greedyRangeFrame(2, "读取 current=[2,6]；比较 current.start=2 与 last.end=3，2<=3，存在重叠。", "检查第二段", 0, 18, map[string]string{"current": "[2,6]", "last": "[1,3]", "merged": "[[1,3]]"}, input(map[int]string{0: "dependency", 1: "current"}), merged(makeGreedyRangeSegment(1, 3, "last=[1,3]", "dependency", "range"))),
+		greedyRangeFrame(4, "只扩展当前段右端：last.end=max(3,6)=6，merged 变为 [[1,6]]。", "合并重叠段", 0, 18, map[string]string{"last.end": "6", "merged": "[[1,6]]"}, input(map[int]string{0: "ready", 1: "ready"}), merged(makeGreedyRangeSegment(1, 6, "[1,6]", "current", "range"))),
+		greedyRangeFrame(2, "读取 [8,10]；8>6，当前段已经固定，不能再被它覆盖。", "检查断开区间", 0, 18, map[string]string{"current": "[8,10]", "last.end": "6"}, input(map[int]string{0: "ready", 1: "ready", 2: "current"}), merged(makeGreedyRangeSegment(1, 6, "[1,6]", "dependency", "range"))),
+		greedyRangeFrame(5, "断开时复制 current 追加新段，而不是修改 last；merged=[[1,6],[8,10]]。", "追加新段", 0, 18, map[string]string{"merged": "[[1,6],[8,10]]"}, input(map[int]string{0: "ready", 1: "ready", 2: "dependency"}), merged(makeGreedyRangeSegment(1, 6, "[1,6]", "ready", "range"), makeGreedyRangeSegment(8, 10, "[8,10]", "current", "range"))),
+		greedyRangeFrame(2, "读取 [15,18]，15>10，再次进入断开分支。", "检查最后区间", 0, 18, map[string]string{"current": "[15,18]", "last.end": "10"}, input(map[int]string{0: "ready", 1: "ready", 2: "ready", 3: "current"}), merged(makeGreedyRangeSegment(1, 6, "[1,6]", "ready", "range"), makeGreedyRangeSegment(8, 10, "[8,10]", "dependency", "range"))),
+		greedyRangeFrame(5, "追加后得到三个互不重叠段；排序键决定了只需观察 merged 的最后一段。", "区间合并：完成", 0, 18, map[string]string{"merged": "[[1,6],[8,10],[15,18]]"}, input(map[int]string{0: "ready", 1: "ready", 2: "ready", 3: "ready"}), merged(makeGreedyRangeSegment(1, 6, "[1,6]", "ready", "range"), makeGreedyRangeSegment(8, 10, "[8,10]", "ready", "range"), makeGreedyRangeSegment(15, 18, "[15,18]", "current", "range"))),
+	}
+	return concreteTrace("greedy-range", "区间：按开始时间合并", code, frames...)
 }
 
 func redesignedMeetingRoomsTrace() Trace {
 	code := []string{"sort.Ints(starts); sort.Ints(ends)", "rooms, end := 0, 0", "for _, start := range starts {", "    if start < ends[end] { rooms++ } else { end++ }", "}", "return rooms"}
-	frames := []Frame{
-		deepExampleFrame(0, "例题 [[0,30],[5,10],[15,20]]。拆出 starts=[0,5,15]、ends=[10,20,30]，两个数组分别排序。", "会议室：双排序指针", map[string]string{"rooms": "0", "end": "0", "starts": "[0,5,15]", "ends": "[10,20,30]"}, tokenRow("starts", []string{"0", "5", "15"}, nil), tokenRow("ends", []string{"10", "20", "30"}, nil)),
-		deepExampleFrame(2, "读取 start=0，比较最早结束 ends[0]=10；0<10，当前会议无法复用房间。", "检查第一个开始时间", map[string]string{"start": "0", "nextEnd": "10", "rooms": "0"}, tokenRow("starts", []string{"0", "5", "15"}, map[int]string{0: "current"}), tokenRow("ends", []string{"10", "20", "30"}, map[int]string{0: "dependency"})),
-		deepExampleFrame(3, "并发房间数写成 1；end 指针仍指向最早结束的 10。", "开第一间房", map[string]string{"rooms": "1", "end": "0"}, lane("rooms", item("1", "current")), lane("end", item("10", "dependency"))),
-		deepExampleFrame(2, "读取 start=5，5<10，第一场仍未结束，不能复用，rooms 将增加。", "第二场产生重叠", map[string]string{"start": "5", "nextEnd": "10", "rooms": "1"}, tokenRow("starts", []string{"0", "5", "15"}, map[int]string{1: "current"}), tokenRow("ends", []string{"10", "20", "30"}, map[int]string{0: "dependency"})),
-		deepExampleFrame(3, "rooms 从 1 写成 2；峰值并发目前是 2。", "开第二间房", map[string]string{"rooms": "2", "end": "0"}, lane("rooms", item("2", "current"))),
-		deepExampleFrame(2, "读取 start=15，15>=最早结束 10；先让 end 指针前进到 20，表示释放一间房。", "找到可复用房间", map[string]string{"start": "15", "ends[end]": "10", "end": "1", "rooms": "2"}, tokenRow("starts", []string{"0", "5", "15"}, map[int]string{2: "current"}), tokenRow("ends", []string{"10", "20", "30"}, map[int]string{0: "rejected", 1: "current"})),
-		deepExampleFrame(3, "复用释放的房间，不增加 rooms；最终峰值仍为 2。", "会议室：完成", map[string]string{"rooms": "2", "answer": "2"}, lane("答案", item("2", "current")), lane("不变量", item("rooms 是峰值，不是当前占用数", "ready"))),
+	meetings := []Interval{{Label: "A", Start: 0, End: 30}, {Label: "B", Start: 5, End: 10}, {Label: "C", Start: 15, End: 20}}
+	meetingTrack := func(states map[int]string) greedyRangeTrack {
+		return makeGreedyRangeTrack("会议区间", greedyRangeIntervals(meetings, states)...)
 	}
-	return concreteTrace("example-state", "区间：最少会议室", code, frames...)
+	frames := []Frame{
+		greedyRangeFrame(0, "例题 [[0,30],[5,10],[15,20]]。横轴是统一时间轴；开始与结束指针都在会议区间上移动。", "会议室：双指针扫描", 0, 30, map[string]string{"rooms": "0", "start": "-", "end": "0"}, meetingTrack(nil), makeGreedyRangeTrack("开始时间"), makeGreedyRangeTrack("最早结束")),
+		greedyRangeFrame(2, "读取 start=0，比较最早结束 10；0<10，当前会议无法复用房间。", "检查第一个开始时间", 0, 30, map[string]string{"start": "0", "nextEnd": "10", "rooms": "0"}, meetingTrack(map[int]string{0: "current"}), makeGreedyRangeTrack("开始时间"), makeGreedyRangeTrack("最早结束"), makeGreedyRangeMarker("开始时间", "start=0", 0, "current"), makeGreedyRangeMarker("最早结束", "end=10", 10, "dependency")),
+		greedyRangeFrame(3, "并发房间数写成 1；end 指针仍停在最早结束的 10。", "开第一间房", 0, 30, map[string]string{"rooms": "1", "end": "0"}, meetingTrack(map[int]string{0: "current"}), makeGreedyRangeTrack("开始时间", makeGreedyRangeSegment(0, 1, "0", "current", "item")), makeGreedyRangeTrack("最早结束"), makeGreedyRangeMarker("开始时间", "start=0", 0, "current"), makeGreedyRangeMarker("最早结束", "end=10", 10, "dependency")),
+		greedyRangeFrame(2, "读取 start=5，5<10；第一场仍未结束，不能复用，rooms 将增加。", "第二场产生重叠", 0, 30, map[string]string{"start": "5", "nextEnd": "10", "rooms": "1"}, meetingTrack(map[int]string{0: "dependency", 1: "current"}), makeGreedyRangeTrack("开始时间"), makeGreedyRangeTrack("最早结束"), makeGreedyRangeMarker("开始时间", "start=5", 5, "current"), makeGreedyRangeMarker("最早结束", "end=10", 10, "dependency")),
+		greedyRangeFrame(3, "rooms 从 1 写成 2；峰值并发目前是 2，两个重叠的区间仍完整可见。", "开第二间房", 0, 30, map[string]string{"rooms": "2", "end": "0"}, meetingTrack(map[int]string{0: "dependency", 1: "current"}), makeGreedyRangeTrack("开始时间", makeGreedyRangeSegment(0, 1, "0", "ready", "item"), makeGreedyRangeSegment(5, 6, "5", "current", "item")), makeGreedyRangeTrack("最早结束"), makeGreedyRangeMarker("开始时间", "start=5", 5, "current"), makeGreedyRangeMarker("最早结束", "end=10", 10, "dependency")),
+		greedyRangeFrame(2, "读取 start=15，15>=最早结束 10；end 指针前进到 20，表示释放一间房。", "找到可复用房间", 0, 30, map[string]string{"start": "15", "ends[end]": "10", "end": "1", "rooms": "2"}, meetingTrack(map[int]string{0: "dependency", 1: "dependency", 2: "current"}), makeGreedyRangeTrack("开始时间"), makeGreedyRangeTrack("最早结束"), makeGreedyRangeMarker("开始时间", "start=15", 15, "current"), makeGreedyRangeMarker("最早结束", "end=20", 20, "current"), makeGreedyRangeMarker("最早结束", "释放=10", 10, "rejected")),
+		greedyRangeFrame(3, "复用释放的房间，不增加 rooms；最终峰值仍为 2。", "会议室：完成", 0, 30, map[string]string{"rooms": "2", "answer": "2"}, meetingTrack(map[int]string{0: "ready", 1: "ready", 2: "ready"}), makeGreedyRangeTrack("开始时间", makeGreedyRangeSegment(0, 1, "0", "ready", "item"), makeGreedyRangeSegment(5, 6, "5", "ready", "item"), makeGreedyRangeSegment(15, 16, "15", "current", "item")), makeGreedyRangeTrack("最早结束"), makeGreedyRangeMarker("开始时间", "完成", 15, "current"), makeGreedyRangeMarker("最早结束", "end=20", 20, "ready")),
+	}
+	return concreteTrace("greedy-range", "区间：最少会议室", code, frames...)
 }
 
 func redesignedWeightedIntervalsTrace() Trace {
 	code := []string{"sort intervals by end", "dp[0] = 0", "for i := 1; i <= n; i++ {", "    prev := latest compatible prefix", "    skip := dp[i-1]", "    take := weight[i] + dp[prev]", "    dp[i] = max(skip, take)", "}"}
-	frames := []Frame{
-		deepExampleFrame(0, "例题 A=[1,3],w=5；B=[2,5],w=100；C=[4,6],w=5。按结束时间排序，dp[0]=0。", "带权区间调度：前驱 DP", map[string]string{"dp": "[0,?, ?, ?]"}, tokenRow("jobs", []string{"A:3/5", "B:5/100", "C:6/5"}, nil), tokenRow("dp", []string{"0", "?", "?", "?"}, map[int]string{0: "current"})),
-		deepExampleFrame(2, "处理 A：它之前没有兼容工作，二分得到 prev=0。", "寻找 A 的前驱", map[string]string{"job": "A", "prev": "0"}, tokenRow("jobs", []string{"A:3/5", "B:5/100", "C:6/5"}, map[int]string{0: "current"}), lane("prev", item("dp[0]", "dependency"))),
-		deepExampleFrame(4, "A 的两种选择：skip=dp[0]=0，take=5+dp[0]=5；橙色候选取更大值。", "比较 A 的两种选择", map[string]string{"skip": "0", "take": "5"}, lane("候选", item("skip=0", "dependency"), item("take=5", "current"))),
-		deepExampleFrame(6, "写 dp[1]=5；这是结束在 3 之前的最优收益。", "写 dp[1]", map[string]string{"dp[1]": "5"}, tokenRow("dp", []string{"0", "5", "?", "?"}, map[int]string{1: "current"})),
-		deepExampleFrame(2, "处理 B：start=2，最近兼容前驱仍为 0；不能因为 A 结束更早就强制选择 A。", "寻找 B 的前驱", map[string]string{"job": "B", "prev": "0"}, tokenRow("jobs", []string{"A:3/5", "B:5/100", "C:6/5"}, map[int]string{1: "current"}), lane("prev", item("dp[0]", "dependency"))),
-		deepExampleFrame(4, "B 的 skip=dp[1]=5，take=100+dp[0]=100；高收益工作胜过结束更早的 A。", "比较 B 的两种选择", map[string]string{"skip": "5", "take": "100"}, lane("候选", item("skip=5", "dependency"), item("take=100", "current"))),
-		deepExampleFrame(6, "写 dp[2]=100；此处正是无权区间调度贪心不能复用的分叉。", "写 dp[2]", map[string]string{"dp[2]": "100"}, tokenRow("dp", []string{"0", "5", "100", "?"}, map[int]string{2: "current"})),
-		deepExampleFrame(2, "处理 C：start=4，最近兼容前驱是 A，prev=1；读取 dp[1]=5。", "寻找 C 的前驱", map[string]string{"job": "C", "prev": "1", "dp[prev]": "5"}, tokenRow("jobs", []string{"A:3/5", "B:5/100", "C:6/5"}, map[int]string{2: "current"}), lane("前驱", item("A→dp[1]=5", "dependency"))),
-		deepExampleFrame(4, "C 的 take=5+dp[1]=10，skip=dp[2]=100；跳过 C 更优。", "比较 C 的两种选择", map[string]string{"skip": "100", "take": "10"}, lane("候选", item("take=10", "rejected"), item("skip=100", "current"))),
-		deepExampleFrame(6, "写 dp[3]=100；最终选择 B，最大收益为 100。", "写最终答案", map[string]string{"dp[3]": "100", "answer": "100"}, lane("答案", item("100", "current"))),
+	jobs := []Interval{{Label: "A", Start: 1, End: 3}, {Label: "B", Start: 2, End: 5}, {Label: "C", Start: 4, End: 6}}
+	jobTrack := func(states map[int]string) greedyRangeTrack {
+		return makeGreedyRangeTrack("工作区间", greedyRangeIntervals(jobs, states)...)
 	}
-	return concreteTrace("example-state", "区间：带权调度 DP", code, frames...)
+	frames := []Frame{
+		greedyRangeFrame(0, "例题 A=[1,3],w=5；B=[2,5],w=100；C=[4,6],w=5。区间条保留时间范围，收益显示在下方 DP 轨道。", "带权区间调度：前驱 DP", 0, 6, map[string]string{"dp": "[0,?, ?, ?]"}, jobTrack(nil), makeGreedyRangeTrack("DP收益", makeGreedyRangeSegment(0, 1, "dp[0]=0", "current", "range"))),
+		greedyRangeFrame(2, "处理 A：它之前没有兼容工作，二分得到 prev=0。", "寻找 A 的前驱", 0, 6, map[string]string{"job": "A", "prev": "0"}, jobTrack(map[int]string{0: "current"}), makeGreedyRangeTrack("DP收益", makeGreedyRangeSegment(0, 1, "dp[0]", "dependency", "range")), makeGreedyRangeMarker("工作区间", "A", 1, "current")),
+		greedyRangeFrame(4, "A 的两种选择：skip=dp[0]=0，take=5+dp[0]=5；橙色候选取更大值。", "比较 A 的两种选择", 0, 6, map[string]string{"skip": "0", "take": "5"}, jobTrack(map[int]string{0: "dependency"}), makeGreedyRangeTrack("DP收益", makeGreedyRangeSegment(0, 1, "skip=0", "dependency", "range"), makeGreedyRangeSegment(1, 3, "take=5", "current", "range")), makeGreedyRangeMarker("工作区间", "A", 1, "current")),
+		greedyRangeFrame(6, "写 dp[1]=5；这是结束在 3 之前的最优收益。", "写 dp[1]", 0, 6, map[string]string{"dp[1]": "5"}, jobTrack(map[int]string{0: "ready"}), makeGreedyRangeTrack("DP收益", makeGreedyRangeSegment(0, 3, "dp[1]=5", "current", "range"))),
+		greedyRangeFrame(2, "处理 B：start=2，最近兼容前驱仍为 0；不能因为 A 结束更早就强制选择 A。", "寻找 B 的前驱", 0, 6, map[string]string{"job": "B", "prev": "0"}, jobTrack(map[int]string{0: "ready", 1: "current"}), makeGreedyRangeTrack("DP收益", makeGreedyRangeSegment(0, 3, "dp[1]=5", "dependency", "range")), makeGreedyRangeMarker("工作区间", "B", 2, "current")),
+		greedyRangeFrame(4, "B 的 skip=dp[1]=5，take=100+dp[0]=100；高收益工作胜过结束更早的 A。", "比较 B 的两种选择", 0, 6, map[string]string{"skip": "5", "take": "100"}, jobTrack(map[int]string{0: "ready", 1: "current"}), makeGreedyRangeTrack("DP收益", makeGreedyRangeSegment(0, 3, "skip=5", "dependency", "range"), makeGreedyRangeSegment(2, 5, "take=100", "current", "range")), makeGreedyRangeMarker("工作区间", "B", 2, "current")),
+		greedyRangeFrame(6, "写 dp[2]=100；此处正是无权区间调度贪心不能复用的分叉。", "写 dp[2]", 0, 6, map[string]string{"dp[2]": "100"}, jobTrack(map[int]string{0: "ready", 1: "ready"}), makeGreedyRangeTrack("DP收益", makeGreedyRangeSegment(0, 5, "dp[2]=100", "current", "range"))),
+		greedyRangeFrame(2, "处理 C：start=4，最近兼容前驱是 A，prev=1；读取 dp[1]=5。", "寻找 C 的前驱", 0, 6, map[string]string{"job": "C", "prev": "1", "dp[prev]": "5"}, jobTrack(map[int]string{0: "ready", 1: "ready", 2: "current"}), makeGreedyRangeTrack("DP收益", makeGreedyRangeSegment(0, 3, "dp[1]=5", "dependency", "range")), makeGreedyRangeMarker("工作区间", "C", 4, "current")),
+		greedyRangeFrame(4, "C 的 take=5+dp[1]=10，skip=dp[2]=100；跳过 C 更优。", "比较 C 的两种选择", 0, 6, map[string]string{"skip": "100", "take": "10"}, jobTrack(map[int]string{0: "ready", 1: "ready", 2: "rejected"}), makeGreedyRangeTrack("DP收益", makeGreedyRangeSegment(4, 6, "take=10", "rejected", "range"), makeGreedyRangeSegment(0, 5, "skip=100", "current", "range")), makeGreedyRangeMarker("工作区间", "C", 4, "rejected")),
+		greedyRangeFrame(6, "写 dp[3]=100；最终选择 B，最大收益为 100。", "写最终答案", 0, 6, map[string]string{"dp[3]": "100", "answer": "100"}, jobTrack(map[int]string{0: "ready", 1: "ready", 2: "ready"}), makeGreedyRangeTrack("DP收益", makeGreedyRangeSegment(0, 6, "dp[3]=100", "current", "range"))),
+	}
+	return concreteTrace("greedy-range", "区间：带权调度 DP", code, frames...)
 }
 
 func redesignedKadaneTrace() Trace {
 	code := []string{"current, best := nums[0], nums[0]", "for _, x := range nums[1:] {", "    extend := current + x", "    current = max(x, extend)", "    best = max(best, current)", "}", "return best"}
 	values := []string{"-2", "1", "-3", "4", "-1", "2", "1", "-5", "4"}
-	frames := []Frame{
-		deepExampleFrame(0, "例题 [-2,1,-3,4,-1,2,1,-5,4]。current 必须以当前位置结尾，best 记录已完成前缀的最大值。", "Kadane：初始化", map[string]string{"current": "-2", "best": "-2", "range": "[0,0]"}, tokenRow("nums", values, map[int]string{0: "current"}), lane("状态", item("current=-2", "current"), item("best=-2", "ready"))),
-		deepExampleFrame(2, "读 x=1；延续候选 extend=-2+1=-1，重开候选 restart=1。", "比较延续与重开", map[string]string{"x": "1", "extend": "-1", "restart": "1"}, tokenRow("nums", values, map[int]string{0: "dependency", 1: "current"}), lane("候选", item("extend=-1", "dependency"), item("restart=1", "current"))),
-		deepExampleFrame(3, "取较大者，写 current=1；它覆盖区间 [1,1]。", "写 current=1", map[string]string{"current": "1", "range": "[1,1]"}, lane("current", item("1", "current"))),
-		deepExampleFrame(4, "更新 best=max(-2,1)=1；全局状态只在 current 写完后读取。", "更新 best", map[string]string{"current": "1", "best": "1"}, lane("best", item("1", "current"))),
-		deepExampleFrame(2, "读 x=-3；extend=1-3=-2，restart=-3，延续仍更大，current=-2。", "负数削弱当前段", map[string]string{"x": "-3", "extend": "-2", "restart": "-3", "current": "-2"}, tokenRow("nums", values, map[int]string{1: "dependency", 2: "current"}), lane("候选", item("extend=-2", "current"), item("restart=-3", "rejected"))),
-		deepExampleFrame(2, "读 x=4；extend=-2+4=2，restart=4，旧 current 为负，重开得到更优。", "从 4 重开", map[string]string{"x": "4", "extend": "2", "restart": "4"}, tokenRow("nums", values, map[int]string{2: "dependency", 3: "current"}), lane("候选", item("extend=2", "dependency"), item("restart=4", "current"))),
-		deepExampleFrame(3, "写 current=4、best=max(1,4)=4；当前最优区间从下标 3 重新开始。", "写入第二个状态", map[string]string{"current": "4", "best": "4", "range": "[3,3]"}, lane("状态", item("current=4", "current"), item("best=4", "current"))),
-		deepExampleFrame(2, "依次读 -1、2、1：每次都比较 extend 与 restart，current 变为 3、5、6，区间持续延伸。", "连续延续正贡献", map[string]string{"current": "6", "best": "6", "range": "[3,6]"}, tokenRow("nums", values, map[int]string{4: "ready", 5: "ready", 6: "current"}), lane("候选", item("extend 胜过 restart", "dependency"))),
-		deepExampleFrame(2, "读 x=-5：extend=1，restart=-5，取 extend=1；best 仍保持 6。", "短暂回落但不重开", map[string]string{"x": "-5", "extend": "1", "restart": "-5", "current": "1", "best": "6"}, tokenRow("nums", values, map[int]string{6: "dependency", 7: "current"}), lane("best", item("6", "ready"))),
-		deepExampleFrame(2, "读最后 x=4：extend=5，restart=4，current=5，小于 best=6。", "最后一次比较", map[string]string{"x": "4", "extend": "5", "restart": "4", "current": "5", "best": "6"}, tokenRow("nums", values, map[int]string{8: "current"}), lane("比较", item("best=6 保持", "ready"))),
-		deepExampleFrame(6, "扫描结束，返回 best=6，对应连续区间 [4,-1,2,1]。", "Kadane：完成", map[string]string{"answer": "6", "range": "[4,-1,2,1]"}, lane("答案", item("6", "current"))),
+	array := func(states map[int]string) greedyRangeTrack {
+		return makeGreedyRangeTrack("数组位置", greedyRangeItems(values, states)...)
 	}
-	return concreteTrace("example-state", "贪心：最大子数组 Kadane", code, frames...)
+	currentRange := func(start, end int, label, state string) greedyRangeTrack {
+		return makeGreedyRangeTrack("当前子段", makeGreedyRangeSegment(start, end+1, label, state, "range"))
+	}
+	bestRange := func(start, end int, label, state string) greedyRangeTrack {
+		return makeGreedyRangeTrack("全局最优", makeGreedyRangeSegment(start, end+1, label, state, "range"))
+	}
+	frames := []Frame{
+		greedyRangeFrame(0, "例题 [-2,1,-3,4,-1,2,1,-5,4]。横轴始终保留整个数组；当前子段和全局最优分别占固定轨道。", "Kadane：初始化", 0, 9, map[string]string{"current": "-2", "best": "-2", "range": "[0,0]"}, array(map[int]string{0: "current"}), currentRange(0, 0, "sum=-2", "current"), bestRange(0, 0, "best=-2", "ready"), makeGreedyRangeMarker("数组位置", "i=0", 0, "current")),
+		greedyRangeFrame(2, "读 x=1；在原数组位置 1 上同时保留延续候选 -1 和重开候选 1。", "比较延续与重开", 0, 9, map[string]string{"x": "1", "extend": "-1", "restart": "1"}, array(map[int]string{0: "dependency", 1: "current"}), currentRange(0, 1, "extend=-1", "dependency"), bestRange(0, 0, "best=-2", "ready"), makeGreedyRangeMarker("数组位置", "i=1", 1, "current")),
+		greedyRangeFrame(3, "取较大者，current=1；当前子段移动为单点 [1,1]，数组主体没有换屏。", "写 current=1", 0, 9, map[string]string{"current": "1", "range": "[1,1]"}, array(map[int]string{0: "ready", 1: "current"}), currentRange(1, 1, "sum=1", "current"), bestRange(0, 0, "best=-2", "ready"), makeGreedyRangeMarker("数组位置", "i=1", 1, "current")),
+		greedyRangeFrame(4, "更新 best=max(-2,1)=1；全局最优轨道扩展到位置 1。", "更新 best", 0, 9, map[string]string{"current": "1", "best": "1"}, array(map[int]string{0: "ready", 1: "ready"}), currentRange(1, 1, "sum=1", "ready"), bestRange(1, 1, "best=1", "current"), makeGreedyRangeMarker("数组位置", "best", 1, "current")),
+		greedyRangeFrame(2, "读 x=-3；extend=-2 比 restart=-3 更大，当前子段延续到位置 2，但和降为 -2。", "负数削弱当前段", 0, 9, map[string]string{"x": "-3", "extend": "-2", "restart": "-3", "current": "-2"}, array(map[int]string{1: "dependency", 2: "current"}), currentRange(1, 2, "sum=-2", "current"), bestRange(1, 1, "best=1", "ready"), makeGreedyRangeMarker("数组位置", "i=2", 2, "current")),
+		greedyRangeFrame(2, "读 x=4；extend=2，restart=4，旧 current 为负，重开得到更优。", "从 4 重开", 0, 9, map[string]string{"x": "4", "extend": "2", "restart": "4"}, array(map[int]string{2: "dependency", 3: "current"}), currentRange(3, 3, "restart=4", "current"), bestRange(1, 1, "best=1", "ready"), makeGreedyRangeMarker("数组位置", "i=3", 3, "current")),
+		greedyRangeFrame(3, "写 current=4、best=max(1,4)=4；当前子段和全局最优都落在位置 3。", "写入第二个状态", 0, 9, map[string]string{"current": "4", "best": "4", "range": "[3,3]"}, array(map[int]string{0: "ready", 1: "ready", 2: "ready", 3: "current"}), currentRange(3, 3, "sum=4", "current"), bestRange(3, 3, "best=4", "current"), makeGreedyRangeMarker("数组位置", "i=3", 3, "current")),
+		greedyRangeFrame(2, "依次读 -1、2、1：current 由 3、5、6 逐步沿原数组延伸到位置 6。", "连续延续正贡献", 0, 9, map[string]string{"current": "6", "best": "6", "range": "[3,6]"}, array(map[int]string{3: "dependency", 4: "ready", 5: "ready", 6: "current"}), currentRange(3, 6, "sum=6", "current"), bestRange(3, 6, "best=6", "ready"), makeGreedyRangeMarker("数组位置", "i=6", 6, "current")),
+		greedyRangeFrame(2, "读 x=-5：extend=1 胜过 restart=-5，当前子段仍沿位置 7 延伸；best 保持 6。", "短暂回落但不重开", 0, 9, map[string]string{"x": "-5", "extend": "1", "restart": "-5", "current": "1", "best": "6"}, array(map[int]string{6: "dependency", 7: "current"}), currentRange(3, 7, "sum=1", "dependency"), bestRange(3, 6, "best=6", "ready"), makeGreedyRangeMarker("数组位置", "i=7", 7, "current")),
+		greedyRangeFrame(2, "读最后 x=4：extend=5，restart=4，current=5，小于保留在原位置的 best=6。", "最后一次比较", 0, 9, map[string]string{"x": "4", "extend": "5", "restart": "4", "current": "5", "best": "6"}, array(map[int]string{7: "dependency", 8: "current"}), currentRange(3, 8, "sum=5", "dependency"), bestRange(3, 6, "best=6", "ready"), makeGreedyRangeMarker("数组位置", "i=8", 8, "current")),
+		greedyRangeFrame(6, "扫描结束，返回 best=6，对应原数组中的连续区间 [4,-1,2,1]。", "Kadane：完成", 0, 9, map[string]string{"answer": "6", "range": "[4,-1,2,1]"}, array(map[int]string{0: "ready", 1: "ready", 2: "ready", 3: "ready", 4: "ready", 5: "ready", 6: "ready", 7: "ready", 8: "ready"}), currentRange(3, 8, "current=5", "ready"), bestRange(3, 6, "best=6", "current"), makeGreedyRangeMarker("数组位置", "答案", 6, "current")),
+	}
+	return concreteTrace("greedy-range", "贪心：最大子数组 Kadane", code, frames...)
 }

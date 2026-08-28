@@ -46,6 +46,7 @@ func validateRendererState(kind string, state any) error {
 		"sequence-tails":     {"numbers", "tails", "tailStates"},
 		"row-gravity":        {"cells"},
 		"example-state":      {"lanes"},
+		"greedy-range":       {"tracks", "markers"},
 		"matrix-state":       {"cells"},
 		"node-link-state":    {"nodes", "links"},
 		"cycle-list-state":   {"nodes", "links"},

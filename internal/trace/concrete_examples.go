@@ -9,9 +9,9 @@ func concreteFlowTrace(name string) (Trace, bool) {
 }
 
 var concreteFlowFactories = map[string]func() Trace{
-	"flow-greedy-reachability":       redesignedReachabilityTrace,
-	"flow-greedy-lexicographic":      redesignedLexicographicTrace,
-	"flow-greedy-interval-endpoints": redesignedEndpointsTrace,
+	"flow-greedy-reachability":       redesignedGreedyReachabilityTrace,
+	"flow-greedy-lexicographic":      redesignedGreedyLexicographicTrace,
+	"flow-greedy-interval-endpoints": redesignedGreedyEndpointsTrace,
 	"flow-bfs-shortest-path":         redesignedBFSShortestTrace,
 	"flow-bfs-multi-source":          redesignedBFSMultiSourceTrace,
 	"flow-bfs-topological":           redesignedBFSTopologicalTrace,

@@ -167,6 +167,45 @@ func TestRedesignedAdditionalTracesKeepDecisionFrames(t *testing.T) {
 	}
 }
 
+func TestGreedyTracesKeepOneStableRangeLayout(t *testing.T) {
+	traces := []Trace{
+		FlowTraceMust("flow-greedy-reachability"),
+		FlowTraceMust("flow-greedy-lexicographic"),
+		FlowTraceMust("flow-greedy-interval-endpoints"),
+		StartSortedIntervalsTrace(), MeetingRoomsTrace(), WeightedIntervalsTrace(), KadaneTrace(),
+	}
+	for _, trace := range traces {
+		t.Run(trace.Title, func(t *testing.T) {
+			if trace.Kind != "greedy-range" {
+				t.Fatalf("kind = %q, want greedy-range", trace.Kind)
+			}
+			first, ok := trace.Frames[0].State.(greedyRangeState)
+			if !ok || len(first.Tracks) == 0 {
+				t.Fatalf("missing range tracks: %#v", trace.Frames[0].State)
+			}
+			for index, frame := range trace.Frames[1:] {
+				state, ok := frame.State.(greedyRangeState)
+				if !ok || len(state.Tracks) != len(first.Tracks) {
+					t.Fatalf("frame %d replaces the main range layout: %#v", index+1, frame.State)
+				}
+				for trackIndex, track := range state.Tracks {
+					if track.Label != first.Tracks[trackIndex].Label {
+						t.Fatalf("frame %d changes track %d from %q to %q", index+1, trackIndex, first.Tracks[trackIndex].Label, track.Label)
+					}
+				}
+			}
+		})
+	}
+}
+
+func FlowTraceMust(name string) Trace {
+	trace, ok := FlowTrace(name)
+	if !ok {
+		panic("missing flow trace " + name)
+	}
+	return trace
+}
+
 func TestBinaryRedBlueTrace(t *testing.T) {
 	got := BinaryRedBluePartition()
 	last := got.Frames[len(got.Frames)-1]
